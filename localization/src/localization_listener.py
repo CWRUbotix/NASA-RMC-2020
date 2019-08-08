@@ -5,10 +5,11 @@ import math
 import matplotlib
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import matplotlib.pyplot as plt
-from localization.msg import UWB_data
+from canbus.msg import UWB_data
 
 topic = 'localization_data'
 viz_dir = 'visualizations/'
+print('Booting up node...')
 rospy.init_node('localization_listener', anonymous=True)
 distances = {}
 confidences = {}
