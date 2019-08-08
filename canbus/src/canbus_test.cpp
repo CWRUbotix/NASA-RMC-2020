@@ -5,7 +5,8 @@
 int main(int argc, char** argv){
 	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
-	ros::Publisher can_pub = n.advertise<std_msgs::Float32>("localization_data", 1024);
+	
+	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
 	ros::Rate loop_rate(1);
 
 	int s;
@@ -62,6 +63,7 @@ int main(int argc, char** argv){
 
 			// ROS_INFO("Wrote %d bytes to CAN bus.", nbytes);
 			for(int i = 0; i < NUM_ANCHORS; i++){
+				nbytes = 0;
 				while(nbytes <= 0){
 
 					nbytes = read(s, &rx_frame, sizeof(struct can_frame));
@@ -77,12 +79,17 @@ int main(int argc, char** argv){
 						ROS_INFO("Distance from node %d to anchor %d: %.3f m", node_id, dist_data.anchor_id, dist_data.distance);
 					}else{
 						nbytes = 0;
+						ROS_INFO("No bytes received");
 					}
 				}
-				std_msgs::Float32 distance;
-				distance.data = dist_data.distance;
+				UWB_msg msg;
+				msg.timestamp = ros::Time::now();
+				msg.node_id = node_id;
+				msg.anchor_id = dist_data.anchor_id;
+				msg.distance = dist_data.distance;
+				msg.confidence = dist_data.confidence;
 
-				can_pub.publish(distance);
+				can_pub.publish(msg);
 			}
 		}
 		

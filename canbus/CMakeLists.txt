@@ -96,6 +96,7 @@ generate_messages(
 add_executable(canbus src/canbus_test.cpp)
 target_link_libraries(canbus ${catkin_LIBRARIES})
 add_dependencies(canbus ${catkin_EXPORTED_TARGETS})
+add_dependencies(canbus canbus_generate_messages_cpp)
 
 ###################################
 ## catkin specific configuration ##
@@ -109,7 +110,7 @@ add_dependencies(canbus ${catkin_EXPORTED_TARGETS})
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES canbus
-#  CATKIN_DEPENDS roscpp std_msgs
+  CATKIN_DEPENDS roscpp std_msgs message_runtime
 #  DEPENDS system_lib
 )
 

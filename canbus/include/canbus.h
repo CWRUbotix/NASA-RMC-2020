@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
+#include <canbus/UWB_data.h>
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,8 @@
 #include <linux/can/raw.h>
 
 #include <inttypes.h>
+
+typedef canbus::UWB_data UWB_msg;
 
 using std::string;
 
