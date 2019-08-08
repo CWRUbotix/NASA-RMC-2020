@@ -30,12 +30,14 @@ def position_callback(msg):
     else:
         confidences[key_pair] = [msg.confidence]
     ax = plt.subplot(211)
-    ax.plot(distances)
+    for key in distances.keys():
+        ax.plot(distances[keys], label=key)
     ax.set_title('Distance')
     ax.set_ylim(0, 6)
     ax.legend(loc='best')
     ax = plt.subplot(212)
-    ax.plot(confidences)
+    for key in confidences.keys():
+        ax.plot(confidences[keys], label=key)
     ax.set_title('Confidence')
     ax.legend(loc='best')
     plt.savefig('node_1_%d.png' % (len(os.listdir('.'))))
