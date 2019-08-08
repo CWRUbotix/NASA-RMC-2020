@@ -7,7 +7,7 @@ import matplotlib
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import matplotlib.pyplot as plt
 from canbus.msg import UWB_data
-from triangulation import
+from triangulation import UltraWideBandNode
 
 topic = 'localization_data'
 viz_dir = 'visualizations/'
