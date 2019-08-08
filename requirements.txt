@@ -4,3 +4,4 @@ catkin_pkg
 matplotlib
 numpy
 pandas
+localization
