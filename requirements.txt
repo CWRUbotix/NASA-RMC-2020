@@ -1,0 +1,6 @@
+rospy
+rspkg
+catkin_pkg
+matplotlib
+numpy
+pandas

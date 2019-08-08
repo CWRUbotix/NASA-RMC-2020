@@ -1,30 +1,42 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import rospy
 import math
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import matplotlib.pyplot as plt
 from localization.msg import UWB_data
 
 topic = 'localization_data'
 viz_dir = 'visualizations/'
 rospy.init_node('localization_listener', anonymous=True)
-distances = []
-confidences = []
+distances = {}
+confidences = {}
+
+
+def node_anchor_pair(n_id, a_id):
+    return n_id + ', ' + a_id
 
 def position_callback(msg):
     print('distance:', msg.distance, 'confidence:', msg.confidence)
-    if msg.node_id == 1 and msg.anchor_id == 17:
-        distances.append(msg.distance)
-        confidences.append(msg.confidence)
+    key_pair = node_anchor_pair(msg.node_id, msg.anchor_id)
+    if key_pair in distances.keys():
+        distances[key_pair].append(msg.distance)
+    else:
+        distances[key_pair] = [msg.distance]
+    if key_pair in confidences.keys():
+        confidences[key_pair].append(msg.confidence)
+    else:
+        confidences[key_pair] = [msg.confidence]
     ax = plt.subplot(211)
     ax.plot(distances)
     ax.set_title('Distance')
     ax.set_ylim(0, 6)
+    ax.legend(loc='best')
     ax = plt.subplot(212)
     ax.plot(confidences)
     ax.set_title('Confidence')
+    ax.legend(loc='best')
     plt.savefig('node_1_%d.png' % (len(os.listdir('.'))))
     plt.close()
 
