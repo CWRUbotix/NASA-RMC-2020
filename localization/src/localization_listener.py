@@ -15,7 +15,7 @@ print('Booting up node...')
 rospy.init_node('localization_listener', anonymous=True)
 distances = {}
 confidences = {}
-Nodes = []
+nodes = []
 
 
 def init_nodes():
@@ -23,14 +23,21 @@ def init_nodes():
     script_path = os.path.join(rp.get_path("canbus"), "include", "node_config.csv")
     sensors = pd.read_csv(script_path, index=False)
     print(sensors)
+    return sensors
 
 
 def node_anchor_pair(n_id, a_id):
     return str(n_id) + ', ' + str(a_id)
 
 def position_callback(msg):
+    global nodes
     print('distance:', msg.distance, 'confidence:', msg.confidence)
     key_pair = node_anchor_pair(msg.node_id, msg.anchor_id)
+    for node in nodes:
+        if node.id == msg.node_id:
+            node.add_measurement(msg.anchor_id, msg.distance)
+    for node in nodes:
+        node.get_position()
     if key_pair in distances.keys():
         distances[key_pair].append(msg.distance)
     else:
@@ -54,6 +61,9 @@ def position_callback(msg):
     plt.close()
 
 if __name__ == '__main__':
-    init_nodes()
+    sensors = init_nodes()
+    for i, sensor in sensors.iterrows():
+        if sensor['type'] == 'node':
+            nodes.append(UltraWideBandNode(sensor['id'], sensors))
     sub=rospy.Subscriber(topic, UWB_data, position_callback)
     rospy.spin()

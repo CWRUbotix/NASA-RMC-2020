@@ -3,10 +3,11 @@ import pandas as pd
 import localization as lx
 
 class UltraWideBandNode:
-    def __init__(self):
+    def __init__(self, id, sensors):
+        self.id = id
         self.x = None
         self.y = None
-        self.sensors =
+        self.sensors = sensors
         self.measurements = {}
 
     def add_measurement(anchor_id, distance):
