@@ -106,7 +106,7 @@ UwbNode* get_nodes_from_file(string fname, string sType, int* len, int max_len){
 	// allocate our array
 	UwbNode* result = (UwbNode*) malloc(sizeof(UwbNode) * max_len);
 
-	ifstream node_data(fname);
+	ifstream node_data(fname.c_str());
 
 	string line;
 	stringstream lineStream(line);
@@ -143,9 +143,9 @@ UwbNode* get_nodes_from_file(string fname, string sType, int* len, int max_len){
 			}
 			if(cells[type_ind].compare(sType) == 0){
 				result[index].type 	= cells[type_ind];
-				result[index].id 	= stoi(cells[id_ind], nullptr, 10);
-				result[index].x 	= stof(cells[x_ind], nullptr);
-				result[index].y 	= stof(cells[y_ind], nullptr);
+				result[index].id 	= stoi(cells[id_ind], NULL, 10);
+				result[index].x 	= stof(cells[x_ind], NULL);
+				result[index].y 	= stof(cells[y_ind], NULL);
 				index++;
 			}
 			if (index >= max_len){
