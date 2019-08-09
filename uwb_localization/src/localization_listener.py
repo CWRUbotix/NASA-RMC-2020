@@ -30,6 +30,7 @@ def init_nodes():
 def node_anchor_pair(n_id, a_id):
     return str(n_id) + ', ' + str(a_id)
 
+
 def position_callback(msg):
     global nodes
     print('distance:', msg.distance, 'confidence:', msg.confidence)
@@ -55,16 +56,17 @@ def position_callback(msg):
     ax.legend(loc='best')
     ax = plt.subplot(212)
     for key in confidences.keys():
-        ax.plot(confidences[keys], label=key)
+        ax.plot(confidences[key], label=key)
     ax.set_title('Confidence')
     ax.legend(loc='best')
     plt.savefig('node_1_%d.png' % (len(os.listdir('.'))))
     plt.close()
+
 
 if __name__ == '__main__':
     sensors = init_nodes()
     for i, sensor in sensors.iterrows():
         if sensor['type'] == 'node':
             nodes.append(UltraWideBandNode(sensor['id'], sensors))
-    sub=rospy.Subscriber(topic, UWB_data, position_callback)
+    sub = rospy.Subscriber(topic, UWB_data, position_callback)
     rospy.spin()
