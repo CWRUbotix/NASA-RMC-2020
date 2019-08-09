@@ -53,6 +53,6 @@ typedef struct {
 	uint16_t confidence;
 } DistanceFrame;
 
-UwbNode* get_nodes_from_file(char* fname, string sType, int* len, int max_len);
+UwbNode* get_nodes_from_file(string fname, string sType, int* len, int max_len);
 
 #endif
