@@ -1,14 +1,27 @@
 #include <canbus.h>
 
 int main(int argc, char** argv){
+	ROS_INFO("CANbus Node!!!!!");
 	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
 	
 	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
 	ros::Rate loop_rate(1);
 
-	UwbNode* nodes 		= get_nodes_from_file(node_config_fname, node_str, &nNodes, MAX_NUM_NODES);
-	UwbNode* anchors 	= get_nodes_from_file(node_config_fname, anchor_str, &nAnchors, MAX_NUM_ANCHORS);
+	//UwbNode* nodes 		= get_nodes_from_file(node_config_fname, node_str, &nNodes, MAX_NUM_NODES);
+	//UwbNode* anchors 	= get_nodes_from_file(node_config_fname, anchor_str, &nAnchors, MAX_NUM_ANCHORS);
+	nNodes = 2;
+	nAnchors = 3;
+
+	UwbNode nodes[nNodes] = {};
+	UwbNode anchors[nAnchors] = {};
+
+	nodes[0].id = 1;
+	nodes[1].id = 2;
+
+	anchors[0].id = 0x11;
+	anchors[1].id = 0x22;
+	anchors[2].id = 0x33;
 
 	int s;
 	int nbytes;
@@ -53,7 +66,7 @@ int main(int argc, char** argv){
 	}
 
 	while(ros::ok()){
-		for(node_id = 1; node_id <= nNodes; node_id++){
+		for(node_id = 0; node_id < nNodes; node_id++){
 			UwbNode* node = &nodes[node_id];
 
 			// ----- REQUEST DATA FROM THIS NODE -----
@@ -72,7 +85,7 @@ int main(int argc, char** argv){
 		
 					int rx_id = (int)rx_frame.can_id & CAN_SFF_MASK;
 				
-					if(nbytes > 0 && rx_frame.can_dlc == 8 && rx_id == node_id){
+					if(nbytes > 0 && rx_frame.can_dlc == 8 && rx_id == node->id){
 						memcpy(&rx_buf, rx_frame.data, 8);
 						dist_data.type = rx_buf[0];
 						dist_data.anchor_id = rx_buf[1];
