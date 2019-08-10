@@ -33,7 +33,6 @@ def node_anchor_pair(n_id, a_id):
 
 def position_callback(msg):
     global nodes
-    print('distance:', msg.distance, 'confidence:', msg.confidence)
     key_pair = node_anchor_pair(msg.node_id, msg.anchor_id)
     for node in nodes:
         if node.id == msg.node_id:
@@ -48,18 +47,12 @@ def position_callback(msg):
         confidences[key_pair].append(msg.confidence)
     else:
         confidences[key_pair] = [msg.confidence]
-    ax = plt.subplot(211)
-    for key in distances.keys():
-        ax.plot(distances[key], label=key)
-    ax.set_title('Distance')
-    ax.set_ylim(0, 6)
+    ax = plt.subplot(111)
+    ax.set_title('Position')
+    for node in nodes:
+        node.plot_position(ax=ax)
     ax.legend(loc='best')
-    ax = plt.subplot(212)
-    for key in confidences.keys():
-        ax.plot(confidences[key], label=key)
-    ax.set_title('Confidence')
-    ax.legend(loc='best')
-    plt.savefig('node_1_%d.png' % (len(os.listdir('.'))))
+    plt.savefig(viz_dir + 'node_1_%d.png' % (len(os.listdir(viz_dir))))
     plt.close()
 
 
