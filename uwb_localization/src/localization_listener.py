@@ -14,8 +14,6 @@ topic = 'localization_data'
 viz_dir = 'visualizations/'
 print('Booting up node...')
 rospy.init_node('localization_listener', anonymous=True)
-distances = {}
-confidences = {}
 nodes = []
 
 
@@ -39,18 +37,15 @@ def position_callback(msg):
             node.add_measurement(msg.anchor_id, msg.distance)
     for node in nodes:
         node.get_position()
-    if key_pair in distances.keys():
-        distances[key_pair].append(msg.distance)
-    else:
-        distances[key_pair] = [msg.distance]
-    if key_pair in confidences.keys():
-        confidences[key_pair].append(msg.confidence)
-    else:
-        confidences[key_pair] = [msg.confidence]
-    ax = plt.subplot(111)
+    ax = plt.subplot(121)
     ax.set_title('Position')
     for node in nodes:
         node.plot_position(ax=ax)
+    ax.legend(loc='best')
+    ax = plt.subplot(122)
+    ax.set_title('Position (moving average)')
+    for node in nodes:
+        node.plot_position(ax=ax, moving_average=True)
     ax.legend(loc='best')
     plt.savefig(viz_dir + 'node_1_%d.png' % (len(os.listdir(viz_dir))))
     plt.close()

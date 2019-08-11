@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 from localization.localization.geoProject import Project
-# from localization import *
 
 
 class UltraWideBandNode:
@@ -19,8 +19,14 @@ class UltraWideBandNode:
         if distance >= 0:
             self.measurements[anchor_id] = distance
 
-    def plot_position(self, ax):
-        ax.scatter(self.x_plot, self.y_plot, label=str(self.id))
+    def plot_position(self, ax, moving_average=False):
+        if moving_average:
+            if len(self.x_plot) >= 3 and len(self.y_plot) >= 3:
+                avg_x = self.moving_average(self.x_plot)
+                avg_y = self.moving_average(self.y_plot)
+                ax.scatter(avg_x, avg_y, label=str(self.id))
+        else:
+            ax.scatter(self.x_plot, self.y_plot, label=str(self.id))
 
     def get_position(self):
         if len(list(self.measurements.keys())) >= 3:
@@ -37,10 +43,15 @@ class UltraWideBandNode:
 
             P.solve()
             # Then the target location is:
-            #print(t.loc)
             position = t.loc
             print('id: %d, X: %.2f, Y: %.2f' % (self.id, position.x, position.x))
             self.x_plot.append(position.x)
             self.y_plot.append(position.y)
         else:
             print('Not enough points to triangulate node...')
+
+    @staticmethod
+    def moving_average(a, n=3):
+        ret = np.cumsum(a, dtype=float)
+        ret[n:] = ret[n:] - ret[:-n]
+        return ret[n - 1:] / n
