@@ -10,14 +10,20 @@ class UltraWideBandNode:
         self.id = id
         self.x = None
         self.y = None
+        self.confidence = None
         self.sensors = sensors
         self.measurements = {}
         self.x_plot = []
         self.y_plot = []
 
-    def add_measurement(self, anchor_id, distance):
+    def get_robot_position(self):
+        sensor = self.sensors[self.sensors['id'] == self.id]
+        return float(sensor['x']), float(sensor['y'])
+
+    def add_measurement(self, anchor_id, distance, confidence):
         if distance >= 0:
             self.measurements[anchor_id] = distance
+            self.confidence = confidence
 
     def plot_position(self, ax, moving_average=False):
         if moving_average:
@@ -30,7 +36,7 @@ class UltraWideBandNode:
 
     def get_position(self):
         if len(list(self.measurements.keys())) >= 3:
-            P = Project(mode='2D', solver='LSE_GC')
+            P = Project(mode='2D', solver='LSE')
 
             for i, sensor in self.sensors.iterrows():
                 if sensor['type'] == 'anchor':
@@ -44,7 +50,10 @@ class UltraWideBandNode:
             P.solve()
             # Then the target location is:
             position = t.loc
+
             print('id: %d, X: %.2f, Y: %.2f' % (self.id, position.x, position.x))
+            self.x = position.x
+            self.y = position.y
             self.x_plot.append(position.x)
             self.y_plot.append(position.y)
         else:
