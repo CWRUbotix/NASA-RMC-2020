@@ -36,7 +36,7 @@ class UltraWideBandNode:
 
     def get_position(self):
         if len(list(self.measurements.keys())) >= 3:
-            P = Project(mode='2D', solver='LSE')
+            P = Project(mode='2D', solver='LSE_GC')
 
             for i, sensor in self.sensors.iterrows():
                 if sensor['type'] == 'anchor':

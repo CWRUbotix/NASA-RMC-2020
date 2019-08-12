@@ -18,6 +18,9 @@ viz_dir = 'visualizations/'
 print('Booting up node...')
 rospy.init_node('localization_listener', anonymous=True)
 nodes = []
+robot_x = []
+robot_y = []
+msg_counts = {1:0, 2:0, 3:0}
 
 try:
     files = glob.glob('%s/*' % viz_dir)
@@ -61,38 +64,42 @@ def remove_invalid_points(nodes, epsilon=.2):
 
 
 def position_callback(msg):
-    global nodes
+    global nodes, robot_x, robot_y, msg_counts
     for node in nodes:
         if node.id == msg.node_id:
             node.add_measurement(msg.anchor_id, msg.distance, msg.confidence)
+            msg_counts[node.id] += 1
     for node in nodes:
-        node.get_position()
+        if msg_counts[node.id] >= 3:
+            node.get_position()
 
-    remove_invalid_points(nodes)
+    #remove_invalid_points(nodes)
 
-    fig = plt.figure(figsize=(16, 8))
-    ax = plt.subplot(121)
+    fig = plt.figure(figsize=(18, 6))
+    ax = plt.subplot(131)
     ax.set_title('Position')
     for node in nodes:
         node.plot_position(ax=ax)
     ax.axis('equal')
-    '''
-    x_pos = np.array([])
-    y_pos = np.array([])
-    for node in nodes:
-        if len(node.x_plot) == len(node.y_plot):
-            x_pos = np.append(x_pos, node.x_plot)
-            y_pos = np.append(y_pos, node.y_plot)
-    x_pos = np.reshape(x_pos, (len(nodes), -1))
-    y_pos = np.reshape(y_pos, (len(nodes), -1))
-    print(x_pos.shape, y_pos.shape)
-    ax.scatter(np.mean(x_pos, axis=0), np.mean(y_pos, axis=0), label='robot')
-    '''
     ax.legend(loc='best')
-    ax = plt.subplot(122)
+    ax = plt.subplot(132)
     ax.set_title('Position (moving average)')
     for node in nodes:
         node.plot_position(ax=ax, moving_average=True)
+    ax.axis('equal')
+    ax.legend(loc='best')
+    ax = plt.subplot(133)
+    avg_x = 0
+    avg_y = 0
+    total = 0
+    for node in nodes:
+        if node.x is not None and node.y is not None:
+            avg_x += node.x
+            avg_y += node.y
+            total += 1
+    robot_x.append(avg_x / total)
+    robot_y.append(avg_y / total)
+    ax.scatter(robot_x, robot_y, label='robot')
     ax.axis('equal')
     ax.legend(loc='best')
     plt.tight_layout()
@@ -105,5 +112,5 @@ if __name__ == '__main__':
     for i, sensor in sensors.iterrows():
         if sensor['type'] == 'node':
             nodes.append(UltraWideBandNode(sensor['id'], sensors))
-    sub = rospy.Subscriber(topic, UWB_data, position_callback)
+    sub = rospy.Subscriber(topic, UWB_data, position_callback, queue_size=18)
     rospy.spin()
