@@ -15,6 +15,7 @@ class UltraWideBandNode:
         self.measurements = {}
         self.x_plot = []
         self.y_plot = []
+        self.distance_plot = []
 
     def get_robot_position(self):
         sensor = self.sensors[self.sensors['id'] == self.id]
@@ -23,6 +24,8 @@ class UltraWideBandNode:
     def add_measurement(self, anchor_id, distance, confidence):
         if distance >= 0:
             self.measurements[anchor_id] = distance
+            if int(anchor_id) == 51:
+                self.distance_plot.append(distance)
             self.confidence = confidence
 
     def plot_position(self, ax, moving_average=False):
@@ -51,11 +54,12 @@ class UltraWideBandNode:
             # Then the target location is:
             position = t.loc
 
-            print('id: %d, X: %.2f, Y: %.2f' % (self.id, position.x, position.x))
-            self.x = position.x
-            self.y = position.y
-            self.x_plot.append(position.x)
-            self.y_plot.append(position.y)
+            print('id: %d, X: %.2f, Y: %.2f' % (self.id, position.x, position.y))
+            if position.x > 0 and position.y > 0:
+                self.x = position.x
+                self.y = position.y
+                self.x_plot.append(position.x)
+                self.y_plot.append(position.y)
         else:
             print('Not enough points to triangulate node...')
 

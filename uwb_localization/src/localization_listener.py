@@ -75,18 +75,20 @@ def position_callback(msg):
 
     #remove_invalid_points(nodes)
 
-    fig = plt.figure(figsize=(18, 6))
+    fig = plt.figure(figsize=(6 * 3, 9))
     ax = plt.subplot(131)
     ax.set_title('Position')
     for node in nodes:
         node.plot_position(ax=ax)
-    ax.axis('equal')
+    #ax.axis('equal')
     ax.legend(loc='best')
+    ax.set_xlim(0, 4.2)
+    ax.set_ylim(0, 6.05)
     ax = plt.subplot(132)
-    ax.set_title('Position (moving average)')
+    ax.set_title('Node Distances')
     for node in nodes:
-        node.plot_position(ax=ax, moving_average=True)
-    ax.axis('equal')
+        ax.plot(node.distance_plot, label=node.id)
+    ax.set_ylim(0, 6.05)
     ax.legend(loc='best')
     ax = plt.subplot(133)
     avg_x = 0
@@ -100,8 +102,10 @@ def position_callback(msg):
     robot_x.append(avg_x / total)
     robot_y.append(avg_y / total)
     ax.scatter(robot_x, robot_y, label='robot')
-    ax.axis('equal')
+    #ax.axis('equal')
     ax.legend(loc='best')
+    ax.set_xlim(0, 4.2)
+    ax.set_ylim(0, 6.05)
     plt.tight_layout()
     fig.savefig(viz_dir + 'node_1_%d.png' % (len(os.listdir(viz_dir))))
     plt.close()
