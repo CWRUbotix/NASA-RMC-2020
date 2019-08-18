@@ -1,5 +1,4 @@
-rospy
-rspkg
+rospkg
 catkin_pkg
 matplotlib
 numpy
