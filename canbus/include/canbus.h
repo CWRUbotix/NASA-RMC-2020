@@ -22,7 +22,7 @@
 
 #define MAX_NUM_NODES 4
 #define MAX_NUM_ANCHORS 3
-
+#define MAX_CAN_TRIES 3
 using namespace std;
 
 using std::string;
@@ -53,6 +53,6 @@ typedef struct {
 	uint16_t confidence;
 } DistanceFrame;
 
-UwbNode* get_nodes_from_file(string fname, string sType, int* len, int max_len);
+int get_nodes_from_file(string fname, string sType);
 
 #endif

@@ -6,23 +6,23 @@ int main(int argc, char** argv){
 	ros::NodeHandle n;
 	
 	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
-	ros::Rate loop_rate(1);
-
-	//UwbNode* nodes 		= get_nodes_from_file(node_config_fname, node_str, &nNodes, MAX_NUM_NODES);
-	//UwbNode* anchors 	= get_nodes_from_file(node_config_fname, anchor_str, &nAnchors, MAX_NUM_ANCHORS);
-	nNodes = 2;
+	ros::Rate loop_rate(10);
+	
+	ROS_INFO("ROS init success");
+	//nNodes 		= get_nodes_from_file(node_config_fname, node_str);
+	//nAnchors 	= get_nodes_from_file(node_config_fname, anchor_str);
+	//ROS_INFO("# of Nodes: %d,\t# of Anchors: %d", nNodes, nAnchors);
+	
+	nNodes = 3;
 	nAnchors = 3;
 
 	UwbNode nodes[nNodes] = {};
-	UwbNode anchors[nAnchors] = {};
 
 	nodes[0].id = 1;
 	nodes[1].id = 2;
+	nodes[2].id = 3;
 
-	anchors[0].id = 0x11;
-	anchors[1].id = 0x22;
-	anchors[2].id = 0x33;
-
+	UWB_msg msg;
 	int s;
 	int nbytes;
 	struct sockaddr_can addr;
@@ -31,7 +31,7 @@ int main(int argc, char** argv){
 	struct can_frame tx_frame;
 	struct ifreq ifr;
 	struct timeval tv;
-	tv.tv_sec = 1;
+	tv.tv_sec = 0;
 	tv.tv_usec = 500000;
 	
 	
@@ -74,15 +74,15 @@ int main(int argc, char** argv){
 			tx_frame.can_dlc = 8;
 			nbytes = write(s, &tx_frame, sizeof(struct can_frame));
 												
-			ros::Duration(0.25).sleep();
+			ros::Duration(0.1).sleep();
 
 			// ROS_INFO("Wrote %d bytes to CAN bus.", nbytes);
 			for(int i = 0; i < nAnchors; i++){
 				nbytes = 0;
-				while(nbytes <= 0){
+				int n_tries = 0;
+				while(nbytes <= 0 && n_tries < MAX_CAN_TRIES){
 
 					nbytes = read(s, &rx_frame, sizeof(struct can_frame));
-		
 					int rx_id = (int)rx_frame.can_id & CAN_SFF_MASK;
 				
 					if(nbytes > 0 && rx_frame.can_dlc == 8 && rx_id == node->id){
@@ -92,19 +92,19 @@ int main(int argc, char** argv){
 						memcpy(&(dist_data.distance), rx_buf+2, sizeof(dist_data.distance));
 						memcpy(&(dist_data.confidence), rx_buf+6, 2);
 						ROS_INFO("Distance from node %d to anchor %d: %.3f m", node->id, dist_data.anchor_id, dist_data.distance);
+						msg.timestamp = ros::Time::now();
+						msg.node_id = node->id;
+						msg.anchor_id = dist_data.anchor_id;
+						msg.distance = dist_data.distance;
+						msg.confidence = dist_data.confidence;
+						can_pub.publish(msg);
 					}else{
 						nbytes = 0;
 						ROS_INFO("No bytes received");
+						n_tries++;	
 					}
 				}
-				UWB_msg msg;
-				msg.timestamp = ros::Time::now();
-				msg.node_id = node->id;
-				msg.anchor_id = dist_data.anchor_id;
-				msg.distance = dist_data.distance;
-				msg.confidence = dist_data.confidence;
 
-				can_pub.publish(msg);
 			}
 		}
 		
@@ -115,69 +115,26 @@ int main(int argc, char** argv){
 	return 0;
 }
 
-UwbNode* get_nodes_from_file(string fname, string sType, int* len, int max_len){
-	// allocate our array
-	UwbNode* result = (UwbNode*) malloc(sizeof(UwbNode) * max_len);
-
+int get_nodes_from_file(string fname, string sType){
+	return 0;
+	
 	ifstream node_data(fname.c_str());
 
 	string line;
-	stringstream lineStream(line);
-	string cell;
-
-	int id_ind, type_ind, x_ind, y_ind;
-
+	
+	int retval;
+	
 	if(node_data.is_open()){
-		// get first line
-		getline(node_data, line);
-		int index = 0;
-		while(getline(lineStream, cell, ',')){
-			if(cell.compare(id_header) == 0){
-				id_ind = index;
-			}else if(cell.compare(type_header) == 0){
-				type_ind = index;
-			}else if(cell.compare(x_header) == 0){
-				x_ind = index;
-			}else if(cell.compare(y_header) == 0){
-				y_ind = index;
-			}
 
-			index++;
-		}
-
-		string cells[index+1];
-
-		// now read each line and parse the data
-		index = 0;
 		while(getline(node_data, line, '\n')){
-			int i = 0;
-			while(getline(lineStream, cell, ',')){
-				cells[i++] = cell;
+			char* type = strstr(line.c_str(), sType.c_str());
+			if(type != NULL){
+				retval++;
 			}
-			if(cells[type_ind].compare(sType) == 0){
-				result[index].type 	= cells[type_ind];
-				result[index].id 	= stoi(cells[id_ind], NULL, 10);
-				result[index].x 	= stof(cells[x_ind], NULL);
-				result[index].y 	= stof(cells[y_ind], NULL);
-				index++;
-			}
-			if (index >= max_len){
-				break;
-			}
-
 		}
-		*len = index + 1;
 	}
 
 	node_data.close();
 
-	UwbNode* final_result = (UwbNode*) malloc(sizeof(UwbNode) * (*len));
-
-	for(int j = 0; j < *len; j++){
-		final_result[j] = result[j];
-	}
-
-	free(result);
-	
-	return final_result;
+	return retval;
 }
