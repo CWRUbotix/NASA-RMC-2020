@@ -127,7 +127,7 @@ int get_nodes_from_file(string fname, string sType){
 	if(node_data.is_open()){
 
 		while(getline(node_data, line, '\n')){
-			char* type = strstr(line.c_str(), sType.c_str());
+			char* type = '\0';//strstr(line.c_str(), sType.c_str());
 			if(type != NULL){
 				retval++;
 			}

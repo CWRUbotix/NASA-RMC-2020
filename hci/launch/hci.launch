@@ -1,0 +1,5 @@
+<launch>
+
+	<node pkg="hci" type="hci" name="$(anon hci)" output="screen"/>
+
+</launch>

@@ -7,7 +7,7 @@ import rospkg
 import math
 import matplotlib
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
-from itertools import combinations
+from itertools import combinations, permutations
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -27,6 +27,8 @@ class LocalizationNode:
         self.robot_theta = []
         self.sensors = None
         self.msg_counts = {1:0, 2:0, 3:0}
+
+        os.makedirs(self.viz_dir, exist_ok=True)
 
         try:
             files = glob.glob('%s/*' % self.viz_dir)
@@ -48,18 +50,20 @@ class LocalizationNode:
         node_pairs = combinations(non_anchors, 2)
         thetas = []
         for (node_1, node_2) in node_pairs:
-            if node_1.x == node_2.x:
-                robot_edge = np.array([-abs(node_1.x), abs(node_1.y) + abs(node_2.y)])
-            elif node_1.y == node_2.y:
-                robot_edge = np.array([abs(node_1.x) + abs(node_2.x), -abs(node_1.y)])
+            #if node_1.relative_x < 0 and node_1.relative_y < 0:
+            if node_1.relative_x == node_2.relative_x and node_1.relative_y > node_2.relative_y:
+                node_1, node_2 = node_2, node_1  # swap nodes
+            elif node_1.relative_y == node_2.relative_y and node_1.relative_x > node_2.relative_x:
+                node_1, node_2 = node_2, node_1
+            elif node_1.relative_y > node_2.relative_y or node_1.relative_x > node_2.relative_x:
+                node_1, node_2 = node_2, node_1
+            robot_edge = -np.array([node_1.relative_x, node_1.relative_y]) + np.array([node_2.relative_x, node_2.relative_y])
             dot_product = np.dot(robot_edge, np.array([1, 0]))
-            if dot_product == 0:
-                theta_offset = math.pi / 2
-            elif dot_product == robot_edge[0]:
-                theta_offset = 0
-            else:
-                theta_offset = math.acos(robot_edge[0] / np.linalg.norm(robot_edge))
-            theta = math.atan2(node_2.y - node_1.y, node_2.x - node_1.x) - theta_offset
+            theta_offset = math.acos(dot_product / np.linalg.norm(robot_edge))
+            print(node_1.id, node_2.id, theta_offset)
+            dY = node_2.y - node_1.y
+            dX = node_2.x - node_1.x
+            theta = math.atan2(dY, dX) - theta_offset
             thetas.append(theta)
         print(thetas)
         theta = np.mean(thetas)
@@ -100,7 +104,8 @@ class LocalizationNode:
                 node.get_position()
         theta = self.get_robot_orientation()
         print(theta)
-        #remove_invalid_points(nodes)
+
+        #self.remove_invalid_points()
 
         fig = plt.figure(figsize=(6 * 3, 9))
         ax = plt.subplot(131)
@@ -128,10 +133,10 @@ class LocalizationNode:
                 total += 1
         self.robot_x.append(avg_x / total)
         self.robot_y.append(avg_y / total)
-        arrow_x = self.robot_x[-1] + 4 * math.cos(theta)
-        arrow_y = self.robot_y[-1] + 4 * math.sin(theta)
+        arrow_x = .3 * math.cos(theta)
+        arrow_y = .3 * math.sin(theta)
         ax.scatter(self.robot_x, self.robot_y, label='robot')
-        ax.arrow(self.robot_x[-1], self.robot_y[-1], arrow_x, arrow_y)
+        ax.arrow(self.robot_x[-1], self.robot_y[-1], arrow_x, arrow_y, head_width=0.1)
         ax.legend(loc='best')
         ax.set_xlim(0, 4.2)
         ax.set_ylim(0, 6.05)

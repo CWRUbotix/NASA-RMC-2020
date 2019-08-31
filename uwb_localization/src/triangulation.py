@@ -30,6 +30,8 @@ class UltraWideBandNode:
             if int(anchor_id) == 51:
                 self.distance_plot.append(distance)
             self.confidence = confidence
+        else:
+            self.measurements[anchor_id] = np.nan  # set to invalid value to be ignored
 
     def plot_position(self, ax, moving_average=False):
         if moving_average:
