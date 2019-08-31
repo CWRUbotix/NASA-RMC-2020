@@ -6,10 +6,13 @@ from localization.localization.geoProject import Project
 
 
 class UltraWideBandNode:
-    def __init__(self, id, sensors):
+    def __init__(self, id, relative_x, relative_y, type, sensors):
         self.id = id
         self.x = None
         self.y = None
+        self.relative_x = relative_x
+        self.relative_y = relative_y
+        self.type = type
         self.confidence = None
         self.sensors = sensors
         self.measurements = {}

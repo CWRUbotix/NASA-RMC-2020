@@ -7,6 +7,7 @@ import rospkg
 import math
 import matplotlib
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
+from itertools import combinations
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -23,6 +24,8 @@ class LocalizationNode:
         self.nodes = []
         self.robot_x = []
         self.robot_y = []
+        self.robot_theta = []
+        self.sensors = None
         self.msg_counts = {1:0, 2:0, 3:0}
 
         try:
@@ -36,8 +39,32 @@ class LocalizationNode:
         rp = rospkg.RosPack()
         script_path = os.path.join(rp.get_path("canbus"), "include", "node_config.csv")
         sensors = pd.read_csv(script_path)
+        self.sensors = sensors
         print(sensors)
         return sensors
+
+    def get_robot_orientation(self):
+        non_anchors = [x for x in self.nodes if x.type == 'node']
+        node_pairs = combinations(non_anchors, 2)
+        thetas = []
+        for (node_1, node_2) in node_pairs:
+            if node_1.x == node_2.x:
+                robot_edge = np.array([-abs(node_1.x), abs(node_1.y) + abs(node_2.y)])
+            elif node_1.y == node_2.y:
+                robot_edge = np.array([abs(node_1.x) + abs(node_2.x), -abs(node_1.y)])
+            dot_product = np.dot(robot_edge, np.array([1, 0]))
+            if dot_product == 0:
+                theta_offset = math.pi / 2
+            elif dot_product == robot_edge[0]:
+                theta_offset = 0
+            else:
+                theta_offset = math.acos(robot_edge[0] / np.linalg.norm(robot_edge))
+            theta = math.atan2(node_2.y - node_1.y, node_2.x - node_1.x) - theta_offset
+            thetas.append(theta)
+        print(thetas)
+        theta = np.mean(thetas)
+        self.robot_theta.append(theta)
+        return theta
 
     @staticmethod
     def euclidean_distance(x1, x2, y1, y2):
@@ -50,7 +77,7 @@ class LocalizationNode:
                 best_node = node
         for n1 in self.nodes:
             if n1.id != best_node.id:  # compare to the highest confidence measure
-                for n2 in nodes:
+                for n2 in self.nodes:
                     if n1.id != n2.id and n2.id == best_node.id:  # if nodes are not the same
                         measured_distance = self.euclidean_distance(n1.x, n2.x, n1.y, n2.y)
                         robot_x1, robot_y1 = n1.get_robot_position()
@@ -71,7 +98,8 @@ class LocalizationNode:
         for node in self.nodes:
             if self.msg_counts[node.id] >= 3:
                 node.get_position()
-
+        theta = self.get_robot_orientation()
+        print(theta)
         #remove_invalid_points(nodes)
 
         fig = plt.figure(figsize=(6 * 3, 9))
@@ -100,7 +128,10 @@ class LocalizationNode:
                 total += 1
         self.robot_x.append(avg_x / total)
         self.robot_y.append(avg_y / total)
+        arrow_x = self.robot_x[-1] + 4 * math.cos(theta)
+        arrow_y = self.robot_y[-1] + 4 * math.sin(theta)
         ax.scatter(self.robot_x, self.robot_y, label='robot')
+        ax.arrow(self.robot_x[-1], self.robot_y[-1], arrow_x, arrow_y)
         ax.legend(loc='best')
         ax.set_xlim(0, 4.2)
         ax.set_ylim(0, 6.05)
@@ -114,6 +145,8 @@ if __name__ == '__main__':
     sensors = localization_node.init_nodes()
     for i, sensor in sensors.iterrows():
         if sensor['type'] == 'node':
-            localization_node.nodes.append(UltraWideBandNode(sensor['id'], sensors))
+            uwb_node = UltraWideBandNode(sensor['id'], sensor['x'], sensor['y'], sensor['type'], sensors)
+            localization_node.nodes.append(uwb_node)
+
     sub = rospy.Subscriber(localization_node.topic, UWB_data, localization_node.position_callback, queue_size=18)
     rospy.spin()
