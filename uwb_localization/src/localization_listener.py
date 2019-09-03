@@ -13,6 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from canbus.msg import UWB_data
 from triangulation import UltraWideBandNode
+from unscented_localization import run_localization
 
 
 class LocalizationNode:
@@ -108,6 +109,15 @@ class LocalizationNode:
                 node.get_position()
         theta = self.get_robot_orientation()
         print(theta)
+
+        cmds = np.zeros((1, 2))
+        landmarks = list(zip(self.robot_x, self.robot_y))
+        ukf = run_localization(
+            cmds, landmarks, sigma_vel=0.1, sigma_steer=np.radians(1),
+            sigma_range=0.3, sigma_bearing=0.1, step=1,
+            ellipse_step=20)
+        print('UKF pos:', ukf.x, ukf.y)
+        print('final covariance', ukf.P.diagonal())
 
         fig = plt.figure(figsize=(6 * 3, 9))
         ax = plt.subplot(131)
