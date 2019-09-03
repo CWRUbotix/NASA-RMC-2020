@@ -46,23 +46,27 @@ class LocalizationNode:
         return sensors
 
     def get_robot_orientation(self):
-        non_anchors = [x for x in self.nodes if x.type == 'node']
-        node_pairs = combinations(non_anchors, 2)
-        thetas = []
-        for (node_1, node_2) in node_pairs:
-            #if node_1.relative_x < 0 and node_1.relative_y < 0:
-            if node_1.relative_x == node_2.relative_x and node_1.relative_y > node_2.relative_y:
-                node_1, node_2 = node_2, node_1  # swap nodes
-            elif node_1.relative_y == node_2.relative_y and node_1.relative_x > node_2.relative_x:
-                node_1, node_2 = node_2, node_1
-            elif node_1.relative_y > node_2.relative_y or node_1.relative_x > node_2.relative_x:
-                node_1, node_2 = node_2, node_1
-            robot_edge = -np.array([node_1.relative_x, node_1.relative_y]) + np.array([node_2.relative_x, node_2.relative_y])
+        non_anchors = [x for x in self.nodes if x.type == 'node']  # get all nodes on the robot
+        node_pairs = combinations(non_anchors, 2)  # get all pairwise combinations of nodes
+        thetas = []  # list to store bearing angles measured between all pairs
+        for (start_node, end_node) in node_pairs:
+            # horizontally parallel but wrong direction
+            if start_node.relative_x == end_node.relative_x and start_node.relative_y > end_node.relative_y:
+                start_node, end_node = end_node, start_node  # swap nodes
+            # vertically parallel but wrong direction
+            elif start_node.relative_y == end_node.relative_y and start_node.relative_x > end_node.relative_x:
+                start_node, end_node = end_node, start_node
+            # diagonal and wrong direction
+            elif start_node.relative_y > end_node.relative_y or start_node.relative_x > end_node.relative_x:
+                start_node, end_node = end_node, start_node
+            # get vector with tail at start node and head at end end
+            robot_edge = -np.array([start_node.relative_x, start_node.relative_y]) + np.array([end_node.relative_x, end_node.relative_y])
             dot_product = np.dot(robot_edge, np.array([1, 0]))
+            # each edge vector is at a different angle relative to the robot coordinate system
             theta_offset = math.acos(dot_product / np.linalg.norm(robot_edge))
-            print(node_1.id, node_2.id, theta_offset)
-            dY = node_2.y - node_1.y
-            dX = node_2.x - node_1.x
+            print(start_node.id, end_node.id, theta_offset)
+            dY = end_node.y - start_node.y
+            dX = end_node.x - start_node.x
             theta = math.atan2(dY, dX) - theta_offset
             thetas.append(theta)
         print(thetas)
@@ -105,8 +109,6 @@ class LocalizationNode:
         theta = self.get_robot_orientation()
         print(theta)
 
-        #self.remove_invalid_points()
-
         fig = plt.figure(figsize=(6 * 3, 9))
         ax = plt.subplot(131)
         ax.set_title('Position')
@@ -128,8 +130,8 @@ class LocalizationNode:
         total = 0
         for node in self.nodes:
             if node.x is not None and node.y is not None:
-                avg_x += node.x
-                avg_y += node.y
+                avg_x += node.x - node.relative_x
+                avg_y += node.y - node.relative_y
                 total += 1
         self.robot_x.append(avg_x / total)
         self.robot_y.append(avg_y / total)
