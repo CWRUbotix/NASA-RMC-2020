@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 dt = 1.0
 wheelbase = 0.5
 os.makedirs('kalman_filter', exist_ok=True)
+try:
+    files = glob.glob('kalman_filter/*')
+    for f in files:
+        os.remove(f)
+except Exception as e:
+    print(e)
 
 
 def move(x, dt, u, wheelbase):
@@ -18,8 +24,7 @@ def move(x, dt, u, wheelbase):
     steering_angle = u[1]
     dist = vel * dt
 
-    if abs(steering_angle) > 0.001: # is robot turning?
-        print('Turning...')
+    if abs(steering_angle) > 0.001 and abs(vel) > 0.001: # is robot turning?
         beta = (dist / wheelbase) * math.tan(steering_angle)
         r = wheelbase / math.tan(steering_angle) # radius
 
@@ -27,12 +32,9 @@ def move(x, dt, u, wheelbase):
         cosh, coshb = math.cos(hdg), math.cos(hdg + beta)
         return x + np.array([-r*sinh + r*sinhb,
                               r*cosh - r*coshb, beta])
-
     elif abs(vel) > 0.001: # moving in straight line
-        print('Moving in straight line...')
         return x + np.array([dist*math.cos(hdg), dist*math.sin(hdg), 0])
     else:  # not moving
-        print('Not moving...')
         return x
 
 
@@ -148,10 +150,9 @@ def run_localization(
                     facecolor='g', alpha=0.8)
     track = np.array(track)
     plt.plot(track[:, 0], track[:, 1], color='k', lw=2)
-    plt.axis('equal')
     plt.title("UKF Robot localization")
-    plt.xlim(-5, 5)
-    plt.ylim(-5, 5)
+    plt.xlim(0, 4.2)
+    plt.ylim(0, 6.05)
     plt.savefig('kalman_filter/%d.png' % len(os.listdir('kalman_filter/')))
     plt.close()
     return ukf

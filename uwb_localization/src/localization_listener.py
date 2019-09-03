@@ -25,9 +25,12 @@ class LocalizationNode:
         self.nodes = []
         self.robot_x = []
         self.robot_y = []
+        self.kalman_x = []
+        self.kalman_y = []
         self.robot_theta = []
+        self.kalman_theta = []
         self.sensors = None
-        self.msg_counts = {1:0, 2:0, 3:0}
+        self.msg_counts = {1:0, 2:0, 3:0, 4:0}
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -110,17 +113,8 @@ class LocalizationNode:
         theta = self.get_robot_orientation()
         print(theta)
 
-        cmds = np.zeros((1, 2))
-        landmarks = list(zip(self.robot_x, self.robot_y))
-        ukf = run_localization(
-            cmds, landmarks, sigma_vel=0.1, sigma_steer=np.radians(1),
-            sigma_range=0.3, sigma_bearing=0.1, step=1,
-            ellipse_step=20)
-        print('UKF pos:', ukf.x, ukf.y)
-        print('final covariance', ukf.P.diagonal())
-
-        fig = plt.figure(figsize=(6 * 3, 9))
-        ax = plt.subplot(131)
+        fig = plt.figure(figsize=(6 * 4, 9))
+        ax = plt.subplot(141)
         ax.set_title('Position')
         for node in self.nodes:
             node.plot_position(ax=ax)
@@ -128,13 +122,13 @@ class LocalizationNode:
         ax.legend(loc='best')
         ax.set_xlim(0, 4.2)
         ax.set_ylim(0, 6.05)
-        ax = plt.subplot(132)
+        ax = plt.subplot(142)
         ax.set_title('Node Distances')
         for node in self.nodes:
             ax.plot(node.distance_plot, label=node.id)
         ax.set_ylim(0, 6.05)
         ax.legend(loc='best')
-        ax = plt.subplot(133)
+        ax = plt.subplot(143)
         avg_x = 0
         avg_y = 0
         total = 0
@@ -152,6 +146,28 @@ class LocalizationNode:
         ax.legend(loc='best')
         ax.set_xlim(0, 4.2)
         ax.set_ylim(0, 6.05)
+
+        cmds = np.zeros((1, 2))
+        landmarks = np.array(list(zip(self.robot_x, self.robot_y)))
+        print('UWB position shape,', landmarks.shape)
+        ukf = run_localization(
+            cmds, landmarks, sigma_vel=0.1, sigma_steer=np.radians(1),
+            sigma_range=0.3, sigma_bearing=0.1, step=1,
+            ellipse_step=20)
+        print('UKF pos:', ukf.x)
+        self.kalman_x.append(ukf.x[0])
+        self.kalman_y.append(ukf.x[1])
+        self.kalman_theta.append(ukf.x[2])
+        print('final covariance', ukf.P.diagonal())
+
+        ax = plt.subplot(144)
+        arrow_x = .3 * math.cos(ukf.x[2])
+        arrow_y = .3 * math.sin(ukf.x[2])
+        ax.scatter(self.kalman_x, self.kalman_y, label='kalman filter')
+        ax.arrow(self.kalman_x[-1], self.kalman_y[-1], arrow_x, arrow_y, head_width=0.1)
+        ax.legend(loc='best')
+        ax.set_xlim(0, 4.2)
+        ax.set_ylim(0, 6.05)
         plt.tight_layout()
         fig.savefig(self.viz_dir + 'node_1_%d.png' % (len(os.listdir(self.viz_dir))))
         plt.close()
@@ -165,5 +181,5 @@ if __name__ == '__main__':
             uwb_node = UltraWideBandNode(sensor['id'], sensor['x'], sensor['y'], sensor['type'], sensors)
             localization_node.nodes.append(uwb_node)
 
-    sub = rospy.Subscriber(localization_node.topic, UWB_data, localization_node.position_callback, queue_size=18)
+    sub = rospy.Subscriber(localization_node.topic, UWB_data, localization_node.position_callback)
     rospy.spin()
