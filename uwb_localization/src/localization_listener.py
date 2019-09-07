@@ -30,7 +30,7 @@ class LocalizationNode:
         self.robot_theta = []
         self.kalman_theta = []
         self.sensors = None
-        self.msg_counts = {1:0, 2:0, 3:0, 4:0}
+        self.msg_counts = {}
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -46,6 +46,8 @@ class LocalizationNode:
         script_path = os.path.join(rp.get_path("canbus"), "include", "node_config.csv")
         sensors = pd.read_csv(script_path)
         self.sensors = sensors
+        for i in range(len(self.sensors)):
+            self.msg_counts[i] = 0
         print(sensors)
         return sensors
 
