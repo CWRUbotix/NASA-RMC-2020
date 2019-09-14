@@ -1,11 +1,16 @@
 <launch>
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true">
-    <rosparam command="load" file="$(find uwb_localization)/params/ekf_template.yaml" />
+  <node pkg="uwb_localization" type="imu_listener.py" name="imu_node" cwd="node"/>
 
-   <!--  Placeholder for output topic remapping
-    <remap from="odometry/filtered" to=""/>
-    <remap from="accel/filtered" to=""/>
-    -->
+  <node pkg="uwb_localization" type="localization_listener.py" name="uwb_node"/>
 
+  <node pkg="uwb_localization" type="kalman_filter_listener.py" name="kalman_filter_node" output="screen" cwd="node"/>
+
+  <rosparam command="load" file="$(find uwb_localization)/params/ekf_dual.yaml" />
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true"/>
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true">
+    <remap from="odometry/filtered" to="odometry/filtered_map"/>
   </node>
+
 </launch>

@@ -23,46 +23,109 @@ from hci.msg import sensorValue
 class IMU:
     def __init__(self):
         self.topic = 'imu'
+        self.viz_dir = 'imu_plots'
+        self.save_plots = False
         print('Booting up node...')
         rospy.init_node('imu_listener', anonymous=True)
         self.orientation = np.zeros(3)
+        self.orientation_marker = np.zeros(3)
         self.angular_velocity = np.zeros(3)
+        self.angular_velocity_marker = np.zeros(3)
         self.acceleration = np.zeros(3)
+        self.acceleration_marker = np.zeros(3)
+
+        self.orientation_plot = np.zeros(3)
+        self.angular_velocity_plot = np.zeros(3)
+        self.acceleration_plot = np.zeros(3)
+
+        os.makedirs(self.viz_dir, exist_ok=True)
+
+        try:
+            files = glob.glob('%s/*' % self.viz_dir)
+            for f in files:
+                os.remove(f)
+        except Exception as e:
+            print(e)
 
     def sensor_callback(self, msg):
         if msg.sensorID == 30:
             self.orientation[0] = msg.value
+            self.orientation_marker[0] = 1
         elif msg.sensorID == 31:
             self.orientation[1] = msg.value
+            self.orientation_marker[1] = 1
         elif msg.sensorID == 32:
             self.orientation[2] = msg.value
+            self.orientation_marker[2] = 1
         elif msg.sensorID == 17:
             self.angular_velocity[0] = msg.value
+            self.angular_velocity_marker[0] = 1
         elif msg.sensorID == 18:
             self.angular_velocity[1] = msg.value
+            self.angular_velocity_marker[1] = 1
         elif msg.sensorID == 19:
             self.angular_velocity[2] = msg.value
+            self.angular_velocity_marker[2] = 1
         elif msg.sensorID == 20:
             self.acceleration[0] = msg.value
+            self.acceleration_marker[0] = 1
         elif msg.sensorID == 21:
             self.acceleration[1] = msg.value
+            self.acceleration_marker[1] = 1
         elif msg.sensorID == 22:
             self.acceleration[2] = msg.value
+            self.acceleration_marker[2] = 1
 
-        self.compose_imu_msg()
-        self.compose_wheel_msg()
+        if self.orientation_marker.all() == 1 and self.angular_velocity_marker.all() == 1 and self.acceleration_marker.all() == 1:
+            self.compose_imu_msg()
+            self.compose_wheel_msg()
+
+            self.orientation_plot = np.vstack((self.orientation_plot, self.orientation))
+            self.angular_velocity_plot = np.vstack((self.angular_velocity_plot, self.angular_velocity))
+            self.acceleration_plot = np.vstack((self.acceleration_plot, self.acceleration))
+
+            self.orientation_marker = np.zeros(3)
+            self.angular_velocity_marker = np.zeros(3)
+            self.acceleration_marker = np.zeros(3)
+
+            if self.orientation_plot.shape[0] % 5 == 0 and self.save_plots:
+                fig = plt.figure(figsize=(15, 5))
+                ax = plt.subplot(131)
+                ax.plot(self.orientation_plot[..., 0], label='x')
+                ax.plot(self.orientation_plot[..., 1], label='y')
+                ax.plot(self.orientation_plot[..., 2], label='z')
+                ax.set_title('Orientation')
+                ax.legend(loc='best')
+
+                ax = plt.subplot(132)
+                ax.plot(self.angular_velocity_plot[..., 0], label='x')
+                ax.plot(self.angular_velocity_plot[..., 1], label='y')
+                ax.plot(self.angular_velocity_plot[..., 2], label='z')
+                ax.set_title('Angular Velocity')
+                ax.legend(loc='best')
+
+                ax = plt.subplot(133)
+                ax.plot(self.acceleration_plot[..., 0], label='x')
+                ax.plot(self.acceleration_plot[..., 1], label='y')
+                ax.plot(self.acceleration_plot[..., 2], label='z')
+                ax.set_title('Acceleration')
+                ax.legend(loc='best')
+
+                fig.savefig(self.viz_dir + '/imu_%d.png' % (len(os.listdir(self.viz_dir))))
+                plt.close()
+
 
     def compose_imu_msg(self):
         header = Header()
         orientation_quat = R.from_euler('xyz', self.orientation).as_quat()
-        orientation_cov = np.ones(9) * (0.00017 ** 2)
+        orientation_cov = np.ones(9) * 1e-6
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
         angular_vel_msg = Vector3(self.angular_velocity[0], self.angular_velocity[1], self.angular_velocity[2])
-        angular_vel_cov = np.ones(9) * (0.00017 ** 2)
+        angular_vel_cov = np.ones(9) * 1e-6
         accel_msg = Vector3(self.acceleration[0], self.acceleration[1], self.acceleration[2])
-        accel_cov = np.ones(9) * (0.00017 ** 2)
+        accel_cov = np.ones(9) * 1e-6
         header.stamp = rospy.Time.now()
-        header.frame_id = 'odom'
+        header.frame_id = 'base_link'
         imu_msg = Imu()
         imu_msg.header = header
         imu_msg.orientation = quat_msg
@@ -82,9 +145,9 @@ class IMU:
     def compose_wheel_msg(self):
         header = Header()
         header.stamp = rospy.Time.now()
-        header.frame_id = 'odom'
-        point_msg = Point(0, 0, 0)  # use most recent pos with no z-coord
-        orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat()  # pitch is rotation about z-axis in euler angles
+        header.frame_id = 'base_link'
+        point_msg = Point(0, 0, 0)
+        orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat() 
         pose_cov = np.ones(36) * 0
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
         pose_with_cov = PoseWithCovariance()

@@ -49,20 +49,21 @@ class KalmanFilterNode:
         quat = pose.orientation
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
         self.robot_pitch.append(euler[2])  # rotation about vertical z-axis
-        print(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1])
+        print('X: %.4f \tY: %.4f \tpitch: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
 
         if len(self.robot_x) % self. viz_step == 0:
-            fig = plt.figure()
-            plot_covariance(
-                        (self.robot_x[-1], self.robot_y[-1]), covariance[0:2, 0:2], std=6,
-                        facecolor='g', alpha=0.8)
-            ax = plt.gca()
+            fig, ax = plt.subplots()
+            #fig = plt.figure()
+            #plot_covariance(
+            #            (self.robot_x[-1], self.robot_y[-1]), covariance[0:2, 0:2], std=10,
+            #            facecolor='g', alpha=0.8)
+            #ax = plt.gca()
             ax.scatter(self.robot_x, self.robot_y, label='robot')
             ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(self.robot_pitch[-1]), .3 * math.sin(self.robot_pitch[-1]), head_width=0.1)
             ax.legend(loc='best')
-            #ax.set_xlim(-1, 4.2)
-            #ax.set_ylim(-1, 6.05)
-
+            ax.set_xlim(0, 4.2)
+            ax.set_ylim(0, 6.05)
+            plt.tight_layout()
             fig.savefig(self.viz_dir + '/localization_%d.png' % (len(os.listdir(self.viz_dir))))
             plt.close()
 

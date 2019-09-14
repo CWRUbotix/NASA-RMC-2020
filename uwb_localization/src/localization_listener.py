@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import sys
 import glob
 import math
 import rospy
@@ -11,15 +12,20 @@ from itertools import combinations, permutations
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.spatial.transform import Rotation as R
 from canbus.msg import UWB_data
 from triangulation import UltraWideBandNode
 from unscented_localization import run_localization
 
+from std_msgs.msg import Header
+from geometry_msgs.msg import Quaternion, PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point
+
 
 class LocalizationNode:
-    def __init__(self):
+    def __init__(self, visualize=False):
         self.topic = 'localization_data'
         self.viz_dir = 'visualizations/'
+        self.visualize = visualize
         print('Booting up node...')
         rospy.init_node('localization_listener', anonymous=True)
         self.nodes = []
@@ -56,26 +62,26 @@ class LocalizationNode:
         node_pairs = combinations(non_anchors, 2)  # get all pairwise combinations of nodes
         thetas = []  # list to store bearing angles measured between all pairs
         for (start_node, end_node) in node_pairs:
-            # horizontally parallel but wrong direction
-            if start_node.relative_x == end_node.relative_x and start_node.relative_y > end_node.relative_y:
-                start_node, end_node = end_node, start_node  # swap nodes
-            # vertically parallel but wrong direction
-            elif start_node.relative_y == end_node.relative_y and start_node.relative_x > end_node.relative_x:
-                start_node, end_node = end_node, start_node
-            # diagonal and wrong direction
-            elif start_node.relative_y > end_node.relative_y or start_node.relative_x > end_node.relative_x:
-                start_node, end_node = end_node, start_node
-            # get vector with tail at start node and head at end end
-            robot_edge = -np.array([start_node.relative_x, start_node.relative_y]) + np.array([end_node.relative_x, end_node.relative_y])
-            dot_product = np.dot(robot_edge, np.array([1, 0]))
-            # each edge vector is at a different angle relative to the robot coordinate system
-            theta_offset = math.acos(dot_product / np.linalg.norm(robot_edge))
-            print(start_node.id, end_node.id, theta_offset)
-            dY = end_node.y - start_node.y
-            dX = end_node.x - start_node.x
-            theta = math.atan2(dY, dX) - theta_offset
-            thetas.append(theta)
-        print(thetas)
+            if start_node.is_valid() and end_node.is_valid():
+                # horizontally parallel but wrong direction
+                if start_node.relative_x == end_node.relative_x and start_node.relative_y > end_node.relative_y:
+                    start_node, end_node = end_node, start_node  # swap nodes
+                # vertically parallel but wrong direction
+                elif start_node.relative_y == end_node.relative_y and start_node.relative_x > end_node.relative_x:
+                    start_node, end_node = end_node, start_node
+                # diagonal and wrong direction
+                elif start_node.relative_y > end_node.relative_y or start_node.relative_x > end_node.relative_x:
+                    start_node, end_node = end_node, start_node
+                # get vector with tail at start node and head at end end
+                robot_edge = -np.array([start_node.relative_x, start_node.relative_y]) + np.array([end_node.relative_x, end_node.relative_y])
+                dot_product = np.dot(robot_edge, np.array([1, 0]))
+                # each edge vector is at a different angle relative to the robot coordinate system
+                theta_offset = math.acos(dot_product / np.linalg.norm(robot_edge))
+                print(start_node.id, end_node.id, theta_offset)
+                dY = end_node.y - start_node.y
+                dX = end_node.x - start_node.x
+                theta = math.atan2(dY, dX) - theta_offset
+                thetas.append(theta)
         theta = np.mean(thetas)
         self.robot_theta.append(theta)
         return theta
@@ -112,67 +118,71 @@ class LocalizationNode:
         for node in self.nodes:
             if self.msg_counts[node.id] >= 3:
                 node.get_position()
-        theta = self.get_robot_orientation()
-        print(theta)
-
-        fig = plt.figure(figsize=(6 * 4, 9))
-        ax = plt.subplot(141)
-        ax.set_title('Position')
-        for node in self.nodes:
-            node.plot_position(ax=ax)
-        #ax.axis('equal')
-        ax.legend(loc='best')
-        ax.set_xlim(0, 4.2)
-        ax.set_ylim(0, 6.05)
-        ax = plt.subplot(142)
-        ax.set_title('Node Distances')
-        for node in self.nodes:
-            ax.plot(node.distance_plot, label=node.id)
-        ax.set_ylim(0, 6.05)
-        ax.legend(loc='best')
-        ax = plt.subplot(143)
         avg_x = 0
         avg_y = 0
         total = 0
         for node in self.nodes:
-            if node.x is not None and node.y is not None:
+            if node.is_valid():
                 avg_x += node.x - node.relative_x
                 avg_y += node.y - node.relative_y
                 total += 1
-        self.robot_x.append(avg_x / total)
-        self.robot_y.append(avg_y / total)
-        arrow_x = .3 * math.cos(theta)
-        arrow_y = .3 * math.sin(theta)
-        ax.scatter(self.robot_x, self.robot_y, label='robot')
-        ax.arrow(self.robot_x[-1], self.robot_y[-1], arrow_x, arrow_y, head_width=0.1)
-        ax.legend(loc='best')
-        ax.set_xlim(0, 4.2)
-        ax.set_ylim(0, 6.05)
+        if total > 0:
+            self.robot_x.append(avg_x / total)
+            self.robot_y.append(avg_y / total)
+            theta = self.get_robot_orientation()
+            self.compose_msg()
+        if self.visualize:
+            fig = plt.figure(figsize=(6 * 4, 9))
 
-        cmds = np.zeros((1, 2))
-        landmarks = np.array(list(zip(self.robot_x, self.robot_y)))
-        print('UWB position shape,', landmarks.shape)
-        ukf = run_localization(
-            cmds, landmarks, sigma_vel=0.1, sigma_steer=np.radians(1),
-            sigma_range=0.3, sigma_bearing=0.1, step=1,
-            ellipse_step=20)
-        print('UKF pos:', ukf.x)
-        self.kalman_x.append(ukf.x[0])
-        self.kalman_y.append(ukf.x[1])
-        self.kalman_theta.append(ukf.x[2])
-        print('final covariance', ukf.P.diagonal())
+            ax = plt.subplot(141)
+            ax.set_title('Position')
+            for node in self.nodes:
+                node.plot_position(ax=ax)
+            ax.legend(loc='best')
+            ax.set_xlim(0, 4.2)
+            ax.set_ylim(0, 6.05)
 
-        ax = plt.subplot(144)
-        arrow_x = .3 * math.cos(ukf.x[2])
-        arrow_y = .3 * math.sin(ukf.x[2])
-        ax.scatter(self.kalman_x, self.kalman_y, label='kalman filter')
-        ax.arrow(self.kalman_x[-1], self.kalman_y[-1], arrow_x, arrow_y, head_width=0.1)
-        ax.legend(loc='best')
-        ax.set_xlim(0, 4.2)
-        ax.set_ylim(0, 6.05)
-        plt.tight_layout()
-        fig.savefig(self.viz_dir + 'node_1_%d.png' % (len(os.listdir(self.viz_dir))))
-        plt.close()
+            ax = plt.subplot(142)
+            ax.set_title('Node Distances')
+            for node in self.nodes:
+                ax.plot(node.distance_plot, label=node.id)
+            ax.set_ylim(0, 6.05)
+            ax.legend(loc='best')
+
+            ax = plt.subplot(143)
+            ax.scatter(self.robot_x, self.robot_y, label='robot')
+            ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(theta), .3 * math.sin(theta), head_width=0.1)
+            ax.legend(loc='best')
+            ax.set_xlim(0, 4.2)
+            ax.set_ylim(0, 6.05)
+
+            plt.tight_layout()
+            fig.savefig(self.viz_dir + 'node_1_%d.png' % (len(os.listdir(self.viz_dir))))
+            plt.close()
+
+    def compose_msg(self):
+        for node in self.nodes:
+            if node.is_valid():
+                header = Header()
+                header.stamp = rospy.Time.now()
+                header.frame_id = 'map'
+                point_msg = Point(node.x - node.relative_x, node.y - node.relative_y, 0)  # use most recent pos with no z-coord
+                orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
+                pose_cov = np.ones(36) * 1e-6
+                quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
+                pose_with_cov = PoseWithCovariance()
+                pose_with_cov.pose = Pose(point_msg, quat_msg)
+                pose_with_cov.covariance = pose_cov
+                stamped_msg = PoseWithCovarianceStamped()
+                stamped_msg.header = header
+                stamped_msg.pose = pose_with_cov
+                try:
+                    pub = rospy.Publisher('uwb_node_%d' % node.id, PoseWithCovarianceStamped, queue_size=10)
+                    #rospy.loginfo(stamped_msg)
+                    pub.publish(stamped_msg)
+                except rospy.ROSInterruptException as e:
+                    print(e.getMessage())
+                    pass
 
 
 if __name__ == '__main__':
