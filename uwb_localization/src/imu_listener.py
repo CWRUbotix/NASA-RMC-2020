@@ -39,7 +39,6 @@ class IMU:
         self.acceleration_plot = np.zeros(3)
 
         os.makedirs(self.viz_dir, exist_ok=True)
-
         try:
             files = glob.glob('%s/*' % self.viz_dir)
             for f in files:
