@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import os
-import cv2
 import sys
 import glob
+import cv2
 import math
 import rospy
 import math
@@ -175,7 +175,7 @@ class ObstacleDetectionNode:
             plt.close()
 
     def listen_for_frames(self):
-        while not rospy.is_shutdown():
+        while True:
             frames = self.listener.waitForNewFrame()
             depth_frame = frames["depth"]
             color = frames["color"]
@@ -199,4 +199,5 @@ class ObstacleDetectionNode:
 
 if __name__ == '__main__':
     obstacle_detection = ObstacleDetectionNode()
+    obstacle_detection.listen_for_frames()
 
