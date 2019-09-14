@@ -26,9 +26,30 @@ print("Packet pipeline:", type(pipeline).__name__)
 class ObstacleDetectionNode:
 
     def __init__(self):
-    	self.h, self.w = 512, 424
-        self.fov_x = 1.232202  # horizontal FOV in radians
-    	self.start_kinect()
+        self.h, self.w = 512, 424
+        #camera information based on the Kinect v2 hardware
+        self.CameraParams = {
+          "cx":254.878,
+          "cy":205.395,
+          "fx":365.456,
+          "fy":365.456,
+          "k1":0.0905474,
+          "k2":-0.26819,
+          "k3":0.0950862,
+          "p1":0.0,
+          "p2":0.0,
+        }
+        # Kinect's physical orientation in the real world.
+        self.CameraPosition = {
+            "x": 0, # actual position in meters of kinect sensor relative to the viewport's center.
+            "y": 0, # actual position in meters of kinect sensor relative to the viewport's center.
+            "z": 0, # height in meters of actual kinect sensor from the floor.
+            "roll": 0, # angle in degrees of sensor's roll (used for INU input - trig function for this is commented out by default).
+            "azimuth": 0, # sensor's yaw angle in degrees.
+            "elevation": -30, # sensor's pitch angle in degrees.
+        }
+        
+        self.start_kinect()
         print('Booting up node...')
         rospy.init_node('obstacleDetection', anonymous=True)
 
