@@ -5,6 +5,7 @@
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
 #include <canbus/UWB_data.h>
+#include <canbus/motor_data.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -18,7 +19,7 @@
 #include <inttypes.h>
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <vesc.h>
 
 #define MAX_NUM_NODES 4
 #define MAX_NUM_ANCHORS 3
@@ -38,6 +39,7 @@ int nNodes = 0;
 int nAnchors = 0;
 
 typedef canbus::UWB_data UWB_msg;
+typedef canbus::motor_data motor_data_msg;
 
 typedef struct {
 	int id;

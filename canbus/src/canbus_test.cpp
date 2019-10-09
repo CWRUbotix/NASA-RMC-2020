@@ -6,6 +6,7 @@ int main(int argc, char** argv){
 	ros::NodeHandle n;
 	
 	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
+	ros::Publisher motor_data = n.advertise<motor_data_msg>("motor_data", 1024);
 	ros::Rate loop_rate(10);
 	
 	ROS_INFO("ROS init success");
@@ -23,6 +24,7 @@ int main(int argc, char** argv){
 	nodes[2].id = 3;
 
 	UWB_msg msg;
+	motor_data_msg motor_msg;
 	int s;
 	int nbytes;
 	struct sockaddr_can addr;
@@ -31,6 +33,7 @@ int main(int argc, char** argv){
 	struct can_frame tx_frame;
 	struct ifreq ifr;
 	struct timeval tv;
+	std::vector<struct can_frame> rx_frame_queue; // to store received can frames to process later
 	tv.tv_sec = 0;
 	tv.tv_usec = 500000;
 	
@@ -99,6 +102,9 @@ int main(int argc, char** argv){
 						msg.confidence = dist_data.confidence;
 						can_pub.publish(msg);
 					}else{
+						if(nbytes > 0){
+							rx_frame_queue.push_back(rx_frame); // put the frame in the queue and we'll look at it in a sec
+						}
 						nbytes = 0;
 						ROS_INFO("No bytes received");
 						n_tries++;	
@@ -106,6 +112,35 @@ int main(int argc, char** argv){
 				}
 
 			}
+			// now see if we have any frames in the queue to process
+			for(auto frame = rx_frame_queue.begin(); frame != rx_frame_queue.end(); ++frame){
+				int rx_id = (int)(*frame).can_id;
+				if(rx_id > 0xFF){
+					// we can assume this is a VESC message
+					motor_msg.timestamp = ros::Time::now();
+					int8_t vesc_id = (rx_id & 0xFF);
+					int vesc_cmd = (rx_id >> 8);
+					motor_msg.motor_type 	= "VESC";
+					motor_msg.can_id 		= vesc_id;
+					switch(vesc_cmd){
+						case(CAN_PACKET_STATUS):{
+							// routine status message
+							int32_t rpm;
+							int16_t current;
+							int16_t duty_cycle;
+							memcpy(&rpm, (*frame).data, 4);
+							memcpy(&current, (*frame).data + 4, 2);
+							memcpy(&duty_cycle, (*frame).data + 6, 2);
+							motor_msg.raw_rpm = (float)rpm;
+							motor_msg.current = (float)current;
+							motor_msg.duty_cycle = (float)duty_cycle;
+							break;}
+					}
+					motor_data.publish(motor_msg);
+				}
+			}
+			rx_frame_queue.clear(); // clear the messages once processed
+
 		}
 		
 		ros::spinOnce();
