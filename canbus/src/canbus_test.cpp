@@ -13,7 +13,10 @@ int main(int argc, char** argv){
 	//nNodes 		= get_nodes_from_file(node_config_fname, node_str);
 	//nAnchors 	= get_nodes_from_file(node_config_fname, anchor_str);
 	//ROS_INFO("# of Nodes: %d,\t# of Anchors: %d", nNodes, nAnchors);
-	
+	int nVescStartID 	= 5;
+	int nVescEndID 		= 6;
+	int nVescID 		= nVescStartID;
+
 	nNodes = 3;
 	nAnchors = 3;
 
@@ -33,11 +36,13 @@ int main(int argc, char** argv){
 	struct can_frame tx_frame;
 	struct ifreq ifr;
 	struct timeval tv;
-	std::vector<struct can_frame> rx_frame_queue; // to store received can frames to process later
+	std::vector<struct can_frame> rx_frame_queue; 	// to store received can frames to process later
+	std::vector<struct can_frame> vesc_frames; 		// stores received vesc frames
+	std::vector<motor_data_msg> motor_msgs; 		// stores motor ROS messages
 	tv.tv_sec = 0;
-	tv.tv_usec = 500000;
+	tv.tv_usec = 50000; // 50ms
 	
-	
+	uint8_t vesc_rx_buf[1024];
 	uint8_t rx_buf[8];
 	DistanceFrame dist_data;
 
@@ -69,80 +74,107 @@ int main(int argc, char** argv){
 	}
 
 	while(ros::ok()){
-		for(node_id = 0; node_id < nNodes; node_id++){
-			UwbNode* node = &nodes[node_id];
-
-			// ----- REQUEST DATA FROM THIS NODE -----
-			tx_frame.can_id = node->id | CAN_RTR_FLAG; 
-			tx_frame.can_dlc = 8;
-			nbytes = write(s, &tx_frame, sizeof(struct can_frame));
-												
-			ros::Duration(0.1).sleep();
-
-			// ROS_INFO("Wrote %d bytes to CAN bus.", nbytes);
-			for(int i = 0; i < nAnchors; i++){
-				nbytes = 0;
-				int n_tries = 0;
-				while(nbytes <= 0 && n_tries < MAX_CAN_TRIES){
-
-					nbytes = read(s, &rx_frame, sizeof(struct can_frame));
-					int rx_id = (int)rx_frame.can_id & CAN_SFF_MASK;
-				
-					if(nbytes > 0 && rx_frame.can_dlc == 8 && rx_id == node->id){
-						memcpy(&rx_buf, rx_frame.data, 8);
-						dist_data.type = rx_buf[0];
-						dist_data.anchor_id = rx_buf[1];
-						memcpy(&(dist_data.distance), rx_buf+2, sizeof(dist_data.distance));
-						memcpy(&(dist_data.confidence), rx_buf+6, 2);
-						ROS_INFO("Distance from node %d to anchor %d: %.3f m", node->id, dist_data.anchor_id, dist_data.distance);
-						msg.timestamp = ros::Time::now();
-						msg.node_id = node->id;
-						msg.anchor_id = dist_data.anchor_id;
-						msg.distance = dist_data.distance;
-						msg.confidence = dist_data.confidence;
-						can_pub.publish(msg);
-					}else{
-						if(nbytes > 0){
-							rx_frame_queue.push_back(rx_frame); // put the frame in the queue and we'll look at it in a sec
-						}
-						nbytes = 0;
-						ROS_INFO("No bytes received");
-						n_tries++;	
-					}
-				}
-
-			}
-			// now see if we have any frames in the queue to process
-			for(auto frame = rx_frame_queue.begin(); frame != rx_frame_queue.end(); ++frame){
-				int rx_id = (int)(*frame).can_id;
-				if(rx_id > 0xFF){
-					// we can assume this is a VESC message
-					motor_msg.timestamp = ros::Time::now();
-					int8_t vesc_id = (rx_id & 0xFF);
-					int vesc_cmd = (rx_id >> 8);
-					motor_msg.motor_type 	= "VESC";
-					motor_msg.can_id 		= vesc_id;
-					switch(vesc_cmd){
-						case(CAN_PACKET_STATUS):{
-							// routine status message
-							int32_t rpm;
-							int16_t current;
-							int16_t duty_cycle;
-							memcpy(&rpm, (*frame).data, 4);
-							memcpy(&current, (*frame).data + 4, 2);
-							memcpy(&duty_cycle, (*frame).data + 6, 2);
-							motor_msg.raw_rpm = (float)rpm;
-							motor_msg.current = (float)current;
-							motor_msg.duty_cycle = (float)duty_cycle;
-							break;}
-					}
-					motor_data.publish(motor_msg);
-				}
-			}
-			rx_frame_queue.clear(); // clear the messages once processed
-
+		// REQUEST DATA FROM NEXT UWB NODE
+		UwbNode* node = &nodes[node_id];
+		tx_frame.can_id = node->id | CAN_RTR_FLAG; 
+		tx_frame.can_dlc = 8;
+		nbytes = write(s, &tx_frame, sizeof(struct can_frame));
+		node_id++;
+		if(node_id > nNodes){
+			node_id = 1; // start back at the beginning
 		}
-		
+
+		// REQUEST VALUES FROM VESCS
+		int vesc_success = get_values(s, nVescID, 0);
+		nVescID++;
+		if(nVescID > nVescEndID){
+			nVescID = nVescStartID;
+		}
+
+		// BRING RECEIVED FRAMES INTO USER SPACE
+		nbytes = 0;
+		while((nbytes = read(s, &rx_frame, sizeof(struct can_frame))) > 0){
+			int rx_id = (int)rx_frame.can_id;
+			if(rx_id > 0xFF){
+				// we can assume this is a VESC message
+				vesc_frames.push_back(rx_frame);
+				uint8_t cmd = (uint8_t)(rx_frame.can_id >> 8);
+				int8_t id 	= (int8_t)(rx_frame.can_id);
+				switch(cmd){
+					case CAN_PACKET_FILL_RX_BUFFER:{
+						memcpy(vesc_rx_buf + rx_frame.data[0], rx_frame.data + 1, rx_frame.can_dlc - 1);
+						break;}
+					case CAN_PACKET_PROCESS_RX_BUFFER:{
+						int ind = 0;
+						uint16_t packet_len;
+						uint16_t crc;
+						int vesc_id = rx_frame.data[ind++]; // which vesc sent the data
+						int n_cmds 	= rx_frame.data[ind++]; // how many commands
+						packet_len 	= (rx_frame.data[ind++] << 8);
+						packet_len 	|= rx_frame.data[ind++];
+						crc 		= (rx_frame.data[ind++] << 8);
+						crc 		|= rx_frame.data[ind++];
+
+						chk_crc = crc16(vesc_rx_buf, packet_len);
+
+						if(crc != chk_crc){
+							// error in transmission
+							break;
+						}
+						ind = 0
+						int comm_cmd = vesc_rx_buf[ind++];
+						switch(comm_cmd){
+							case COMM_GET_VALUES:{
+								canbus::motor_data motor_msg;
+								motor_msg.timestamp 	= ros::Time::now();
+								motor_msg.motor_type 	= "VESC";
+								motor_msg.can_id 		= vesc_id;
+
+								motor_msg.temp_mos1 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
+								motor_msg.temp_mos2 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&tind);
+								motor_msg.current_motor 		= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
+								motor_msg.current_in 			= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
+								motor_msg.avg_id				= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
+								motor_msg.avg_iq				= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
+								motor_msg.duty_now 				= buffer_get_float16(vesc_rx_buf, 1000.0,&ind);
+								motor_msg.rpm 					= buffer_get_float32(vesc_rx_buf, 1.0, 	&ind);
+								motor_msg.v_in 					= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
+								motor_msg.amp_hours 			= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
+								motor_msg.amp_hours_charged 	= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
+								motor_msg.watt_hours 			= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
+								motor_msg.watt_hours_charged 	= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
+								motor_msg.tachometer 			= buffer_get_int32(  vesc_rx_buf, &ind);
+								motor_msg.tachometer_abs 		= buffer_get_int32(  vesc_rx_buf, &ind);
+								motor_msg.fault_code 			= (int8_t)vesc_rx_buf[ind++];
+
+								motor_data.publish(motor_msg); // publish motor data
+								break;}
+						}
+
+						break;}
+						// indicates the end of the cmd buffer
+				}
+			}else{
+				// we can assume this is a UWB message
+				rx_id = rx_id & CAN_SFF_MASK;
+				if(rx_id <= nNodes){ 
+					// yes this is an UWB node
+					memcpy(&rx_buf, rx_frame.data, 8);
+					dist_data.type = rx_buf[0];
+					dist_data.anchor_id = rx_buf[1];
+					memcpy(&(dist_data.distance), rx_buf+2, sizeof(dist_data.distance));
+					memcpy(&(dist_data.confidence), rx_buf+6, 2);
+					ROS_INFO("Distance from node %d to anchor %d: %.3f m", rx_id, dist_data.anchor_id, dist_data.distance);
+					msg.timestamp 	= ros::Time::now();
+					msg.node_id 	= rx_id;
+					msg.anchor_id 	= dist_data.anchor_id;
+					msg.distance 	= dist_data.distance;
+					msg.confidence 	= dist_data.confidence;
+					can_pub.publish(msg);
+				}
+			}
+		}
+
 		ros::spinOnce();
 		loop_rate.sleep();
 	}

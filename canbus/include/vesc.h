@@ -26,12 +26,35 @@
 /**
  * takes a vesc communication buffer and fills a vector with valid can frames ready to be sent
  */
-void generate_can_frames(int target_id, uint8_t* buf, int len, std::vector<struct can_frame> &tx_frame_queue);
+void generate_can_frames(int target_id, int self_id, uint8_t* data, int data_len, std::vector<struct can_frame> &tx_frame_queue);
 
-int send_packet(int sock, uint8_t* packet, int len);
+/**
+ * send a short buffer to VESC with target ID with specified command and no data
+ */
+int send_short_buf(int sock, int target_id, int self_id, int command);
 
-int set_rpm(int sock, int target_id, float rpm);
+/**
+ * send a short buffer to VESC with target ID, specified command, and data
+ * data is assumed to be 4 bytes
+ */
+int send_short_buf(int sock, int target_id, int self_id, int command, uint8_t* data);
 
-int get_values(int sock, int target_id);
+/**
+ * Send an arbitrary VESC comm packet
+ */
+int send_packet(int sock, int self_id, uint8_t* packet, int len);
+
+/**
+ * Sets the RPM of VESC with target_id using short buffer command
+ */
+int set_rpm(int sock, int target_id, int self_id, float rpm);
+
+/**
+ * Sends COMM_GET_VALUES command to VESC with target_id
+ */
+int get_values(int sock, int target_id, int self_id);
+
+
+void parse_motor_frames(std::vector<struct can_frame> &frames, std::vector<canbus::motor_data> &motor_msgs);
 
 #endif
