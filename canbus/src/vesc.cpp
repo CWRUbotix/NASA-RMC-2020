@@ -99,32 +99,25 @@ int get_values(int sock, int target_id, int self_id){
 }
 
 void handle_vesc_frame(struct can_frame frame, std::vector<canbus::motor_data> &motor_msgs){
-	
+
 }
 
-void parse_motor_frames(std::vector<struct can_frame> &frames, std::vector<canbus::motor_data> &motor_msgs){
-	uint8_t rx_buffer[1024];
-	for(auto frame = frames.begin(); frame != frames.end(); ++frame){
-		
-	}
-	// motor_msg.timestamp = ros::Time::now();
-	// int8_t vesc_id = (rx_id & 0xFF);
-	// int vesc_cmd = (rx_id >> 8);
-	// motor_msg.motor_type 	= "VESC";
-	// motor_msg.can_id 		= vesc_id;
-	// switch(vesc_cmd){
-	// 	case(CAN_PACKET_STATUS):{
-	// 		// routine status message
-	// 		int32_t rpm;
-	// 		int16_t current;
-	// 		int16_t duty_cycle;
-	// 		memcpy(&rpm, rx_frame.data, 4);
-	// 		memcpy(&current, rx_frame.data + 4, 2);
-	// 		memcpy(&duty_cycle, rx_frame.data + 6, 2);
-	// 		motor_msg.raw_rpm = (float)rpm;
-	// 		motor_msg.current = (float)current;
-	// 		motor_msg.duty_cycle = (float)duty_cycle;
-	// 		break;}
-	// }
-	// motor_data.publish(motor_msg);
+void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg){
+	int ind = 1;
+	motor_msg.temp_mos1 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
+	motor_msg.temp_mos2 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&tind);
+	motor_msg.current_motor 		= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
+	motor_msg.current_in 			= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
+	motor_msg.avg_id				= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
+	motor_msg.avg_iq				= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
+	motor_msg.duty_now 				= buffer_get_float16(vesc_rx_buf, 1000.0,&ind);
+	motor_msg.rpm 					= buffer_get_float32(vesc_rx_buf, 1.0, 	&ind);
+	motor_msg.v_in 					= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
+	motor_msg.amp_hours 			= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
+	motor_msg.amp_hours_charged 	= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
+	motor_msg.watt_hours 			= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
+	motor_msg.watt_hours_charged 	= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
+	motor_msg.tachometer 			= buffer_get_int32(  vesc_rx_buf, &ind);
+	motor_msg.tachometer_abs 		= buffer_get_int32(  vesc_rx_buf, &ind);
+	motor_msg.fault_code 			= (int8_t)vesc_rx_buf[ind++];
 }

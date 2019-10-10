@@ -57,4 +57,6 @@ int get_values(int sock, int target_id, int self_id);
 
 void parse_motor_frames(std::vector<struct can_frame> &frames, std::vector<canbus::motor_data> &motor_msgs);
 
+void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg);
+
 #endif

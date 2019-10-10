@@ -84,12 +84,16 @@ int main(int argc, char** argv){
 			node_id = 1; // start back at the beginning
 		}
 
-		// REQUEST VALUES FROM VESCS
+		// REQUEST VALUES FROM NEXT VESC
 		int vesc_success = get_values(s, nVescID, 0);
 		nVescID++;
 		if(nVescID > nVescEndID){
 			nVescID = nVescStartID;
 		}
+
+		// SLEEP TO ALLOW DEVICES TO RESPOND
+		loop_rate.sleep();
+
 
 		// BRING RECEIVED FRAMES INTO USER SPACE
 		nbytes = 0;
@@ -130,22 +134,7 @@ int main(int argc, char** argv){
 								motor_msg.motor_type 	= "VESC";
 								motor_msg.can_id 		= vesc_id;
 
-								motor_msg.temp_mos1 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
-								motor_msg.temp_mos2 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&tind);
-								motor_msg.current_motor 		= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
-								motor_msg.current_in 			= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
-								motor_msg.avg_id				= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
-								motor_msg.avg_iq				= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
-								motor_msg.duty_now 				= buffer_get_float16(vesc_rx_buf, 1000.0,&ind);
-								motor_msg.rpm 					= buffer_get_float32(vesc_rx_buf, 1.0, 	&ind);
-								motor_msg.v_in 					= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
-								motor_msg.amp_hours 			= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
-								motor_msg.amp_hours_charged 	= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
-								motor_msg.watt_hours 			= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
-								motor_msg.watt_hours_charged 	= buffer_get_float32(vesc_rx_buf, 10000.0, &ind);
-								motor_msg.tachometer 			= buffer_get_int32(  vesc_rx_buf, &ind);
-								motor_msg.tachometer_abs 		= buffer_get_int32(  vesc_rx_buf, &ind);
-								motor_msg.fault_code 			= (int8_t)vesc_rx_buf[ind++];
+								fill_msg_from_buffer(vesc_rx_buf, motor_msg);
 
 								motor_data.publish(motor_msg); // publish motor data
 								break;}
@@ -176,7 +165,6 @@ int main(int argc, char** argv){
 		}
 
 		ros::spinOnce();
-		loop_rate.sleep();
 	}
 
 	return 0;
