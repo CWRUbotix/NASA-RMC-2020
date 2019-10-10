@@ -38,12 +38,12 @@ void generate_can_frames(int target_id, int self_id, uint8_t* data, int data_len
 	tx_frame_queue.push_back(frame);
 }
 
-int send_packet(int sock, int self_id, uint8_t* packet, int len){
+int send_packet(int sock, int target_id, int self_id, uint8_t* packet, int len){
 	std::vector<struct can_frame> frames;
-	generate_can_frames(target_id, self_id, buffer, 5, frames);
+	generate_can_frames(target_id, self_id, packet, 5, frames);
 	int nbytes = 0;
-	for(auto frame = frames.begin(); i != frames.end(); ++i){
-		nbytes = write(sock, frame, sizeof(struct can_frame));
+	for(auto frame = frames.begin(); frame != frames.end(); ++frame){
+		nbytes = write(sock, &frame, sizeof(struct can_frame));
 	}
 	if(nbytes > 0){
 		return 0;
@@ -60,7 +60,7 @@ int send_short_buf(int sock, int target_id, int self_id, int command){
 	frame.data[ind++] = 0x00;
 	frame.data[ind++] = command;
 	frame.can_dlc = ind;
-	int nbytes = write(sock, frame, sizeof(struct can_frame));
+	int nbytes = write(sock, &frame, sizeof(struct can_frame));
 	if(nbytes > 0){
 		return 0;
 	}else{
@@ -78,7 +78,7 @@ int send_short_buf(int sock, int target_id, int self_id, int command, uint8_t* d
 	memcpy(frame.data+ind, data, 4);
 	ind += 4;
 	frame.can_dlc = ind;
-	int nbytes = write(sock, frame, sizeof(struct can_frame));
+	int nbytes = write(sock, &frame, sizeof(struct can_frame));
 	if(nbytes > 0){
 		return 0;
 	}else{
@@ -105,7 +105,7 @@ void handle_vesc_frame(struct can_frame frame, std::vector<canbus::motor_data> &
 void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg){
 	int ind = 1;
 	motor_msg.temp_mos1 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
-	motor_msg.temp_mos2 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&tind);
+	motor_msg.temp_mos2 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
 	motor_msg.current_motor 		= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
 	motor_msg.current_in 			= buffer_get_float32(vesc_rx_buf, 100.0, &ind);
 	motor_msg.avg_id				= buffer_get_float32(vesc_rx_buf, 100.0, &ind);

@@ -119,13 +119,13 @@ int main(int argc, char** argv){
 						crc 		= (rx_frame.data[ind++] << 8);
 						crc 		|= rx_frame.data[ind++];
 
-						chk_crc = crc16(vesc_rx_buf, packet_len);
+						uint16_t chk_crc = crc16(vesc_rx_buf, packet_len);
 
 						if(crc != chk_crc){
 							// error in transmission
 							break;
 						}
-						ind = 0
+						ind = 0;
 						int comm_cmd = vesc_rx_buf[ind++];
 						switch(comm_cmd){
 							case COMM_GET_VALUES:{

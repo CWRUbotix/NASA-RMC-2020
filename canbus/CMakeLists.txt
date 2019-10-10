@@ -51,6 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   UWB_data.msg
+  motor_data.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -93,7 +94,7 @@ generate_messages(
 #   cfg/DynReconf2.cfg
 # )
 
-add_executable(canbus src/canbus_test.cpp)
+add_executable(canbus src/canbus_test.cpp src/vesc.cpp src/crc.cpp src/buffer.cpp)
 target_link_libraries(canbus ${catkin_LIBRARIES})
 add_dependencies(canbus ${catkin_EXPORTED_TARGETS})
 add_dependencies(canbus canbus_generate_messages_cpp)

@@ -22,9 +22,10 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "ch.h"
 
 // Data types
+#define systime_t uint32_t
+
 typedef enum {
    MC_STATE_OFF = 0,
    MC_STATE_DETECTING,

@@ -42,7 +42,7 @@ int send_short_buf(int sock, int target_id, int self_id, int command, uint8_t* d
 /**
  * Send an arbitrary VESC comm packet
  */
-int send_packet(int sock, int self_id, uint8_t* packet, int len);
+int send_packet(int sock, int target_id, int self_id, uint8_t* packet, int len);
 
 /**
  * Sets the RPM of VESC with target_id using short buffer command
