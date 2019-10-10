@@ -59,4 +59,6 @@ void parse_motor_frames(std::vector<struct can_frame> &frames, std::vector<canbu
 
 void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg);
 
+void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::motor_data &motor_msg);
+
 #endif

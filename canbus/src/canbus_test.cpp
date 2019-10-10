@@ -16,6 +16,15 @@ int main(int argc, char** argv){
 	int nVescStartID 	= 5;
 	int nVescEndID 		= 6;
 	int nVescID 		= nVescStartID;
+	int vesc_ind 		= 0;
+	int nVescs 			= (nVescEndID - nVescStartID) + 1;
+	canbus::motor_data motor_msgs[nVescs]; // array of messages for each VESC
+	for(int i = nVescStartID; i <= nVescEndID; i++){
+		motor_msgs[vesc_ind].can_id = i;
+		motor_msgs[vesc_ind].motor_type = "VESC";
+		vesc_ind++;
+	}
+	vesc_ind = 0;
 
 	nNodes = 4;
 	nAnchors = 3;
@@ -86,13 +95,13 @@ int main(int argc, char** argv){
 		}
 
 		// REQUEST VALUES FROM NEXT VESC
+		(canbus::motor_data)* motor_msg = &(motor_msgs[vesc_ind]);
+		nVescID = motor_msg->can_id;
 		int vesc_success = get_values(s, nVescID, 0);
-		if(vesc_success == 0){
-			ROS_INFO("Requested Values from VESC");
-		}
-		nVescID++;
-		if(nVescID > nVescEndID){
-			nVescID = nVescStartID;
+
+		vesc_ind++;
+		if(nVescID == nVescEndID){
+			vesc_ind = 0; // start back at the beginning
 		}
 
 		// SLEEP TO ALLOW DEVICES TO RESPOND
@@ -103,20 +112,21 @@ int main(int argc, char** argv){
 		nbytes = 0;
 		while((nbytes = read(s, &rx_frame, sizeof(struct can_frame))) > 0){
 			uint32_t rx_id = (uint32_t)rx_frame.can_id;
-			ROS_INFO("RX CAN ID: %x", rx_id);
+			//ROS_INFO("RX CAN ID: %x", rx_id);
 			if((rx_id & ~0x7FF) != 0){
-				ROS_INFO("VESC frame received");
+				//ROS_INFO("VESC frame received");
 				// we can assume this is a VESC message
-				//vesc_frames.push_back(rx_frame);
 				uint8_t cmd = (uint8_t)(rx_frame.can_id >> 8);
 				int8_t id 	= (int8_t)(rx_frame.can_id & 0xFF);
 				switch(cmd){
 					case CAN_PACKET_STATUS:{
-						canbus::motor_data motor_msg;
-						motor_msg.timestamp 	= ros::Time::now();
-						motor_msg.motor_type 	= "VESC";
-						motor_msg.can_id 	= id;
-						motor_data.publish(motor_msg);
+						int index = id - nVescStartID;
+						if(id <= 0){
+							break;
+						}
+						(canbus::motor_data)* msg = &(motor_msgs[index]);
+						fill_msg_from_status_packet(rx_frame.data, (*msg));
+						motor_data.publish(*msg);
 						break;}
 					case CAN_PACKET_FILL_RX_BUFFER:{
 						if(id != 0x00){
@@ -147,18 +157,22 @@ int main(int argc, char** argv){
 							// error in transmission
 							break;
 						}
+
+						int index = vesc_id - nVescStartID;
+						if(index < 0){break;}
+						(canbus::motor_data)* msg = &(motor_msgs[index]);
+
 						ind = 0;
 						int comm_cmd = vesc_rx_buf[ind++];
 						switch(comm_cmd){
 							case COMM_GET_VALUES:{
-								canbus::motor_data motor_msg;
-								motor_msg.timestamp 	= ros::Time::now();
-								motor_msg.motor_type 	= "VESC";
-								motor_msg.can_id 		= vesc_id;
+								msg->timestamp 	= ros::Time::now();
+								msg->motor_type 	= "VESC";
+								msg->can_id 		= vesc_id;
 
-								fill_msg_from_buffer(vesc_rx_buf, motor_msg);
+								fill_msg_from_buffer(vesc_rx_buf, *msg);
 
-								motor_data.publish(motor_msg); // publish motor data
+								motor_data.publish(*msg); // publish motor data
 								break;}
 						}
 

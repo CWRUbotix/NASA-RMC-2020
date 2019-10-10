@@ -121,3 +121,10 @@ void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg){
 	motor_msg.tachometer_abs 		= buffer_get_int32(  vesc_rx_buf, &ind);
 	motor_msg.fault_code 			= (int8_t)vesc_rx_buf[ind++];
 }
+
+void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::motor_data &motor_msg){
+	int ind = 0;
+	motor_msg.rpm 			= buffer_get_float32(frame_buf, 1.0, &ind);
+	motor_msg.current_in 	= buffer_get_float16(frame_buf, 10.0, &ind);
+	motor_msg.duty_now 		= buffer_get_float16(frame_buf, 1000.0, &ind);
+}
