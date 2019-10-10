@@ -7,7 +7,7 @@ int main(int argc, char** argv){
 	
 	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
 	ros::Publisher motor_data = n.advertise<motor_data_msg>("motor_data", 1024);
-	ros::Rate loop_rate(10);
+	ros::Rate loop_rate(50); // 20ms loop rate
 	
 	ROS_INFO("ROS init success");
 	//nNodes 		= get_nodes_from_file(node_config_fname, node_str);
@@ -17,7 +17,7 @@ int main(int argc, char** argv){
 	int nVescEndID 		= 6;
 	int nVescID 		= nVescStartID;
 
-	nNodes = 3;
+	nNodes = 4;
 	nAnchors = 3;
 
 	UwbNode nodes[nNodes] = {};
@@ -25,6 +25,7 @@ int main(int argc, char** argv){
 	nodes[0].id = 1;
 	nodes[1].id = 2;
 	nodes[2].id = 3;
+	nodes[3].id = 4;
 
 	UWB_msg msg;
 	motor_data_msg motor_msg;
@@ -48,7 +49,7 @@ int main(int argc, char** argv){
 
 	const char* ifname = "can1";
 
-	uint8_t node_id = 1; // 0 is our ID
+	uint8_t node_ind = 0; //
 
 	// initialize the CAN socket
 	if((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0){
@@ -75,13 +76,13 @@ int main(int argc, char** argv){
 
 	while(ros::ok()){
 		// REQUEST DATA FROM NEXT UWB NODE
-		UwbNode* node = &nodes[node_id];
+		UwbNode* node = &nodes[node_ind];
 		tx_frame.can_id = node->id | CAN_RTR_FLAG; 
 		tx_frame.can_dlc = 8;
 		nbytes = write(s, &tx_frame, sizeof(struct can_frame));
-		node_id++;
-		if(node_id > nNodes){
-			node_id = 1; // start back at the beginning
+		node_ind++;
+		if(node_ind >= nNodes){
+			node_ind = 0; // start back at the beginning
 		}
 
 		// REQUEST VALUES FROM NEXT VESC
@@ -100,15 +101,31 @@ int main(int argc, char** argv){
 		while((nbytes = read(s, &rx_frame, sizeof(struct can_frame))) > 0){
 			int rx_id = (int)rx_frame.can_id;
 			if(rx_id > 0xFF){
+				ROS_INFO("VESC frame received");
 				// we can assume this is a VESC message
-				vesc_frames.push_back(rx_frame);
+				//vesc_frames.push_back(rx_frame);
 				uint8_t cmd = (uint8_t)(rx_frame.can_id >> 8);
-				int8_t id 	= (int8_t)(rx_frame.can_id);
+				int8_t id 	= (int8_t)(rx_frame.can_id & 0xFF);
 				switch(cmd){
+					case CAN_PACKET_STATUS:{
+						canbus::motor_data motor_msg;
+						motor_msg.timestamp 	= ros::Time::now();
+						motor_msg.motor_type 	= "VESC";
+						motor_msg.can_id 	= id;
+						motor_data.publish(motor_msg);
+						break;}
 					case CAN_PACKET_FILL_RX_BUFFER:{
+						if(id != 0x00){
+							// this is not intended for us (our canID is 0)
+							break;
+						}
 						memcpy(vesc_rx_buf + rx_frame.data[0], rx_frame.data + 1, rx_frame.can_dlc - 1);
 						break;}
 					case CAN_PACKET_PROCESS_RX_BUFFER:{
+						if(id != 0x00){
+							// not intended for us
+							break;
+						}
 						int ind = 0;
 						uint16_t packet_len;
 						uint16_t crc;
@@ -122,6 +139,7 @@ int main(int argc, char** argv){
 						uint16_t chk_crc = crc16(vesc_rx_buf, packet_len);
 
 						if(crc != chk_crc){
+							ROS_INFO("Error: Checksum doesn't match");
 							// error in transmission
 							break;
 						}
