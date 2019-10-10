@@ -65,7 +65,7 @@ int main(int argc, char** argv){
 	addr.can_ifindex = ifr.ifr_ifindex;
 
 	ROS_INFO("%s at index %d", ifname, ifr.ifr_ifindex);
-
+	
 	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 	
 	if(bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0){
@@ -87,6 +87,9 @@ int main(int argc, char** argv){
 
 		// REQUEST VALUES FROM NEXT VESC
 		int vesc_success = get_values(s, nVescID, 0);
+		if(vesc_success == 0){
+			ROS_INFO("Requested Values from VESC");
+		}
 		nVescID++;
 		if(nVescID > nVescEndID){
 			nVescID = nVescStartID;
@@ -99,8 +102,9 @@ int main(int argc, char** argv){
 		// BRING RECEIVED FRAMES INTO USER SPACE
 		nbytes = 0;
 		while((nbytes = read(s, &rx_frame, sizeof(struct can_frame))) > 0){
-			int rx_id = (int)rx_frame.can_id;
-			if(rx_id > 0xFF){
+			uint32_t rx_id = (uint32_t)rx_frame.can_id;
+			ROS_INFO("RX CAN ID: %x", rx_id);
+			if((rx_id & ~0x7FF) != 0){
 				ROS_INFO("VESC frame received");
 				// we can assume this is a VESC message
 				//vesc_frames.push_back(rx_frame);

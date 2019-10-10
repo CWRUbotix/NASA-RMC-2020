@@ -27,7 +27,7 @@ void generate_can_frames(int target_id, int self_id, uint8_t* data, int data_len
 	// now add a command to tell the vesc to process the buffer
 	struct can_frame frame;
 	int i = 0;
-	frame.can_id = target_id | (CAN_PACKET_PROCESS_RX_BUFFER << 8);
+	frame.can_id = target_id | (CAN_PACKET_PROCESS_RX_BUFFER << 8) | CAN_EFF_FLAG;
 	frame.data[i++] = self_id;
 	frame.data[i++] = 0x01; // number of commands sent (we just sent 1)
 	frame.data[i++] = (data_len >> 8) & 0xFF;
@@ -54,7 +54,7 @@ int send_packet(int sock, int target_id, int self_id, uint8_t* packet, int len){
 
 int send_short_buf(int sock, int target_id, int self_id, int command){
 	struct can_frame frame;
-	frame.can_id = (CAN_PACKET_PROCESS_SHORT_BUFFER << 8) | target_id;
+	frame.can_id = (CAN_PACKET_PROCESS_SHORT_BUFFER << 8) | target_id | CAN_EFF_FLAG;
 	int ind = 0;
 	frame.data[ind++] = self_id;
 	frame.data[ind++] = 0x00;
@@ -70,7 +70,7 @@ int send_short_buf(int sock, int target_id, int self_id, int command){
 
 int send_short_buf(int sock, int target_id, int self_id, int command, uint8_t* data){
 	struct can_frame frame;
-	frame.can_id = (CAN_PACKET_PROCESS_SHORT_BUFFER << 8) | target_id;
+	frame.can_id = (CAN_PACKET_PROCESS_SHORT_BUFFER << 8) | target_id | CAN_EFF_FLAG;
 	int ind = 0;
 	frame.data[ind++] = self_id;
 	frame.data[ind++] = 0x00;
