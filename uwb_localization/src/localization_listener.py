@@ -22,7 +22,7 @@ from geometry_msgs.msg import Quaternion, PoseWithCovarianceStamped, PoseWithCov
 
 
 class LocalizationNode:
-    def __init__(self, visualize=False):
+    def __init__(self, visualize=True):
         self.topic = 'localization_data'
         self.viz_dir = 'visualizations/'
         self.visualize = visualize
@@ -77,7 +77,6 @@ class LocalizationNode:
                 dot_product = np.dot(robot_edge, np.array([1, 0]))
                 # each edge vector is at a different angle relative to the robot coordinate system
                 theta_offset = math.acos(dot_product / np.linalg.norm(robot_edge))
-                print(start_node.id, end_node.id, theta_offset)
                 dY = end_node.y - start_node.y
                 dX = end_node.x - start_node.x
                 theta = math.atan2(dY, dX) - theta_offset
@@ -138,8 +137,9 @@ class LocalizationNode:
             ax.set_title('Position')
             for node in self.nodes:
                 node.plot_position(ax=ax)
+
             ax.legend(loc='best')
-            ax.set_xlim(0, 4.2)
+            ax.set_xlim(0, 5.2)
             ax.set_ylim(0, 6.05)
 
             ax = plt.subplot(142)
@@ -153,7 +153,7 @@ class LocalizationNode:
             ax.scatter(self.robot_x, self.robot_y, label='robot')
             ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(theta), .3 * math.sin(theta), head_width=0.1)
             ax.legend(loc='best')
-            ax.set_xlim(0, 4.2)
+            ax.set_xlim(0, 5.2)
             ax.set_ylim(0, 6.05)
 
             plt.tight_layout()
@@ -168,7 +168,7 @@ class LocalizationNode:
                 header.frame_id = 'map'
                 point_msg = Point(node.x - node.relative_x, node.y - node.relative_y, 0)  # use most recent pos with no z-coord
                 orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
-                pose_cov = np.ones(36) * 1e-6
+                pose_cov = np.ones(36) * 1e-9
                 quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
                 pose_with_cov = PoseWithCovariance()
                 pose_with_cov.pose = Pose(point_msg, quat_msg)

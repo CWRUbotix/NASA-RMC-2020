@@ -29,7 +29,7 @@ class KalmanFilterNode:
         self.robot_y = []
         self.robot_pitch = []
         self.viz_dir = 'robot_localization_viz'
-        self.viz_step = 10
+        self.viz_step = 1
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -53,11 +53,6 @@ class KalmanFilterNode:
 
         if len(self.robot_x) % self. viz_step == 0:
             fig, ax = plt.subplots()
-            #fig = plt.figure()
-            #plot_covariance(
-            #            (self.robot_x[-1], self.robot_y[-1]), covariance[0:2, 0:2], std=10,
-            #            facecolor='g', alpha=0.8)
-            #ax = plt.gca()
             ax.scatter(self.robot_x, self.robot_y, label='robot')
             ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(self.robot_pitch[-1]), .3 * math.sin(self.robot_pitch[-1]), head_width=0.1)
             ax.legend(loc='best')
