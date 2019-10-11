@@ -54,11 +54,11 @@ int main(int argc, char** argv){
 			}
 		}
 	}
-	nVescStartID 	= motor_msgs.begin().can_id;
-	nVescEndID 		= motor_msgs.end().can_id;
+	nVescEndID 	= motor_msgs[motor_msgs.size()-1].can_id;
+	nVescStartID 		= motor_msgs[0].can_id;
 	int nVescID 	= nVescStartID;
 
-	nNodes 			= (nodes.end().id - nodes.begin().id) + 1;
+	nNodes 			= (nodes[nodes.size()-1].id - nodes[0].id) + 1;
 
 	UWB_msg msg;
 	motor_data_msg motor_msg;
@@ -176,19 +176,18 @@ int main(int argc, char** argv){
 
 						int index = vesc_id - nVescStartID;
 						if(index < 0){break;}
-						(canbus::motor_data)* msg = &(motor_msgs[index]);
-
+						
 						ind = 0;
 						int comm_cmd = vesc_rx_buf[ind++];
 						switch(comm_cmd){
 							case COMM_GET_VALUES:{
-								msg->timestamp 	= ros::Time::now();
-								msg->motor_type 	= "VESC";
-								msg->can_id 		= vesc_id;
+								motor_msgs[index].timestamp 	= ros::Time::now();
+								motor_msgs[index].motor_type 	= "VESC";
+								motor_msgs[index].can_id 		= vesc_id;
+								
+								fill_msg_from_buffer(vesc_rx_buf, *(motor_msgs.data()+index));
 
-								fill_msg_from_buffer(vesc_rx_buf, *msg);
-
-								motor_data.publish(*msg); // publish motor data
+								motor_data.publish(motor_msgs[index]); // publish motor data
 								break;}
 						}
 
@@ -250,8 +249,8 @@ int read_can_config(std::string fname, std::vector<CanDevice> &devices){
 	int retval = 0;
 	std::ifstream config_file;
 	config_file.open(fname.c_str(), ios::in);
-	const std::string line;
-	const std::string word;
+	std::string line;
+	std::string word;
 
 	std::vector<std::string> words;
 
