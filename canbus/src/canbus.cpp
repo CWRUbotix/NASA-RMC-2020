@@ -10,31 +10,55 @@ int main(int argc, char** argv){
 	ros::Rate loop_rate(50); // 20ms loop rate
 	
 	ROS_INFO("ROS init success");
-	//nNodes 		= get_nodes_from_file(node_config_fname, node_str);
-	//nAnchors 	= get_nodes_from_file(node_config_fname, anchor_str);
-	//ROS_INFO("# of Nodes: %d,\t# of Anchors: %d", nNodes, nAnchors);
-	int nVescStartID 	= 5;
-	int nVescEndID 		= 6;
-	int nVescID 		= nVescStartID;
-	int vesc_ind 		= 0;
-	int nVescs 			= (nVescEndID - nVescStartID) + 1;
-	canbus::motor_data motor_msgs[nVescs]; // array of messages for each VESC
-	for(int i = nVescStartID; i <= nVescEndID; i++){
-		motor_msgs[vesc_ind].can_id = i;
-		motor_msgs[vesc_ind].motor_type = "VESC";
-		vesc_ind++;
+
+	std::vector<CanDevice> can_devices;
+	std::vector<UwbNode> nodes;
+	std::vector<canbus::motor_data> motor_msgs; // array of messages for each VESC
+	int nVescStartID 	= 0;
+	int nVescEndID 		= 0;
+
+	int config_read_status = read_can_config(can_config_fname, can_devices);
+	if(config_read_status != 0){
+		ROS_INFO("CONFIG READ FAILED!");
+		UwbNode node;
+		node.id = 1;
+		nodes.push_back(node);
+		node.id = 2;
+		nodes.push_back(node);
+		node.id = 3;
+		nodes.push_back(node);
+		node.id = 4;
+		nodes.push_back(node);
+
+		canbus::motor_data temp_msg;
+		temp_msg.can_id = 5;
+		motor_msgs.push_back(temp_msg);
+		temp_msg.can_id = 6;
+		motor_msgs.push_back(temp_msg);
+
+	}else{
+		ROS_INFO("CONFIG READ SUCCESS!");
+		ROS_INFO("Read %d lines from can config file.", can_devices.size());
+		for(int i = 0; i < can_devices.size(); i++){
+			if((can_devices[i].type.compare("uwb")) == 0){
+				ROS_INFO("Adding UWB Node");
+				UwbNode new_node;
+				new_node.id = can_devices[i].can_id;
+				nodes.push_back(new_node);
+			}else if((can_devices[i].type.compare("vesc")) == 0){
+				ROS_INFO("Adding VESC device.");
+				canbus::motor_data new_msg;
+				new_msg.can_id = can_devices[i].can_id;
+				new_msg.motor_type = can_devices[i].type;
+				motor_msgs.push_back(new_msg);
+			}
+		}
 	}
-	vesc_ind = 0;
+	nVescStartID 	= motor_msgs.begin().can_id;
+	nVescEndID 		= motor_msgs.end().can_id;
+	int nVescID 	= nVescStartID;
 
-	nNodes = 4;
-	nAnchors = 3;
-
-	UwbNode nodes[nNodes] = {};
-
-	nodes[0].id = 1;
-	nodes[1].id = 2;
-	nodes[2].id = 3;
-	nodes[3].id = 4;
+	nNodes 			= (nodes.end().id - nodes.begin().id) + 1;
 
 	UWB_msg msg;
 	motor_data_msg motor_msg;
@@ -46,11 +70,8 @@ int main(int argc, char** argv){
 	struct can_frame tx_frame;
 	struct ifreq ifr;
 	struct timeval tv;
-	std::vector<struct can_frame> rx_frame_queue; 	// to store received can frames to process later
-	std::vector<struct can_frame> vesc_frames; 		// stores received vesc frames
-	std::vector<motor_data_msg> motor_msgs; 		// stores motor ROS messages
 	tv.tv_sec = 0;
-	tv.tv_usec = 50000; // 50ms
+	tv.tv_usec = 25000; // 25ms CAN bus read timeout 
 	
 	uint8_t vesc_rx_buf[1024];
 	uint8_t rx_buf[8];
@@ -95,13 +116,11 @@ int main(int argc, char** argv){
 		}
 
 		// REQUEST VALUES FROM NEXT VESC
-		(canbus::motor_data)* motor_msg = &(motor_msgs[vesc_ind]);
-		nVescID = motor_msg->can_id;
 		int vesc_success = get_values(s, nVescID, 0);
 
-		vesc_ind++;
-		if(nVescID == nVescEndID){
-			vesc_ind = 0; // start back at the beginning
+		nVescID++;
+		if(nVescID >= nVescEndID){
+			nVescID = nVescStartID; // start back at the beginning
 		}
 
 		// SLEEP TO ALLOW DEVICES TO RESPOND
@@ -112,9 +131,7 @@ int main(int argc, char** argv){
 		nbytes = 0;
 		while((nbytes = read(s, &rx_frame, sizeof(struct can_frame))) > 0){
 			uint32_t rx_id = (uint32_t)rx_frame.can_id;
-			//ROS_INFO("RX CAN ID: %x", rx_id);
-			if((rx_id & ~0x7FF) != 0){
-				//ROS_INFO("VESC frame received");
+			if((rx_id & ~0xFF) != 0){
 				// we can assume this is a VESC message
 				uint8_t cmd = (uint8_t)(rx_frame.can_id >> 8);
 				int8_t id 	= (int8_t)(rx_frame.can_id & 0xFF);
@@ -124,9 +141,8 @@ int main(int argc, char** argv){
 						if(id <= 0){
 							break;
 						}
-						(canbus::motor_data)* msg = &(motor_msgs[index]);
-						fill_msg_from_status_packet(rx_frame.data, (*msg));
-						motor_data.publish(*msg);
+						fill_msg_from_status_packet(rx_frame.data, motor_msgs[index]);
+						motor_data.publish(motor_msgs[index]);
 						break;}
 					case CAN_PACKET_FILL_RX_BUFFER:{
 						if(id != 0x00){
@@ -228,4 +244,54 @@ int get_nodes_from_file(string fname, string sType){
 	node_data.close();
 
 	return retval;
+}
+
+int read_can_config(std::string fname, std::vector<CanDevice> &devices){
+	int retval = 0;
+	std::ifstream config_file;
+	config_file.open(fname.c_str(), ios::in);
+	const std::string line;
+	const std::string word;
+
+	std::vector<std::string> words;
+
+	int line_num = 0;
+	int can_id_ind = -1;
+	int device_type_ind = -1;
+	if(config_file.is_open()){
+		while(std::getline(config_file, line)){
+			line.push_back(','); // make sure we can read the last word
+			std::istringstream line_stream(line);
+			while(std::getline(line_stream, word, ',')){
+				words.push_back(word);
+			}
+			if(line_num == 0){
+				// figure out which ID corresponds to which column
+				for(int i = 0; i < words.size(); i++){
+					if(can_id_ind < 0 && words[i].compare(can_id_hddr) == 0){
+						can_id_ind = i;
+					}else if(device_type_ind < 0 && words[i].compare(device_type_hddr) == 0){
+						device_type_ind = i;
+					}
+				}
+			}else{
+				if(can_id_ind < 0 || device_type_ind < 0){
+					return 2;
+				}
+				CanDevice device;
+				device.can_id 	= std::stoi(words[can_id_ind]);
+				device.type 	= words[device_type_ind];
+				devices.push_back(device);
+			}
+			line_num++;
+			
+			words.clear();
+		}
+	}else{
+		return 1;
+	}
+
+	config_file.close();
+
+	return 0;
 }

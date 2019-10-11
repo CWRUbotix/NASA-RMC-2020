@@ -28,13 +28,16 @@ using namespace std;
 
 using std::string;
 
-static const string id_header 		= "id";
-static const string type_header 	= "type";
-static const string x_header 		= "x";
-static const string y_header 		= "y";
-static const string anchor_str 		= "anchor";
-static const string node_str 		= "node";
-static const string node_config_fname = "/home/ros/ros_catkin_ws/src/canbus/include/node_config.csv";
+const string id_header 				= "id";
+const string type_header 			= "type";
+const string x_header 				= "x";
+const string y_header 				= "y";
+const string anchor_str 			= "anchor";
+const string node_str 				= "node";
+const string node_config_fname 		= "/home/ros/ros_catkin_ws/src/canbus/include/node_config.csv";
+const string can_config_fname 		= "/home/ros/ros_catkin_ws/src/canbus/include/can_config.csv";
+const std::string device_type_hddr 	= "device_type";
+const std::string can_id_hddr 		= "can_id";
 int nNodes = 0;
 int nAnchors = 0;
 
@@ -55,6 +58,13 @@ typedef struct {
 	uint16_t confidence;
 } DistanceFrame;
 
+typedef struct {
+	string type;
+	uint8_t can_id;
+}CanDevice;
+
 int get_nodes_from_file(string fname, string sType);
+
+int read_can_config(string fname, std::vector<CanDevice> &devices);
 
 #endif

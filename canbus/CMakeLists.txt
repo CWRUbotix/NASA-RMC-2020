@@ -94,7 +94,7 @@ generate_messages(
 #   cfg/DynReconf2.cfg
 # )
 
-add_executable(canbus src/canbus_test.cpp src/vesc.cpp src/crc.cpp src/buffer.cpp)
+add_executable(canbus src/canbus.cpp src/vesc.cpp src/crc.cpp src/buffer.cpp)
 target_link_libraries(canbus ${catkin_LIBRARIES})
 add_dependencies(canbus ${catkin_EXPORTED_TARGETS})
 add_dependencies(canbus canbus_generate_messages_cpp)
