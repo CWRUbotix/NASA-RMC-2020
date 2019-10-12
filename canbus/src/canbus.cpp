@@ -4,7 +4,7 @@ int main(int argc, char** argv){
 	ROS_INFO("CANbus Node!!!!!");
 	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
-	
+
 	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
 	ros::Publisher motor_data = n.advertise<motor_data_msg>("motor_data", 1024);
 	ros::Rate loop_rate(50); // 20ms loop rate
@@ -107,6 +107,12 @@ int main(int argc, char** argv){
 		ROS_INFO("Error in CAN socket bind");
 		return -2;
 	}
+
+	VescCan vesc_can_obj(s, 0); //
+	// Provide the set_vesc service
+	// we have to do it after CAN is set up
+	ros::ServiceServer ser_vesc_srv = n.advertiseService("set_vesc", &VescCan::set_vesc_callback, &vesc_can_obj);
+	
 
 	while(ros::ok()){
 		// REQUEST DATA FROM NEXT UWB NODE

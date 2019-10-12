@@ -128,3 +128,17 @@ void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::motor_data &motor_m
 	motor_msg.current_in 	= buffer_get_float16(frame_buf, 10.0, &ind);
 	motor_msg.duty_now 		= buffer_get_float16(frame_buf, 1000.0, &ind);
 }
+
+bool VescCan::set_vesc_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response){
+	int retval = set_rpm(this->can_sock, request.can_id, this->self_can_id, request.e_rpm);
+	if(retval == 0){
+		response.status = 0;
+		return true;
+	}else{
+		return false;
+	}
+}
+VescCan::VescCan(int s, int id){
+	can_sock = s;
+	self_can_id = id;
+}
