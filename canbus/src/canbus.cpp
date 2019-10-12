@@ -12,8 +12,8 @@ int main(int argc, char** argv){
 	ROS_INFO("ROS init success");
 
 	std::vector<CanDevice> can_devices;
-	std::vector<UwbNode> nodes;
-	std::vector<canbus::motor_data> motor_msgs; // array of messages for each VESC
+	std::vector<UwbNode> nodes_vect;
+	std::vector<canbus::motor_data> motor_msgs_vect; // array of messages for each VESC
 	int nVescStartID 	= 0;
 	int nVescEndID 		= 0;
 
@@ -22,19 +22,19 @@ int main(int argc, char** argv){
 		ROS_INFO("CONFIG READ FAILED!");
 		UwbNode node;
 		node.id = 1;
-		nodes.push_back(node);
+		nodes_vect.push_back(node);
 		node.id = 2;
-		nodes.push_back(node);
+		nodes_vect.push_back(node);
 		node.id = 3;
-		nodes.push_back(node);
+		nodes_vect.push_back(node);
 		node.id = 4;
-		nodes.push_back(node);
+		nodes_vect.push_back(node);
 
 		canbus::motor_data temp_msg;
 		temp_msg.can_id = 5;
-		motor_msgs.push_back(temp_msg);
+		motor_msgs_vect.push_back(temp_msg);
 		temp_msg.can_id = 6;
-		motor_msgs.push_back(temp_msg);
+		motor_msgs_vect.push_back(temp_msg);
 
 	}else{
 		ROS_INFO("CONFIG READ SUCCESS!");
@@ -44,21 +44,25 @@ int main(int argc, char** argv){
 				ROS_INFO("Adding UWB Node");
 				UwbNode new_node;
 				new_node.id = can_devices[i].can_id;
-				nodes.push_back(new_node);
+				nodes_vect.push_back(new_node);
 			}else if((can_devices[i].type.compare("vesc")) == 0){
 				ROS_INFO("Adding VESC device.");
 				canbus::motor_data new_msg;
 				new_msg.can_id = can_devices[i].can_id;
 				new_msg.motor_type = can_devices[i].type;
-				motor_msgs.push_back(new_msg);
+				motor_msgs_vect.push_back(new_msg);
 			}
 		}
 	}
-	nVescEndID 	= motor_msgs[motor_msgs.size()-1].can_id;
-	nVescStartID 		= motor_msgs[0].can_id;
+	nVescEndID 		= motor_msgs_vect[motor_msgs_vect.size()-1].can_id;
+	nVescStartID 	= motor_msgs_vect[0].can_id;
 	int nVescID 	= nVescStartID;
 
-	nNodes 			= (nodes[nodes.size()-1].id - nodes[0].id) + 1;
+	nNodes 			= (nodes_vect[nodes_vect.size()-1].id - nodes_vect[0].id) + 1;
+
+	// make the vectors into normal arrays to avoid weirdness
+	(canbus::motor_data)* motor_msgs = motor_msgs_vect.data();
+	UwbNode* nodes = nodes_vect.data();
 
 	UWB_msg msg;
 	motor_data_msg motor_msg;
@@ -185,7 +189,7 @@ int main(int argc, char** argv){
 								motor_msgs[index].motor_type 	= "VESC";
 								motor_msgs[index].can_id 		= vesc_id;
 								
-								fill_msg_from_buffer(vesc_rx_buf, *(motor_msgs.data()+index));
+								fill_msg_from_buffer(vesc_rx_buf, &(motor_msgs[index]));
 
 								motor_data.publish(motor_msgs[index]); // publish motor data
 								break;}
