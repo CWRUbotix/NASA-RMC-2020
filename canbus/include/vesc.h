@@ -2,6 +2,8 @@
 #define VESC_H_
 
 #include <ros/ros.h>
+#include <std_srvs/Empty.h>
+#include <canbus/set_vesc_cmd.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
 #include <canbus/UWB_data.h>
@@ -28,8 +30,8 @@ class VescCan{
 	int can_sock, self_can_id;
 public:
 	VescCan(int s, int id);
-	bool set_vesc_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
-}
+	bool set_vesc_callback(canbus::set_vesc_cmd::Request& request, canbus::set_vesc_cmd::Response& response);
+};
 
 /**
  * takes a vesc communication buffer and fills a vector with valid can frames ready to be sent
@@ -68,7 +70,5 @@ void parse_motor_frames(std::vector<struct can_frame> &frames, std::vector<canbu
 void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg);
 
 void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::motor_data &motor_msg);
-
-bool set_vesc_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
 
 #endif

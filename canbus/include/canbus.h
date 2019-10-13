@@ -61,6 +61,8 @@ typedef struct {
 typedef struct {
 	string type;
 	uint8_t can_id;
+	canbus::UWB_data* uwb_msg;
+	canbus::motor_data* vesc_msg;
 }CanDevice;
 
 int get_nodes_from_file(string fname, string sType);

@@ -11,49 +11,77 @@ int main(int argc, char** argv){
 	
 	ROS_INFO("ROS init success");
 
-	std::vector<CanDevice> can_devices;
+	std::vector<CanDevice> can_devices_vect;
+	std::vector<CanDevice> vescs;
+	std::vector<CanDevice> uwb_nodes;
 	std::vector<UwbNode> nodes_vect;
 	std::vector<canbus::motor_data> motor_msgs_vect; // array of messages for each VESC
 	int nVescStartID 	= 0;
 	int nVescEndID 		= 0;
 
-	int config_read_status = read_can_config(can_config_fname, can_devices);
+	int config_read_status = read_can_config(can_config_fname, can_devices_vect);
 	if(config_read_status != 0){
 		ROS_INFO("CONFIG READ FAILED!");
-		UwbNode node;
-		node.id = 1;
-		nodes_vect.push_back(node);
-		node.id = 2;
-		nodes_vect.push_back(node);
-		node.id = 3;
-		nodes_vect.push_back(node);
-		node.id = 4;
-		nodes_vect.push_back(node);
+		CanDevice new_device;
+		new_device.type = "uwb";
+		new_device.can_id = 1;
+		can_devices_vect.push_back(new_device);
+		new_device.type = "uwb";
+		new_device.can_id = 2;
+		can_devices_vect.push_back(new_device);
+		new_device.type = "uwb";
+		new_device.can_id = 3;
+		can_devices_vect.push_back(new_device);
+		new_device.type = "uwb";
+		new_device.can_id = 4;
+		can_devices_vect.push_back(new_device);
+		
 
-		canbus::motor_data temp_msg;
-		temp_msg.can_id = 5;
-		motor_msgs_vect.push_back(temp_msg);
-		temp_msg.can_id = 6;
-		motor_msgs_vect.push_back(temp_msg);
-
+		new_device.type = "vesc";
+		new_device.can_id = 5;
+		can_devices_vect.push_back(new_device);
+		new_device.type = "vesc";
+		new_device.can_id = 6;
+		can_devices_vect.push_back(new_device);
 	}else{
 		ROS_INFO("CONFIG READ SUCCESS!");
-		ROS_INFO("Read %d lines from can config file.", can_devices.size());
-		for(int i = 0; i < can_devices.size(); i++){
-			if((can_devices[i].type.compare("uwb")) == 0){
-				ROS_INFO("Adding UWB Node");
-				UwbNode new_node;
-				new_node.id = can_devices[i].can_id;
-				nodes_vect.push_back(new_node);
-			}else if((can_devices[i].type.compare("vesc")) == 0){
-				ROS_INFO("Adding VESC device.");
-				canbus::motor_data new_msg;
-				new_msg.can_id = can_devices[i].can_id;
-				new_msg.motor_type = can_devices[i].type;
-				motor_msgs_vect.push_back(new_msg);
-			}
+		ROS_INFO("Read %d lines from can config file.", (int)can_devices_vect.size());
+	}
+
+	CanDevice can_devices[can_devices_vect.back().can_id]; // make our array of can devices
+
+	// find out how many of each node exists
+	int nVescs = 0, nUwbNodes = 0;
+	for(int i = 0; i < can_devices_vect.size(); i++){
+		if((can_devices_vect[i].type.compare("uwb")) == 0){
+			ROS_INFO("Adding UWB Node");
+			nUwbNodes++;
+		}else if((can_devices_vect[i].type.compare("vesc")) == 0){
+			ROS_INFO("Adding VESC device.");
+			nVescs++;
 		}
 	}
+
+	// allocate memory for those nodes
+	canbus::UWB_data UWB_msgs_arr[nUwbNodes];
+	canbus::motor_data motor_msgs_arr[nVescs];
+	
+	int UwbInd = 0, VescInd = 0;
+	for(int i = can_devices_vect.front().can_id; i < can_devices_vect.back().can_id; i++){
+		if((can_devices_vect[i].type.compare("uwb")) == 0){
+			can_devices[i].type = "uwb";
+			can_devices[i].can_id = i;
+			can_devices[i].uwb_msg = &(UWB_msgs_arr[UwbInd++]);
+		}else if((can_devices_vect[i].type.compare("vesc")) == 0){
+			can_devices[i].type = "vesc";
+			can_devices[i].can_id = i;
+			can_devices[i].vesc_msg = &(motor_msgs_arr[VescInd++]);
+		}else{
+			// do nothing
+		}
+	}
+
+
 	nVescEndID 		= motor_msgs_vect[motor_msgs_vect.size()-1].can_id;
 	nVescStartID 	= motor_msgs_vect[0].can_id;
 	int nVescID 	= nVescStartID;
@@ -61,7 +89,7 @@ int main(int argc, char** argv){
 	nNodes 			= (nodes_vect[nodes_vect.size()-1].id - nodes_vect[0].id) + 1;
 
 	// make the vectors into normal arrays to avoid weirdness
-	(canbus::motor_data)* motor_msgs = motor_msgs_vect.data();
+	canbus::motor_data motor_msgs[motor_msgs_vect.size()];
 	UwbNode* nodes = nodes_vect.data();
 
 	UWB_msg msg;
@@ -147,12 +175,13 @@ int main(int argc, char** argv){
 				int8_t id 	= (int8_t)(rx_frame.can_id & 0xFF);
 				switch(cmd){
 					case CAN_PACKET_STATUS:{
-						int index = id - nVescStartID;
-						if(id <= 0){
+						CanDevice vesc = can_devices[id];
+
+						if(vesc.vesc_msg == NULL || vesc.type.compare("vesc") == 0){
 							break;
 						}
-						fill_msg_from_status_packet(rx_frame.data, motor_msgs[index]);
-						motor_data.publish(motor_msgs[index]);
+						fill_msg_from_status_packet(rx_frame.data, *(vesc.vesc_msg));
+						motor_data.publish(*(vesc.vesc_msg));
 						break;}
 					case CAN_PACKET_FILL_RX_BUFFER:{
 						if(id != 0x00){
@@ -183,21 +212,22 @@ int main(int argc, char** argv){
 							// error in transmission
 							break;
 						}
-
-						int index = vesc_id - nVescStartID;
-						if(index < 0){break;}
+						CanDevice vesc = can_devices[vesc_id];
+						if(vesc.vesc_msg == NULL || vesc.type.compare("vesc") == 0){
+							break;
+						}
 						
 						ind = 0;
 						int comm_cmd = vesc_rx_buf[ind++];
 						switch(comm_cmd){
 							case COMM_GET_VALUES:{
-								motor_msgs[index].timestamp 	= ros::Time::now();
-								motor_msgs[index].motor_type 	= "VESC";
-								motor_msgs[index].can_id 		= vesc_id;
+								vesc.vesc_msg->timestamp 	= ros::Time::now();
+								vesc.vesc_msg->motor_type 	= "VESC";
+								vesc.vesc_msg->can_id 		= vesc_id;
 								
-								fill_msg_from_buffer(vesc_rx_buf, &(motor_msgs[index]));
+								fill_msg_from_buffer(vesc_rx_buf, *(vesc.vesc_msg));
 
-								motor_data.publish(motor_msgs[index]); // publish motor data
+								motor_data.publish(*(vesc.vesc_msg)); // publish motor data
 								break;}
 						}
 
@@ -209,18 +239,19 @@ int main(int argc, char** argv){
 				rx_id = rx_id & CAN_SFF_MASK;
 				if(rx_id <= nNodes){ 
 					// yes this is an UWB node
+					CanDevice uwb_boi = can_devices[rx_id];
 					memcpy(&rx_buf, rx_frame.data, 8);
 					dist_data.type = rx_buf[0];
 					dist_data.anchor_id = rx_buf[1];
 					memcpy(&(dist_data.distance), rx_buf+2, sizeof(dist_data.distance));
 					memcpy(&(dist_data.confidence), rx_buf+6, 2);
 					ROS_INFO("Distance from node %d to anchor %d: %.3f m", rx_id, dist_data.anchor_id, dist_data.distance);
-					msg.timestamp 	= ros::Time::now();
-					msg.node_id 	= rx_id;
-					msg.anchor_id 	= dist_data.anchor_id;
-					msg.distance 	= dist_data.distance;
-					msg.confidence 	= dist_data.confidence;
-					can_pub.publish(msg);
+					uwb_boi.uwb_msg->timestamp 	= ros::Time::now();
+					uwb_boi.uwb_msg->node_id 	= rx_id;
+					uwb_boi.uwb_msg->anchor_id 	= dist_data.anchor_id;
+					uwb_boi.uwb_msg->distance 	= dist_data.distance;
+					uwb_boi.uwb_msg->confidence = dist_data.confidence;
+					can_pub.publish(*(uwb_boi.uwb_msg));
 				}
 			}
 		}
