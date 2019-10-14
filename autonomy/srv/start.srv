@@ -1,0 +1,6 @@
+# Service that triggers Automodule to start the run
+# If received true, start the run, if received false
+
+bool start
+---
+bool confirm

@@ -30,8 +30,8 @@ devel_isolated/
 .cproject
 
 # pycharm stuff
-.idea/*
-venv/
+.idea
+venv
 
 # qcreator stuff
 CMakeLists.txt.user
