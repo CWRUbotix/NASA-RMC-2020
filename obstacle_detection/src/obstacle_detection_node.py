@@ -175,16 +175,16 @@ class ObstacleDetectionNode:
             plt.close()
 
     def listen_for_frames(self):
-        while True:
+        while not rospy.is_shutdown():
             frames = self.listener.waitForNewFrame()
             depth_frame = frames["depth"]
             color = frames["color"]
-            self.registration.apply(color, depth_frame, self.undistorted, self.egistered)
+            self.registration.apply(color, depth_frame, self.undistorted, self.registered)
             color_frame = self.registered.asarray(np.uint8)
 
             img = depth_frame.asarray(np.float32)
             img = cv2.flip(img, 1)
-
+            cv2.imshow('frame', img)
             # TODO: Detect obstacles
             self.detect_obstacles_from_above(img)
 
@@ -199,5 +199,6 @@ class ObstacleDetectionNode:
 
 if __name__ == '__main__':
     obstacle_detection = ObstacleDetectionNode()
+    print('Listening for frames...')
     obstacle_detection.listen_for_frames()
 
