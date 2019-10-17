@@ -10,3 +10,5 @@ float32 e_rpm
 # 1: no confirmation received from VESC
 # 2: CAN write error
 int8 status
+
+time timestamp

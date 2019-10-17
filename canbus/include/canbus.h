@@ -24,6 +24,7 @@
 #define MAX_NUM_NODES 4
 #define MAX_NUM_ANCHORS 3
 #define MAX_CAN_TRIES 3
+#define TX_RX_BUFFER_SIZE 256
 using namespace std;
 
 using std::string;
@@ -34,10 +35,13 @@ const string x_header 				= "x";
 const string y_header 				= "y";
 const string anchor_str 			= "anchor";
 const string node_str 				= "node";
-const string node_config_fname 		= "/home/ros/ros_catkin_ws/src/canbus/include/node_config.csv";
-const string can_config_fname 		= "/home/ros/ros_catkin_ws/src/canbus/include/can_config.csv";
+const string node_config_fname 		= "conf/node_config.csv";
+const string can_config_fname 		= "conf/hw_config.csv";
+const std::string device_if_hddr 	= "interface";
 const std::string device_type_hddr 	= "device_type";
-const std::string can_id_hddr 		= "can_id";
+const std::string can_id_hddr 		= "device_id";
+const std::string device_name_hddr 	= "name";
+
 int nNodes = 0;
 int nAnchors = 0;
 
@@ -61,8 +65,10 @@ typedef struct {
 typedef struct {
 	string type;
 	uint8_t can_id;
+	string name;
 	canbus::UWB_data* uwb_msg;
 	canbus::motor_data* vesc_msg;
+
 }CanDevice;
 
 int get_nodes_from_file(string fname, string sType);
