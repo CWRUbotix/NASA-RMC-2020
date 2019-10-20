@@ -33,7 +33,7 @@ def a_star(start, end, grid):
 
 #    print(str(startVertex))
 #    print(str(endVertex))
-    if grid.blocked(*startVertex.get_indices()) or grid.blocked(*endVertex.get_indices()):
+    if grid.is_probably_blocked(*startVertex.get_indices()) or grid.is_probably_blocked(*endVertex.get_indices()):
         print("Start or end is blocked")
         return
 
@@ -80,7 +80,7 @@ def updateHeuristic(end, grid):
     for i in range(grid.num_rows):
         for j in range(grid.num_cols):
             v = grid.getVertex(i, j)
-            v.setHeuristic(v.distanceTo(end))
+            v.setHeuristic(5 * v.get_prob_blocked() + v.distanceTo(end))
 
 
 def post_process(path, grid):
@@ -94,13 +94,16 @@ def post_process(path, grid):
 
 def theta_star(path, grid):
     index = 0
+    counter = 1
     while True:
         if index < len(path.path) - 2:  # If not at end of path - the nodes that will be joined
-            if not checkBlocked(path.path[index], path.path[index + 2], grid):  # if there is a line of sigh
+            if not checkBlocked(path.path[index], path.path[index + 2], grid) and counter % 10 != 0:  # if there is a line of sight
                 path.path[index + 2].setParent(path.path[index])  # Join the two end nodes
                 path.delete(path.path[index + 1])  # and cut out the middle node
+                counter += 1
             else:
                 index += 1  # check the next node
+                counter = 1
         else:
             break  # Stop when end of path reached
 
@@ -131,9 +134,22 @@ def remove_adjacents(path, unit_dist):
 def checkBlocked(p1, p2, grid):
     v1 = grid.getGridIndices(p1.getX(), p1.getY())  # Get indices of the two points
     v2 = grid.getGridIndices(p2.getX(), p2.getY())
-    for i in range(int(min(v1[0], v2[0])), int(max(v1[0], v2[0])) + 1):  # In the whole block (not line?) see if blocked
-        for j in range(int(min(v1[1], v2[1])), int(max(v1[1], v2[1])) + 1):
-            if grid.blocked(i, j):
-                return True
+    x_start = min(v1[0], v2[0])
+    x_end = max(v1[0], v2[0])
+    y_start = min(v1[1], v2[1])
+    y_end = max(v1[1], v2[1])
+    dx = x_end - x_start
+    dy = y_end - y_start
+    dist = (dx**2 + dy**2)**0.5
+    dx = dx/dist
+    dy = dy/dist
+    # print(x_start, x_end, y_start, y_end, dist, dx, dy)
+    for i in range(int(math.ceil(dist))):
+        x = x_start + dx * i
+        y = y_start + dy * i
+        # Check squares around x and y coords
+        for r in range(int(math.floor(x)), int(math.ceil(x) + 1)):
+            for c in range(int(math.floor(y)), int(math.ceil(y) + 1)):
+                if grid.is_probably_blocked(r, c):
+                    return True
     return False
-

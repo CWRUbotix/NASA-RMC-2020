@@ -5,7 +5,7 @@ import sys
 
 # Global Variables
 ERROR_BOUND = 0.05
-CLEARANCE = 0.0
+CLEARANCE = 0.3
 GRID_SIZE = 0.15
 
 
@@ -97,25 +97,41 @@ class Grid(object):
 
         for r in y_coords:
             for c in x_coords:
-                if not self.blocked(r, c) and not (r == row_index and c == col_index):
+                if not self.out_of_bounds(r, c) and not (r == row_index and c == col_index) and not \
+                   self.is_probably_blocked(r, c):
                     neighbors.append(self.getVertex(r, c))
         return neighbors
 
-    def blocked(self, row_index, col_index):
+    def out_of_bounds(self, row_index, col_index):
         if row_index < 0 or row_index > self.num_rows-1:
             return True
         if col_index < 0 or col_index > self.num_cols-1:
             return True
 
-        return self.vertices[int(row_index)][int(col_index)].get_blocked()
+        return False
+
+    def is_probably_blocked(self, row_index, col_index):
+        return self.vertices[row_index][col_index].get_blocked()
+
+    def get_prob_blocked(self, row_index, col_index):
+        return self.vertices[row_index][col_index].get_prob_blocked()
 
     def addObstacle(self, obs):
-        o1 = self.getGridIndices(obs.getCenter()[0] - obs.getRadius() - CLEARANCE, obs.getCenter()[1] - obs.getRadius() - CLEARANCE)
-        o2 = self.getGridIndices(obs.getCenter()[0] + obs.getRadius() + CLEARANCE, obs.getCenter()[1] + obs.getRadius() + CLEARANCE)
-        # print(str(o1), str(o2))
-        for i in range(int(o1[0]), int(o2[0])+1):
-            for j in range(int(o1[1]), int(o2[1])+1):
-                self.vertices[i][j].set_blocked(True)
+        extra_space = 0.5
+        o1 = self.getGridIndices(obs.getCenter()[0] - obs.getRadius() - CLEARANCE - extra_space, obs.getCenter()[1] - obs.getRadius() - CLEARANCE - extra_space)
+        o2 = self.getGridIndices(obs.getCenter()[0] + obs.getRadius() + CLEARANCE + extra_space, obs.getCenter()[1] + obs.getRadius() + CLEARANCE + extra_space)
+        for i in range(o1[0], o2[0]+1):
+            for j in range(o1[1], o2[1]+1):
+                centerx = self.getGridIndices(obs.getCenter()[0], obs.getCenter()[1])[0]
+                centery = self.getGridIndices(obs.getCenter()[0], obs.getCenter()[1])[1]
+                dist_sq = (i-centerx)**2 + (j-centery)**2
+                radius_sq = ((obs.getRadius())/self.unit_width) ** 2
+                if dist_sq <= radius_sq + (CLEARANCE/self.unit_width)**2:
+                    self.vertices[i][j].set_prob_blocked(1)
+                else:
+                    guassian = 50 * 1/(2 * math.pi * radius_sq) * math.exp(-0.2 * dist_sq / radius_sq)
+                    self.vertices[i][j].set_prob_blocked(max(guassian, self.vertices[i][j].get_prob_blocked()))
+
 
     def getGridIndices(self, x_pos, y_pos):
         col_index = min(self.num_cols - 1, max(int(x_pos / self.unit_width), 0))
@@ -203,7 +219,7 @@ class Vertex(Position):
         self.heuristic = float('inf')
         self.row = row
         self.col = col
-        self.blocked = False
+        self.prob_blocked = 0
 
     def __lt__(self, other):
         return self.dist + self.heuristic < other.getDistance() + other.getHeuristic()
@@ -251,9 +267,12 @@ class Vertex(Position):
         return self.row, self.col
 
     def get_blocked(self):
-        return self.blocked
+        return self.prob_blocked >= 0.6
 
-    def set_blocked(self, blocked):
-        self.blocked = blocked
+    def set_prob_blocked(self, prob_blocked):
+        self.prob_blocked = prob_blocked
+
+    def get_prob_blocked(self):
+        return self.prob_blocked
 
 

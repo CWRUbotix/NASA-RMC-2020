@@ -90,9 +90,10 @@ class InteractivePathTester:
             x.draw(win)
         for r in range(grid.num_rows):
             for c in range(grid.num_cols):
-                if grid.blocked(r, c):
+                if grid.get_prob_blocked(r, c) > 0.2:
                     ci = Circle(Point(((c+0.5) * grid.unit_width) * self.SCALE,
-                                      (self.arena_height-(r+0.5) * grid.unit_height) * self.SCALE), 0.05 * self.SCALE)
+                                      (self.arena_height-(r+0.5) * grid.unit_height) * self.SCALE),
+                                      grid.get_prob_blocked(r, c) * 0.08 * self.SCALE)
                     ci.setFill("green")
                     ci.setOutline("green")
                     ci.draw(win)

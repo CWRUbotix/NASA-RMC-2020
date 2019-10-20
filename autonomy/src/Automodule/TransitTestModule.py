@@ -3,7 +3,7 @@ import sys
 import math
 #import rospy
 from PathPlanning.PathPlanning import Grid, Obstacle, Position
-from PathPlanning.ThetaStar import create_path
+from PathPlanning.ThetaStar import create_path, checkBlocked
 from PathPlanning.InteractivePathTester import InteractivePathTester
 #from TestModule import turn_algo_2, conservative_drive, testShutdown
 
@@ -18,10 +18,14 @@ def rosTest():
 
 
 def softwareTest():
+
     print('checking pathplanning stuff')
-    p1 = Position(0, 0)
-    p2 = Position(0.5, 7.0)
+    p1 = Position(2, 0.5)
+    p2 = Position(0.5, 6.5)
     grid = Grid(p1, p2, 3.78, 7.38)
+    checkBlocked(Position(0, 0), Position(3, 1), grid)
+    # while True:
+    #     pass
     print(str(grid.unit_width))
     print(str(grid.unit_height))
     print(str(grid.num_cols))

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class PathFollower:
     def __init__(self, fuzzy_controller, path):
         self.fuzzy_controller = fuzzy_controller
