@@ -2,9 +2,13 @@
 #define HWCTRL_H_
 
 #include <ros/ros.h>
+#include <ros/spinner.h>
+#include <ros/callback_queue.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
-#include <canbus/set_vesc_cmd.h>
+#include <std_msgs/Empty.h>
+#include <canbus/SetVescCmd.h>
+#include <canbus/MotorData.h>
 #include <hwctrl/SetMotor.h>
 #include <string>
 #include <cstdio>
@@ -58,7 +62,7 @@ typedef enum ControlType {
 	CTRL_POSITION
 }ControlType;
 
-// struct to hold info about a motor
+// class to hold info about a motor
 class HwMotor{
 private:
 	char scratch_buf[1024];

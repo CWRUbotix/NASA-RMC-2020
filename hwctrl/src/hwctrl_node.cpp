@@ -1,14 +1,30 @@
 #include <hwctrl.h>
 
+boost::shared_ptr<ros::AsyncSpinner> async_spinner;
+
+
+void test_cb(const std_msgs::EmptyConstPtr& msg){
+  ROS_INFO("TEST 1");
+}
+
+void test_cb_2(const std_msgs::EmptyConstPtr& msg){
+  ROS_INFO("TEST 2");
+}
+
+
+
 int main(int argc, char** argv){
 	ROS_INFO("Hardware Controller Node");
 	ros::init(argc, argv, "hwctrl");
 	ros::NodeHandle n;
 	ros::Rate loop_rate(200); // 5ms loop rate
 
+	ros::Subscriber test_1_sub = n.subscribe<std_msgs::Empty>("test_1", 3, test_cb);
+	ros::Subscriber test_2_sub = n.subscribe<std_msgs::Empty>("test_2", 1, test_cb_2);
+
 
 	// client which sends commands to drive the VESC's
-	ros::ServiceClient set_vesc_client = n.serviceClient<canbus::set_vesc_cmd>("set_vesc");
+	ros::ServiceClient set_vesc_client = n.serviceClient<canbus::SetVescCmd>("set_vesc");
 	
 	// make the HwMotorIf object
 	HwMotorIf motor_if;
@@ -35,14 +51,18 @@ int main(int argc, char** argv){
 
 	ROS_INFO(motor_if.list_motors().c_str());
 
+	async_spinner.reset(new ros::AsyncSpinner(4));
+	async_spinner->start();
 	// MAIN LOOP
-	while(ros::ok()){
 
-		motor_if.maintain_next_motor();
+	// while(ros::ok()){
 
-		loop_rate.sleep();
-		ros::spinOnce();
-	}
-
+	// 	// motor_if.maintain_next_motor();
+		
+	// 	loop_rate.sleep();
+	// 	ros::spinOnce();
+	// }
+	// spinner.reset();
+	ros::waitForShutdown();
 	return 0;
 }

@@ -50,14 +50,14 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  UWB_data.msg
-  motor_data.msg
+  UwbData.msg
+  MotorData.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  set_vesc_cmd.srv
+  SetVescCmd.srv
 )
 
 ## Generate actions in the 'action' folder

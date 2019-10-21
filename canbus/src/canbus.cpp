@@ -149,6 +149,7 @@ int main(int argc, char** argv){
 	}
 
 	VescCan vesc_can_obj(s, 0); //
+	
 	// Provide the set_vesc service
 	// we have to do it after CAN is set up
 	ros::ServiceServer ser_vesc_srv = n.advertiseService("set_vesc", &VescCan::set_vesc_callback, &vesc_can_obj);

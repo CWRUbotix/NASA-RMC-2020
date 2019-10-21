@@ -4,8 +4,8 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
-#include <canbus/UWB_data.h>
-#include <canbus/motor_data.h>
+#include <canbus/UwbData.h>
+#include <canbus/MotorData.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -45,8 +45,8 @@ const std::string device_name_hddr 	= "name";
 int nNodes = 0;
 int nAnchors = 0;
 
-typedef canbus::UWB_data UWB_msg;
-typedef canbus::motor_data motor_data_msg;
+typedef canbus::UwbData UWB_msg;
+typedef canbus::MotorData motor_data_msg;
 
 typedef struct {
 	int id;

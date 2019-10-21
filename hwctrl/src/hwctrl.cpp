@@ -2,6 +2,7 @@
 
 void HwMotorIf::maintain_next_motor(){
 	HwMotor* motor = &(*(this->motor_it));
+	ROS_INFO("Maintaining motor %s", motor->name.c_str());
 	switch(motor->motor_type){
 		case(MOTOR_NONE):break;
 		case(MOTOR_VESC):{
@@ -22,7 +23,7 @@ void HwMotorIf::maintain_next_motor(){
 			}
 			motor->last_setpoint = motor->last_setpoint + delta; // the new setpoint based on delta
 			
-			canbus::set_vesc_cmd cmd;
+			canbus::SetVescCmd cmd;
 			cmd.request.can_id 	= motor->id; // motor id should be the can_id
 			cmd.request.e_rpm 	= motor->rpm_coef * motor->last_setpoint;
 
@@ -31,6 +32,8 @@ void HwMotorIf::maintain_next_motor(){
 				if(cmd.response.status == 0){
 					motor->update_t = cmd.response.timestamp;
 				}
+			}else{
+				ROS_INFO("No dice");
 			}
 			break;}
 		case(MOTOR_BRUSHED):{
