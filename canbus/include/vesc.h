@@ -3,12 +3,11 @@
 
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
-#include <canbus/set_vesc_cmd.h>
+#include <canbus/SetVescCmd.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
-#include <canbus/UWB_data.h>
-#include <canbus/motor_data.h>
-#include <canbus/set_vesc_cmd.h>
+#include <canbus/UwbData.h>
+#include <canbus/MotorData.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -30,7 +29,7 @@ class VescCan{
 	int can_sock, self_can_id;
 public:
 	VescCan(int s, int id);
-	bool set_vesc_callback(canbus::set_vesc_cmd::Request& request, canbus::set_vesc_cmd::Response& response);
+	bool set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response);
 };
 
 /**
@@ -65,10 +64,10 @@ int set_rpm(int sock, int target_id, int self_id, float rpm);
 int get_values(int sock, int target_id, int self_id);
 
 
-void parse_motor_frames(std::vector<struct can_frame> &frames, std::vector<canbus::motor_data> &motor_msgs);
+void parse_motor_frames(std::vector<struct can_frame> &frames, std::vector<canbus::MotorData> &motor_msgs);
 
-void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg);
+void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::MotorData &motor_msg);
 
-void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::motor_data &motor_msg);
+void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::MotorData &motor_msg);
 
 #endif
