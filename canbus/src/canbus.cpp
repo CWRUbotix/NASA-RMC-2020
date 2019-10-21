@@ -65,8 +65,8 @@ int main(int argc, char** argv){
 	ROS_INFO("nUwbNodes: %d, nVescs: %d", nUwbNodes, nVescs);
 
 	// allocate memory for the messages
-	canbus::UWB_data UWB_msgs_arr[nUwbNodes];
-	canbus::motor_data motor_msgs_arr[nVescs];
+	canbus::UwbData UWB_msgs_arr[nUwbNodes];
+	canbus::MotorData motor_msgs_arr[nVescs];
 	
 	int UwbInd 			= 0;
 	int VescInd 		= 0;
