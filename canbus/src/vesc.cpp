@@ -98,11 +98,11 @@ int get_values(int sock, int target_id, int self_id){
 	return send_short_buf(sock, target_id, self_id, COMM_GET_VALUES);
 }
 
-void handle_vesc_frame(struct can_frame frame, std::vector<canbus::motor_data> &motor_msgs){
+void handle_vesc_frame(struct can_frame frame, std::vector<canbus::MotorData> &motor_msgs){
 
 }
 
-void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg){
+void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::MotorData &motor_msg){
 	int ind = 1;
 	motor_msg.temp_mos1 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
 	motor_msg.temp_mos2 			= buffer_get_float16(vesc_rx_buf, 10.0, 	&ind);
@@ -122,14 +122,14 @@ void fill_msg_from_buffer(uint8_t* vesc_rx_buf, canbus::motor_data &motor_msg){
 	motor_msg.fault_code 			= (int8_t)vesc_rx_buf[ind++];
 }
 
-void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::motor_data &motor_msg){
+void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::MotorData &motor_msg){
 	int ind = 0;
 	motor_msg.rpm 			= buffer_get_float32(frame_buf, 1.0, &ind);
 	motor_msg.current_in 	= buffer_get_float16(frame_buf, 10.0, &ind);
 	motor_msg.duty_now 		= buffer_get_float16(frame_buf, 1000.0, &ind);
 }
 
-bool VescCan::set_vesc_callback(canbus::set_vesc_cmd::Request& request, canbus::set_vesc_cmd::Response& response){
+bool VescCan::set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response){
 	int retval = set_rpm(this->can_sock, request.can_id, this->self_can_id, request.e_rpm);
 	if(retval == 0){
 		response.status = 0;
