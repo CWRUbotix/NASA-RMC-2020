@@ -18,7 +18,6 @@ def rosTest():
 
 
 def softwareTest():
-
     print('checking pathplanning stuff')
     p1 = Position(2, 0.5)
     p2 = Position(0.5, 6.5)

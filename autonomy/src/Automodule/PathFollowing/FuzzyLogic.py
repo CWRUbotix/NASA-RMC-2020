@@ -29,19 +29,34 @@ class FuzzySet:
 
 
 class FuzzyLogic:
-    def __init__(self, set1, set2, rules):
-        self.set1 = set1
-        self.set2 = set2
+    def __init__(self, rules, *sets):
+        self.set1 = sets[0]
+
+        if len(sets) == 2:
+            self.set2 = sets[1]
+        else:
+            self.set2 = None
+
         self.rules = rules
 
-    def crisp_output(self, x1, x2):
+        if len(sets) != len(rules.shape):
+            raise Exception("Wrong number of sets for rule base")
+
+    def crisp_output(self, *xs):
+        x1 = xs[0]
         y1 = self.set1.get_membership(x1)
-        y2 = self.set2.get_membership(x2)
 
-        crisp_output = np.dot(np.dot(y1, self.rules), y2.T)
+        if self.set2:
+            x2 = xs[1]
+            y2 = self.set2.get_membership(x2)
 
-        return crisp_output
+            crisp_output = np.dot(np.dot(y1, self.rules), y2.T)
 
+            return crisp_output
+        else:
+            crisp_output = np.sum(np.dot(y1, self.rules))
+
+            return crisp_output
 
 if __name__ == "__main__":
     error_centers = np.array([-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6])
@@ -65,13 +80,15 @@ if __name__ == "__main__":
                       [NS, ZO, PS, PM, PM, PB, PB],
                       [ZO, PS, PM, PB, PM, PB, PB]])
 
-    fuzzy_controller = FuzzyLogic(error_set, error_dot_set, rules)
+    fuzzy_controller = FuzzyLogic(rules, error_set, error_dot_set)
+    fuzzy_controller_2 = FuzzyLogic(rules[3], error_set)
 
-    x = np.arange(-1, 1, 0.1)
-    y = np.array([-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3])
+    print(fuzzy_controller.crisp_output(0, 0))
+    print(fuzzy_controller_2.crisp_output(0))
 
-    for value in y:
-        plt.plot(x, [fuzzy_controller.crisp_output(x1, value) for x1 in x])
-    plt.show()
-    # print(fuzzy_controller.crisp_output(0, 0))
-
+    # x = np.arange(-1, 1, 0.1)
+    # y = np.array([-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3])
+    #
+    # for value in y:
+    #     plt.plot(x, [fuzzy_controller.crisp_output(x1, value) for x1 in x])
+    # plt.show()
