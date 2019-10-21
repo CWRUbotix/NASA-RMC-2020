@@ -6,7 +6,7 @@ int main(int argc, char** argv){
 	ros::NodeHandle n;
 
 	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
-	ros::Publisher motor_data = n.advertise<motor_data_msg>("motor_data", 1024);
+	ros::Publisher MotorData = n.advertise<MotorData_msg>("MotorData", 1024);
 	ros::Rate loop_rate(50); // 20ms loop rate
 	
 	ROS_INFO("ROS init success");
@@ -65,8 +65,8 @@ int main(int argc, char** argv){
 	ROS_INFO("nUwbNodes: %d, nVescs: %d", nUwbNodes, nVescs);
 
 	// allocate memory for the messages
-	canbus::UWB_data UWB_msgs_arr[nUwbNodes];
-	canbus::motor_data motor_msgs_arr[nVescs];
+	canbus::UwbData UWB_msgs_arr[nUwbNodes];
+	canbus::MotorData motor_msgs_arr[nVescs];
 	
 	int UwbInd 			= 0;
 	int VescInd 		= 0;
@@ -106,7 +106,7 @@ int main(int argc, char** argv){
 	nNodes 			= nUwbNodes;
 
 	UWB_msg msg;
-	motor_data_msg motor_msg;
+	MotorData_msg motor_msg;
 	int s;
 	int nbytes;
 	struct sockaddr_can addr;
@@ -195,7 +195,7 @@ int main(int argc, char** argv){
 							break;
 						}
 						fill_msg_from_status_packet(rx_frame.data, *(vesc->vesc_msg));
-						motor_data.publish(*(vesc->vesc_msg));
+						MotorData.publish(*(vesc->vesc_msg));
 						break;}
 					case CAN_PACKET_FILL_RX_BUFFER:{
 						if(id != 0x00){
@@ -241,7 +241,7 @@ int main(int argc, char** argv){
 								
 								fill_msg_from_buffer(vesc_rx_buf, *(vesc->vesc_msg));
 
-								motor_data.publish(*(vesc->vesc_msg)); // publish motor data
+								MotorData.publish(*(vesc->vesc_msg)); // publish motor data
 								break;}
 						}
 

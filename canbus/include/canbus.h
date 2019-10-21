@@ -46,7 +46,7 @@ int nNodes = 0;
 int nAnchors = 0;
 
 typedef canbus::UwbData UWB_msg;
-typedef canbus::MotorData motor_data_msg;
+typedef canbus::MotorData MotorData_msg;
 
 typedef struct {
 	int id;
@@ -66,8 +66,8 @@ typedef struct {
 	string type;
 	uint8_t can_id;
 	string name;
-	canbus::UWB_data* uwb_msg;
-	canbus::motor_data* vesc_msg;
+	canbus::UwbData* uwb_msg;
+	canbus::MotorData* vesc_msg;
 
 }CanDevice;
 
