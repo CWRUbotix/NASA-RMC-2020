@@ -42,7 +42,7 @@ int main(int argc, char** argv){
 	}
 
 	int nCanDevices = can_devices_vect.size();
-	ROS_INFO("Number of CAN devices (including ourself): %d", nCanDevices);
+	ROS_INFO("Number of CAN devices (including ourself): %d", nCanDevices + 1);
 
 	// make our array of can devices
 	// each device will be at index == can_id
@@ -99,7 +99,7 @@ int main(int argc, char** argv){
 			// do nothing
 		}
 	}
-
+	ROS_INFO("Vesc Start,end ID: %d, %d",nVescStartID, nVescEndID);
 	int nVescID 	= nVescStartID;
 
 	int node_ind 	= nUwbStartID;
