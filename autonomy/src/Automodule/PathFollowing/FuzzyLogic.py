@@ -3,10 +3,12 @@ import matplotlib.pyplot as plt
 
 
 class FuzzySet:
-    def __init__(self, centers, left_widths, right_widths):
-        self.centers = centers
-        self.left_widths = left_widths
-        self.right_widths = right_widths
+    def __init__(self, fuzzy_set):
+        fuzzy_set = np.array(fuzzy_set)
+
+        self.centers = fuzzy_set[:, 1]
+        self.left_widths = fuzzy_set[:, 0]
+        self.right_widths = fuzzy_set[:, 2]
 
     def get_membership(self, x):
         memberships = []
@@ -24,6 +26,9 @@ class FuzzySet:
         members = []
         for center, left, right in zip(self.centers, self.left_widths, self.right_widths):
             members.append([[center - left, 0], [center, 1], [center + right, 0]])
+
+        # for member in members:
+        #     plt.plot(member[:, 0], member[:, 1])
 
         return np.array(members)
 
@@ -58,18 +63,16 @@ class FuzzyLogic:
 
             return crisp_output
 
+
 if __name__ == "__main__":
-    error_centers = np.array([-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6])
-    error_left_widths = np.array([1000, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2])
-    error_right_widths = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 1000])
+    error_set = [[1e99, -0.6, 0.2], [0.2, -0.4, 0.2], [0.2, -0.2, 0.2],
+                 [0.2, 0, 0.2], [0.2, 0.2, 0.2], [0.2, 0.4, 0.2], [0.2, 0.6, 1e99]]
 
-    error_dot_centers = np.array([-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3])
-    error_dot_left_widths = np.array([1000, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
-    error_dot_right_widths = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1000])
+    error_dot_set = [[1e99, -0.3, 0.1], [0.1, -0.2, 0.1], [0.1, -0.1, 0.1],
+                     [0.1, 0, 0.1], [0.1, 0.1, 0.1], [0.1, 0.2, 0.1], [0.1, 0.3, 1e99]]
 
-    error_set = FuzzySet(error_centers, error_left_widths, error_right_widths)
-    error_dot_set = FuzzySet(error_dot_centers, error_dot_left_widths, error_dot_right_widths)
-    members = error_set.draw()
+    error_set = FuzzySet(error_set)
+    error_dot_set = FuzzySet(error_dot_set)
 
     NB, NM, NS, ZO, PS, PM, PB = -1.5 * np.pi, -1 * np.pi, -0.5 * np.pi, 0, 0.5 * np.pi, 1 * np.pi, 1.5 * np.pi
     rules = np.array([[NB, NB, NM, NB, NM, NS, ZO],
@@ -85,6 +88,23 @@ if __name__ == "__main__":
 
     print(fuzzy_controller.crisp_output(0, 0))
     print(fuzzy_controller_2.crisp_output(0))
+
+    curvature_set = [[1e99, 0, 5], [5, 5, 5], [5, 10, 5], [5, 15, 5], [5, 20, 1e99]]
+
+    curvature_rules = np.array([0.5, 0.675, 0.75, 0.825, 1])
+
+    curvature_set = FuzzySet(curvature_set)
+    curvature_controller = FuzzyLogic(curvature_rules, curvature_set)
+    members = curvature_set.draw()
+
+    for member in members:
+        plt.plot(member[:, 0], member[:, 1])
+    axes = plt.gca()
+    axes.set_xlim([-5, 30])
+
+    plt.show()
+
+    print(curvature_controller.crisp_output(1000))
 
     # x = np.arange(-1, 1, 0.1)
     # y = np.array([-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3])
