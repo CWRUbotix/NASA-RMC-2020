@@ -7,7 +7,7 @@ int main(int argc, char** argv){
 
 	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
 	ros::Publisher MotorData = n.advertise<MotorData_msg>("MotorData", 1024);
-	ros::Rate loop_rate(50); // 20ms loop rate
+	ros::Rate loop_rate(25); // 40ms loop rate
 	
 	ROS_INFO("ROS init success");
 
@@ -81,9 +81,10 @@ int main(int argc, char** argv){
 		if(j > nCanDevices){
 			continue;
 		}
+		ROS_INFO("Type, ID: %s, %d",can_devices_vect[i].type.c_str(), j);
 		if((can_devices_vect[i].type.compare("uwb")) == 0){
-			if(j < nVescStartID){nVescStartID = j;}
-			if(j > nVescEndID){nVescEndID = j;}
+			if(j < nUwbStartID){nUwbStartID = j;}
+			if(j > nUwbEndID){nUwbEndID = j;}
 			can_devices[j] = can_devices_vect[i];
 			can_devices[j].uwb_msg = &(UWB_msgs_arr[UwbInd]);
 			can_devices[j].uwb_msg->node_id = j;
@@ -104,6 +105,11 @@ int main(int argc, char** argv){
 
 	int node_ind 	= nUwbStartID;
 	nNodes 			= nUwbNodes;
+	int nAnchors 	= 3;
+	bool node_done 	= false;
+	bool uwb_range_next = true;
+	int anchor_frames = 0;
+	int uwb_timeout = 0;
 
 	UWB_msg msg;
 	MotorData_msg motor_msg;
@@ -156,15 +162,27 @@ int main(int argc, char** argv){
 	
 
 	while(ros::ok()){
-		// REQUEST DATA FROM NEXT UWB NODE
-		CanDevice* uwb_node = &(can_devices[node_ind]);
-		tx_frame.can_id = uwb_node->can_id | CAN_RTR_FLAG; 
-		tx_frame.can_dlc = 8;
-		nbytes = write(s, &tx_frame, sizeof(struct can_frame));
-
-		node_ind++;
+		
+		if(anchor_frames >= nAnchors){
+			node_ind++;
+			anchor_frames = 0;
+			uwb_range_next = true;
+		}
 		if(node_ind > nUwbEndID){
 			node_ind = nUwbStartID; // start back at the beginning
+		}
+
+		// REQUEST DATA FROM NEXT UWB NODE
+		if(uwb_range_next || uwb_timeout > 10){
+			CanDevice* uwb_node = &(can_devices[node_ind]);
+			tx_frame.can_id = uwb_node->can_id | CAN_RTR_FLAG; 
+			tx_frame.can_dlc = 8;
+			nbytes = write(s, &tx_frame, sizeof(struct can_frame));
+			uwb_range_next = false;
+			uwb_timeout = 0;
+		}else{
+			// ranging with last node not done yet
+			uwb_timeout++;
 		}
 
 		// REQUEST VALUES FROM NEXT VESC
@@ -251,8 +269,9 @@ int main(int argc, char** argv){
 			}else{
 				// we can assume this is a UWB message
 				rx_id = rx_id & CAN_SFF_MASK;
-				if(rx_id <= nUwbEndID && rx_id >= nUwbEndID){ 
+				if(rx_id <= nUwbEndID && rx_id >= nUwbStartID){	
 					// yes this is an UWB node
+					anchor_frames++;
 					CanDevice* uwb_boi = &(can_devices[rx_id]);
 					memcpy(&rx_buf, rx_frame.data, 8);
 					dist_data.type = rx_buf[0];
