@@ -1,5 +1,8 @@
 #include <canbus.h>
 
+
+
+
 int main(int argc, char** argv){
 	ROS_INFO("CANbus Node!!!!!");
 	ros::init(argc, argv, "canbus");
@@ -105,11 +108,7 @@ int main(int argc, char** argv){
 
 	int node_ind 	= nUwbStartID;
 	nNodes 			= nUwbNodes;
-	int nAnchors 	= 3;
-	bool node_done 	= false;
-	bool uwb_range_next = true;
-	int anchor_frames = 0;
-	int uwb_timeout = 0;
+	nAnchors 		= NUM_ANCHORS; // set in canbus.h
 
 	UWB_msg msg;
 	MotorData_msg motor_msg;
@@ -160,6 +159,8 @@ int main(int argc, char** argv){
 	// we have to do it after CAN is set up
 	ros::ServiceServer ser_vesc_srv = n.advertiseService("set_vesc", &VescCan::set_vesc_callback, &vesc_can_obj);
 	
+	// timer to continue to next UWB node in case of dropped packets
+	ros::Timer uwb_timeout_timer = n.createTimer(ros::Duration(0.25), uwb_timeout_cb, true); // this is a oneshot timer
 
 	while(ros::ok()){
 		
@@ -173,23 +174,22 @@ int main(int argc, char** argv){
 		}
 
 		// REQUEST DATA FROM NEXT UWB NODE
-		if(uwb_range_next || uwb_timeout > 10){
+		if(uwb_range_next){
 			CanDevice* uwb_node = &(can_devices[node_ind]);
 			tx_frame.can_id = uwb_node->can_id | CAN_RTR_FLAG; 
 			tx_frame.can_dlc = 8;
 			nbytes = write(s, &tx_frame, sizeof(struct can_frame));
 			uwb_range_next = false;
-			uwb_timeout = 0;
-		}else{
-			// ranging with last node not done yet
-			uwb_timeout++;
+			uwb_timeout_timer.stop();
+			uwb_timeout_timer.setPeriod(uwb_timeout_period);
+			uwb_timeout_timer.start();
 		}
 
 		// REQUEST VALUES FROM NEXT VESC
 		int vesc_success = get_values(s, nVescID, 0);
 
 		nVescID++;
-		if(nVescID >= nVescEndID){
+		if(nVescID > nVescEndID){
 			nVescID = nVescStartID; // start back at the beginning
 		}
 
@@ -385,4 +385,8 @@ int read_can_config(std::string fname, std::vector<CanDevice> &devices){
 	config_file.close();
 
 	return 0;
+}
+
+void uwb_timeout_cb(const ros::TimerEvent& event){
+	uwb_range_next = true;
 }

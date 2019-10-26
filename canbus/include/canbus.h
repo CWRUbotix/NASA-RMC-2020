@@ -23,6 +23,7 @@
 
 #define MAX_NUM_NODES 4
 #define MAX_NUM_ANCHORS 3
+#define NUM_ANCHORS MAX_NUM_ANCHORS
 #define MAX_CAN_TRIES 3
 #define TX_RX_BUFFER_SIZE 256
 using namespace std;
@@ -44,6 +45,11 @@ const std::string device_name_hddr 	= "name";
 
 int nNodes = 0;
 int nAnchors = 0;
+bool node_done 	= false;
+bool uwb_range_next = true;
+int anchor_frames = 0;
+int uwb_timeout = 0;
+ros::Duration uwb_timeout_period(0.25);
 
 typedef canbus::UwbData UWB_msg;
 typedef canbus::MotorData MotorData_msg;
@@ -74,5 +80,7 @@ typedef struct {
 int get_nodes_from_file(string fname, string sType);
 
 int read_can_config(string fname, std::vector<CanDevice> &devices);
+
+void uwb_timeout_cb(const ros::TimerEvent& event);
 
 #endif
