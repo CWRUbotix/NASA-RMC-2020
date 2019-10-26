@@ -1,0 +1,14 @@
+# id of the motor
+int8 can_id
+
+# target eRPM (setpoint) of the motor
+float32 e_rpm
+
+---
+# status - indicates success or failure
+# 0: success
+# 1: no confirmation received from VESC
+# 2: CAN write error
+int8 status
+
+time timestamp
