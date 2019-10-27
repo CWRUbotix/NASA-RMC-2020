@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.7
+#!/usr/env/bin/python
 
 import rospy
 import math

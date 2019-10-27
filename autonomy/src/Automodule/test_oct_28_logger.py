@@ -1,10 +1,12 @@
-#!/usr/local/bin/python3.7
+#!/usr/env/bin python
 
 import rospy
 import sys
 import time
 
 from hci.msg import sensorValue
+from nav_msgs import Odometry
+from scipy.spatial.transform import Rotation as R
 
 
 class robot_state:
@@ -70,11 +72,16 @@ def updateState(msg):
         currentState.acce1X = msg.value
 
 def updatePos(msg):
-    pass
+	pos = msg.pos.pose
+	currentState.x = pos.position.x
+	currentState.y = pos.position.y
+	quat = pos.orientation
+	theta = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
+	currentState.theta = euler[2]
 
 def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
-    rospy.Subscriber('', None, updatePos)
+    rospy.Subscriber('odometry/filtered_map', Odometry, updatePos)
 
 def shutdown():
     global logfile
