@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
-from canbus.msg import UWB_data
+from canbus.msg import UwbData
 from triangulation import UltraWideBandNode
 from unscented_localization import run_localization
 
@@ -115,8 +115,11 @@ class LocalizationNode:
                 node.add_measurement(msg.anchor_id, msg.distance, msg.confidence)
                 self.msg_counts[node.id] += 1
         for node in self.nodes:
+            if node.id == 2:
+                print(self.msg_counts[node.id])
             if self.msg_counts[node.id] >= 3:
                 node.get_position()
+                self.msg_counts[node.id] = 0
         avg_x = 0
         avg_y = 0
         total = 0
@@ -193,5 +196,5 @@ if __name__ == '__main__':
             uwb_node = UltraWideBandNode(sensor['id'], sensor['x'], sensor['y'], sensor['type'], sensors)
             localization_node.nodes.append(uwb_node)
 
-    sub = rospy.Subscriber(localization_node.topic, UWB_data, localization_node.position_callback)
+    sub = rospy.Subscriber(localization_node.topic, UwbData, localization_node.position_callback)
     rospy.spin()

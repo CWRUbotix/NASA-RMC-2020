@@ -27,10 +27,10 @@ ekf_se_odom:
   imu0_remove_gravitational_acceleration: true
 
   odom0: wheel
-  odom0_config: [true, true, false,
-                 false, false, false,
-                 true,  true,  true,
+  odom0_config: [false, false, false,
+                 true, true, false,
                  false, false, true,
+                 false, false, false,
                  false, false, false]
   odom0_queue_size: 10
   odom0_nodelay: true

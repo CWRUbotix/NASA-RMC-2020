@@ -33,6 +33,8 @@ class IMU:
         self.angular_velocity_marker = np.zeros(3)
         self.acceleration = np.zeros(3)
         self.acceleration_marker = np.zeros(3)
+        self.port_encoder = 0
+        self.starboard_encoder = 0
 
         self.orientation_plot = np.zeros(3)
         self.angular_velocity_plot = np.zeros(3)
@@ -47,6 +49,10 @@ class IMU:
             print(e)
 
     def sensor_callback(self, msg):
+        if msg.sensorID == 0:
+            self.port_encoder = msg.value
+        if msg.sensorID == 1:
+            self.starboard_encoder = msg.value
         if msg.sensorID == 30:
             self.orientation[0] = msg.value
             self.orientation_marker[0] = 1
@@ -135,7 +141,7 @@ class IMU:
         imu_msg.linear_acceleration_covariance = accel_cov
         try:
             pub = rospy.Publisher('imu', Imu, queue_size=10)
-            rospy.loginfo(imu_msg)
+            #rospy.loginfo(imu_msg)
             pub.publish(imu_msg)
         except rospy.ROSInterruptException as e:
             print(e.getMessage())
@@ -145,6 +151,7 @@ class IMU:
         header = Header()
         header.stamp = rospy.Time.now()
         header.frame_id = 'base_link'
+        #print('Port:', self.port_encoder, 'Starboard:', self.starboard_encoder)
         point_msg = Point(0, 0, 0)
         orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat() 
         pose_cov = np.ones(36) * 0
@@ -153,8 +160,11 @@ class IMU:
         pose_with_cov.pose = Pose(point_msg, quat_msg)
         pose_with_cov.covariance = pose_cov
 
-        linear_twist = Vector3(0, 0, 0)
-        angular_twist = Vector3(0, 0, 0)
+        x_dot = (((self.port_encoder * math.pi / 30 * 0.2286) + (self.starboard_encoder * math.pi / 30 * 0.2286)) / 2) * math.cos(self.orientation[-1])
+        y_dot = (((self.port_encoder * math.pi / 30 * 0.2286) + (self.starboard_encoder * math.pi / 30 * 0.2286)) / 2) * math.sin(self.orientation[-1])
+        theta_dot = ((self.port_encoder * math.pi / 30 * 0.2286) - (self.starboard_encoder * math.pi / 30 * 0.2286)) / 0.63
+        linear_twist = Vector3(x_dot, y_dot, 0)
+        angular_twist = Vector3(0, 0, theta_dot)
 
         twist_with_cov = TwistWithCovariance()
         twist_with_cov.twist = Twist(linear_twist, angular_twist)
