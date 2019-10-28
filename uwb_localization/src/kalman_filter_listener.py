@@ -16,7 +16,7 @@ from filterpy.stats import plot_covariance
 from scipy.spatial.transform import Rotation as R
 
 from std_msgs.msg import Header
-from geometry_msgs.msg import Quaternion, Vector3
+from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped
 from geometry_msgs.msg import Pose
 from nav_msgs.msg import Odometry
 
@@ -29,9 +29,12 @@ class KalmanFilterNode:
         rospy.init_node('kalman_filter_listener', anonymous=True)
         self.robot_x = []
         self.robot_y = []
-        self.robot_pitch = []
+        self.node_x = []
+        self.node_y = []
+        self.robot_yaw = []
+        self.node_yaw = []
         self.viz_dir = 'robot_localization_viz'
-        self.viz_step = 1
+        self.viz_step = 20
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -65,8 +68,7 @@ class KalmanFilterNode:
         ----------------
         kwargs : `~matplotlib.patches.Patch` properties
         """
-        
-        print(cov)
+
         pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
         # Using a special case to obtain the eigenvalues of this
         # two-dimensionl dataset.
@@ -104,14 +106,17 @@ class KalmanFilterNode:
         self.robot_y.append(pose.position.y)
         quat = pose.orientation
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-        self.robot_pitch.append(euler[2])  # rotation about vertical z-axis
-        print('X: %.4f \tY: %.4f \tpitch: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
+        self.robot_yaw.append(euler[2])  # rotation about vertical z-axis
+        print('X: %.4f \tY: %.4f \tyaw: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_yaw[-1]))
+        print('X: %.4f \tY: %.4f\tyaw: %.4f\n' % (self.node_x[-1], self.node_y[-1], self.node_yaw[-1]))
 
-        if len(self.robot_x) % self. viz_step == 0:
+        if len(self.robot_x) % self.viz_step == 0:
             fig, ax = plt.subplots()
-            ax.scatter(self.robot_x, self.robot_y, label='robot')
+            ax.scatter(self.robot_x, self.robot_y, label='kalman filter', alpha=0.2)
+            ax.scatter(self.node_x, self.node_y, label='node', alpha=0.2)
             self.confidence_ellipse(self.robot_x[-1], self.robot_y[-1], covariance[0: 2, 0: 2], ax, edgecolor='red')
-            ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(self.robot_pitch[-1]), .3 * math.sin(self.robot_pitch[-1]), head_width=0.1)
+            ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(self.robot_yaw[-1]), .3 * math.sin(self.robot_yaw[-1]), head_width=0.1)
+            ax.arrow(self.node_x[-1], self.node_y[-1], .3 * math.cos(self.node_yaw[-1]), .3 * math.sin(self.node_yaw[-1]), head_width=0.1)
             ax.legend(loc='best')
             ax.set_xlim(0, 5.2)
             ax.set_ylim(0, 6.05)
@@ -119,9 +124,16 @@ class KalmanFilterNode:
             fig.savefig(self.viz_dir + '/localization_%d.png' % (len(os.listdir(self.viz_dir))))
             plt.close()
 
+    def node_callback(self, msg):
+        self.node_x.append(msg.pose.pose.position.x)
+        self.node_y.append(msg.pose.pose.position.y)
+        quat = msg.pose.pose.orientation
+        euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
+        self.node_yaw.append(euler[2])
 
 
 if __name__ == '__main__':
     kalman_filter_node = KalmanFilterNode()
     sub = rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback)
+    rospy.Subscriber('uwb_nodes', PoseWithCovarianceStamped, kalman_filter_node.node_callback)
     rospy.spin()

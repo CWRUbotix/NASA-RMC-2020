@@ -1,4 +1,4 @@
-#!/usr/env/bin/python
+#!/usr/bin/env python3
 
 import rospy
 import math
@@ -16,19 +16,27 @@ def updateControl(event):
     x = x - win.winfo_rootx() - win.winfo_width() / 2
     y = y - win.winfo_rooty() - win.winfo_height() / 2
     theta = -math.atan2(y, x)
-    if math.cos(theta) >= 0 and theta >= 0:
+    if math.fabs(theta-math.pi / 2) < math.pi / 12:
         left = 1
-        right = math.cos(theta)
-    elif math.cos(theta) < 0 and theta >= 0:
-        left = math.fabs(math.cos(theta))
         right = 1
-    elif math.cos(theta) >= 0 and theta < 0:
+    elif theta >= math.pi / 2:
+        right = 1
+        left = math.cos(theta-math.pi / 2)
+    elif theta >= 0:
+        right = math.fabs(math.cos(theta - math.pi / 2))
+        left = 1
+    elif theta < -math.pi / 2:
+        right = math.cos(theta-math.pi / 2)
         left = -1
-        right = -math.cos(theta)
-    else:
-        left = math.cos(theta)
+    elif math.fabs(theta + math.pi / 2) < math.pi / 2:
+        left = -1
         right = -1
-
+    else:
+        right = -1
+        left = -math.cos(theta-math.pi / 2)
+   # print(theta)
+    print("left:", left * robot_speed)
+    print("right:", right * robot_speed)
     motor_pub.publish(motorID=0, value = left * robot_speed)
     motor_pub.publish(motorID=1, value = right * robot_speed)
     

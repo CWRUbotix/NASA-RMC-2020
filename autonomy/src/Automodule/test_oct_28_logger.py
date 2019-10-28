@@ -1,11 +1,12 @@
-#!/usr/env/bin python
+#!/usr/bin/env python3
 
 import rospy
 import sys
 import time
 
 from hci.msg import sensorValue
-from nav_msgs import Odometry
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from nav_msgs.msg import Odometry
 from scipy.spatial.transform import Rotation as R
 
 
@@ -72,16 +73,16 @@ def updateState(msg):
         currentState.acce1X = msg.value
 
 def updatePos(msg):
-	pos = msg.pos.pose
+	pos = msg.pose.pose
 	currentState.x = pos.position.x
 	currentState.y = pos.position.y
 	quat = pos.orientation
 	theta = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-	currentState.theta = euler[2]
+	currentState.theta = theta[2]
 
 def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
-    rospy.Subscriber('odometry/filtered_map', Odometry, updatePos)
+    rospy.Subscriber('uwb_nodes', PoseWithCovarianceStamped, updatePos)
 
 def shutdown():
     global logfile
@@ -106,6 +107,7 @@ def main():
         tag = 0
         for sensor in currentState:
             log += tags[tag] + str(sensor) + " "
+            tag += 1
         logfile.write(log[:len(log)-1] + "\n")
 
         rate.sleep()
