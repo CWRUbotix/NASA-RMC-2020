@@ -33,7 +33,7 @@ def softwareTest():
     obstacles = [Obstacle(3, 2.0, 0.35), Obstacle(0.5, 5, 0.35), Obstacle(0.5, 1.5, 0.35)]
 
     tester = InteractivePathTester(p1, p2, 3.78, 7.38, obstacles)
-    tester.update_image()
+    tester.update_path_and_draw()
 
     path = create_path(p1, p2, 3.78, 7.38, obstacles)
     print(path)

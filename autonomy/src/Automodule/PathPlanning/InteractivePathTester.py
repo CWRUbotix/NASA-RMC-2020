@@ -21,6 +21,8 @@ class InteractivePathTester:
         self.path = None
         self.robot = SkidSteerSimulator(2, 0, 1.5)
 
+        self.controller = PathFollower(self.path, self.robot.reference_point)
+
         self.win = GraphWin("Path", self.arena_width*self.SCALE, self.arena_height*self.SCALE, autoflush=False)
 
         self.win.bind("<ButtonPress-1>", self.on_click)
@@ -29,7 +31,9 @@ class InteractivePathTester:
 
         self.object_id = -1
 
-        self.update_image()
+        self.robot_drawings = []
+
+        self.update_path_and_draw()
         self.simulate_robot()
         update(1000)
         self.win.getMouse()
@@ -58,15 +62,22 @@ class InteractivePathTester:
 
         if 0 <= self.object_id < len(self.obstacles):
             self.obstacles[self.object_id].setCenter(x, y)
-            self.update_image()
+            self.update_path_and_draw()
         elif self.object_id > 0:
             self.positions[self.object_id - len(self.obstacles)] = Position(x, y)
-            self.update_image()
+            self.update_path_and_draw()
 
-    def update_image(self):
+    def update_path_and_draw(self):
         # t = time.time_ns()
         self.path, grid = create_path(self.positions[0], self.positions[1], self.arena_width, self.arena_height, self.obstacles)
         # print((time.time_ns()-t)*10**-9)
+
+        path = []
+        for p in self.path.path:
+            path.append([p.x_pos, p.y_pos])
+        path = np.array(path)
+        self.controller.set_path(path)
+
         self.drawPath(self.win, self.path, self.obstacles, self.positions, grid)
 
     def drawPath(self, win, path, obstacles, positions, grid):
@@ -110,30 +121,50 @@ class InteractivePathTester:
     def simulate_robot(self):
         dt = 0.01
 
-        path = []
-        for p in self.path.path:
-            path.append([p.x_pos, p.y_pos])
-        path = np.array(path)
-
-        controller = PathFollower(config.fuzzy_controller, config.slowdown_controller, path, self.robot.reference_point)
-        controller.set_forward_torque(config.forward_torque)
         for i in range(50):
-            right_torque, left_torque = controller.get_wheel_torques(self.robot.state, self.robot.state_dot)
+            target_vel, target_angular_vel = self.controller.get_wheel_torques(self.robot.state, self.robot.state_dot, dt)
+
+            if self.robot.state_dot[0, 0] < target_vel:
+                forward_torque = 30
+            else:
+                forward_torque = 29
+
+            turn_torque = 7 * (target_angular_vel - self.robot.state_dot[2, 0])
+
+            right_torque = forward_torque + turn_torque
+            left_torque = forward_torque - turn_torque
+
             self.robot.update(right_torque, left_torque, dt)
 
-        self.draw_robot(self.robot, self.win)
+        self.draw_robot(self.robot, self.controller, self.win)
 
         self.win.after(int(dt * 1000 * 10), self.simulate_robot)
 
-    def draw_robot(self, robot, win):
+    def draw_robot(self, robot, controller, win):
         points, _, _ = robot.draw()
+        robot_path, _, _ = controller.draw_path_info()
 
-        drawing_points = []
+        to_draw = []
         for point in points:
             c = Circle(Point(point[0]*self.SCALE, (self.arena_height-point[1])*self.SCALE), 0.05*self.SCALE)
             c.setFill("blue")
             c.setOutline("blue")
-            drawing_points.append(c)
+            to_draw.append(c)
 
-        for x in drawing_points:
+        lastX = 0
+        lastY = 0
+        for p in robot_path:
+            if lastX != 0 or lastY != 0:
+                l = Line(Point(lastX * self.SCALE, (self.arena_height - lastY) * self.SCALE),
+                         Point(p[0] * self.SCALE, (self.arena_height - p[1]) * self.SCALE))
+                to_draw.append(l)
+            lastX = p[0]
+            lastY = p[1]
+
+        for item in self.robot_drawings:
+            item.undraw()
+
+        for x in to_draw:
             x.draw(win)
+
+        self.robot_drawings = to_draw

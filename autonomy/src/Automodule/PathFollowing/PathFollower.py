@@ -1,15 +1,15 @@
 import numpy as np
+import PathFollowing.config as config
+import time
 
 
 class PathFollower:
-    def __init__(self, fuzzy_controller, slowdown_controller, path, reference_point):
-        self.fuzzy_controller = fuzzy_controller
-        self.slowdown_controller = slowdown_controller
+    def __init__(self, path, reference_point):
         self.global_path = path
         self.local_path = path
         self.current_index = 0  # Fractional index of where robot's reference point is along path
 
-        self.a = 0  # Coeffecients of quadratic equation for the approximate path the robot is trying to follow
+        self.a = 0  # Coefficients of quadratic equation for the approximate path the robot is trying to follow
         self.b = 0
         self.c = 0
 
@@ -17,42 +17,44 @@ class PathFollower:
         self.robot_state_dot = None
         self.reference_point = reference_point
 
-        self.turn_torque = 0
+        self.target_angular_vel = 0
         self.closest_point = None
 
         self.alpha = 1
         self.r = 100
 
-        self.forward_torque = 0
+        self.last_s = 0
 
-        self.target_speed = 0.5
-
-        self.turn_torque_constant = 1
+        self.errors = []
+        self.error_dots = []
 
     def update(self, robot_state, robot_state_dot):
         self.robot_state = robot_state
         self.robot_state_dot = robot_state_dot
 
-    def get_wheel_torques(self, robot_state, robot_state_dot):
+    def get_wheel_torques(self, robot_state, robot_state_dot, dt):
         self.update(robot_state, robot_state_dot)
 
         error, error_dot, = self.get_cross_track_error()
 
-        turn_torque = self.turn_torque_constant * self.fuzzy_controller.crisp_output(error, error_dot)
-        alpha = self.slowdown_controller.crisp_output(self.r)
+        self.errors.append(error)
+        self.error_dots.append(error_dot)
 
-        self.turn_torque = turn_torque
-        self.alpha = alpha
+        s = error_dot + config.lambda_e * error
+        s_dot = (s - self.last_s) / dt
+        self.last_s = s
 
-        if self.robot_state_dot[0, 0] < self.target_speed:
-            forward_torque = self.forward_torque
-        else:
-            forward_torque = self.forward_torque - 1
+        S = s * config.G_s
+        S_dot = s_dot * config.G_s_dot
 
-        right_torque = alpha * (forward_torque + turn_torque)
-        left_torque = alpha * (forward_torque - turn_torque)
+        target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
+        self.alpha = config.slowdown_controller.crisp_output(self.r)
 
-        return right_torque, left_torque
+        self.target_angular_vel = target_angular_vel
+
+        target_vel = config.target_velocity * self.alpha
+
+        return target_vel, target_angular_vel
 
     def get_cross_track_error(self):
         position = self.robot_state[:2]  # global position
@@ -69,8 +71,8 @@ class PathFollower:
 
         index = min(max(int(self.current_index-0.5), 0), len(self.local_path) - 2)
 
-        is_linear = (index == len(self.local_path) - 2)
-        # is_linear = False
+        is_linear = (index >= len(self.local_path) - 2)
+        # is_linear = True
         self.a, self.b, self.c, phi, x, y, self.r = self.calculate_path_and_closest_point(index, is_linear, x0, y0)
 
         self.closest_point = np.array([[x], [y]])
@@ -132,6 +134,9 @@ class PathFollower:
 
         return a, b, c, phi, x, y, r
 
+    def set_path(self, path):
+        self.global_path = path
+
     def draw_path_info(self):
         path = []
 
@@ -159,5 +164,3 @@ class PathFollower:
 
         return path, closest_point, reference
 
-    def set_forward_torque(self, torque):
-        self.forward_torque = torque
