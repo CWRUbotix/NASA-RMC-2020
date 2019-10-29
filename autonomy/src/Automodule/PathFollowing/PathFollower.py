@@ -8,6 +8,7 @@ class PathFollower:
         self.global_path = path
         self.local_path = path
         self.current_index = 0  # Fractional index of where robot's reference point is along path
+        self.index = 0
 
         self.a = 0  # Coefficients of quadratic equation for the approximate path the robot is trying to follow
         self.b = 0
@@ -69,11 +70,11 @@ class PathFollower:
 
         self.local_path = np.dot(rotation_matrix_reverse, (self.global_path-position.T).T).T  # convert path to local coordinates
 
-        index = min(max(int(self.current_index-0.5), 0), len(self.local_path) - 2)
+        self.index = min(max(int(self.current_index + 0.2), 0), len(self.local_path) - 2)
 
-        is_linear = (index >= len(self.local_path) - 2)
-        # is_linear = True
-        self.a, self.b, self.c, phi, x, y, self.r = self.calculate_path_and_closest_point(index, is_linear, x0, y0)
+        # is_linear = (index >= len(self.local_path) - 2)
+        is_linear = True
+        self.a, self.b, self.c, phi, x, y, self.r = self.calculate_path_and_closest_point(self.index, is_linear, x0, y0)
 
         self.closest_point = np.array([[x], [y]])
 
@@ -84,8 +85,13 @@ class PathFollower:
         error = ((x - x0)**2 + (y - y0)**2)**0.5 * np.sign(y)
         error_dot = x_dot * np.sin(phi) - self.reference_point[0, 0] * theta_dot * np.cos(phi)
 
-        self.current_index = max(self.current_index, index + (((self.local_path[index][0] - x)**2 + (self.local_path[index][1]-y)**2)**0.5) /
-                                 ((self.local_path[index][0] - self.local_path[index+1][0])**2 + (self.local_path[index][1]-self.local_path[index+1][1])**2)**0.5)
+        # Find projection of closest point onto line segment to determine how far along the line segment the robot is
+        index = min(int(self.current_index), len(self.local_path)-2)
+        start = self.local_path[index]
+        segment = self.local_path[index + 1] - start
+        fractional_index = (segment[0] * (x - start[0]) + segment[1] * (y-start[1]))/(segment[0]**2 + segment[1]**2)
+
+        self.current_index = max(self.current_index, index + fractional_index)
 
         return error, error_dot
 
@@ -144,12 +150,10 @@ class PathFollower:
         rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
                                     [np.sin(theta), np.cos(theta)]])
 
-        index = min(max(int(self.current_index-0.5), 0), len(self.local_path) - 2)
-
-        for i in range(10 + 1):
-            start = self.local_path[index][0] - 1
-            end = self.local_path[index + (1 if self.a == 0 else 2)][0] + 1
-            x = (end - start) / 10 * i + start
+        for i in range(4 + 1):
+            start = self.local_path[self.index][0] - 1
+            end = self.local_path[self.index + (1 if self.a == 0 else 2)][0] + 1
+            x = (end - start) / 4 * i + start
             y = self.a * x * x + self.b * x + self.c
             path.append([x, y])
 

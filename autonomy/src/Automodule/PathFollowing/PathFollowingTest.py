@@ -73,18 +73,18 @@ for i in range(2000):
 
         plt.savefig('viz_dir/fig_'+str(int(i/draw_step)))
 
-plt.figure()
-plt.plot(target_vels)
-plt.plot(vels)
-plt.plot(target_angular_vels)
-plt.plot(angular_vels, label='angular vel')
-plt.legend()
-plt.show()
-
-plt.figure()
-plt.plot(controller.errors)
-plt.show()
-
-plt.figure()
-plt.plot(controller.errors, controller.error_dots)
-plt.show()
+# plt.figure()
+# plt.plot(target_vels)
+# plt.plot(vels)
+# plt.plot(target_angular_vels)
+# plt.plot(angular_vels, label='angular vel')
+# plt.legend()
+# plt.show()
+#
+# plt.figure()
+# plt.plot(controller.errors)
+# plt.show()
+#
+# plt.figure()
+# plt.plot(controller.errors, controller.error_dots)
+# plt.show()

@@ -173,7 +173,7 @@ class Obstacle:
 
 
 # acts as a sequence of instances of the Position class
-class Path(collections.Sequence):
+class Path:
     def __init__(self, positions):
         self.path = deque(positions)
 

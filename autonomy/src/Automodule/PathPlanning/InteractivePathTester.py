@@ -12,6 +12,7 @@ import numpy as np
 
 class InteractivePathTester:
     SCALE = 75  # px/meter
+    SIM_DELAY = 10  # iterations
 
     def __init__(self, start, end, arena_width, arena_height, obstacles):
         self.positions = [start, end]
@@ -69,7 +70,7 @@ class InteractivePathTester:
 
     def update_path_and_draw(self):
         # t = time.time_ns()
-        self.path, grid = create_path(self.positions[0], self.positions[1], self.arena_width, self.arena_height, self.obstacles)
+        self.path, grid = create_path(Position(self.robot.state[0], self.robot.state[1]), self.positions[1], self.arena_width, self.arena_height, self.obstacles)
         # print((time.time_ns()-t)*10**-9)
 
         path = []
@@ -136,9 +137,10 @@ class InteractivePathTester:
 
             self.robot.update(right_torque, left_torque, dt)
 
+        self.update_path_and_draw()
         self.draw_robot(self.robot, self.controller, self.win)
 
-        self.win.after(int(dt * 1000 * 10), self.simulate_robot)
+        self.win.after(int(dt * 1000 * self.SIM_DELAY), self.simulate_robot)
 
     def draw_robot(self, robot, controller, win):
         points, _, _ = robot.draw()

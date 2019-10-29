@@ -19,25 +19,14 @@ def rosTest():
 
 
 def softwareTest():
-    print('checking pathplanning stuff')
     p1 = Position(0, 0)
     p2 = Position(0.5, 6.5)
     grid = Grid(p1, p2, 3.78, 7.38)
-    checkBlocked(Position(0, 0), Position(3, 1), grid)
-    # while True:
-    #     pass
-    print(str(grid.unit_width))
-    print(str(grid.unit_height))
-    print(str(grid.num_cols))
-    print(str(grid.num_rows))
+
     obstacles = [Obstacle(3, 2.0, 0.35), Obstacle(0.5, 5, 0.35), Obstacle(0.5, 1.5, 0.35)]
 
     tester = InteractivePathTester(p1, p2, 3.78, 7.38, obstacles)
     tester.update_path_and_draw()
-
-    path = create_path(p1, p2, 3.78, 7.38, obstacles)
-    print(path)
-    print(convertToCommands(path, p1))
 
 
 def toDegree(rad):
