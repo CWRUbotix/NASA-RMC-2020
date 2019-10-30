@@ -17,7 +17,7 @@ def send_path_data(path):
     """
     global topic
     point_list = []
-    for pos in path.path:
+    for pos in path:
         point = Point()
         point.x = pos.getX()
         point.y = pos.getY()

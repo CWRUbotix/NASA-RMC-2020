@@ -1,6 +1,6 @@
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathFollowing.PathFollower import PathFollower
-from PathFollowing import config
+from PathPlanning.PathPlanning import Grid
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -11,10 +11,11 @@ robot = SkidSteerSimulator(0, 2, 0)
 
 # path = np.array([[0, 0], [2, 0.3], [4, 0.6], [5, 1.5], [6, 2.5], [9, 3.3]])
 # path = np.array([[1, -1]]) * path
-path = np.array([[0.5249999999999999, 2.025 ], [1.4249999999999998, 1.125], [2.775, 0.6749999999999999 ],
-                 [3.975, 1.275 ], [5.025, 1.8 ], [ 6.225, 1.4249999999999998], [6.5, 0.5]])
+path = np.array([[0.5249999999999999, 2.025], [1.4249999999999998, 1.125], [2.775, 0.6749999999999999],
+                 [3.975, 1.275], [5.025, 1.8], [6.225, 1.4249999999999998], [6.5, 0.5]])
 
-controller = PathFollower(path, robot.reference_point)
+controller = PathFollower(robot, path=path)
+controller.set_path(path)
 
 os.makedirs("viz_dir", exist_ok=True)
 try:
@@ -24,9 +25,7 @@ try:
 except Exception as e:
     print(e)
 
-
-draw_step = 50
-
+draw_step = 30
 
 target_vels = []
 target_angular_vels = []
@@ -34,12 +33,12 @@ angular_vels = []
 vels = []
 
 for i in range(2000):
-    target_vel, target_angular_vel = controller.get_wheel_torques(robot.state, robot.state_dot, dt)
+    target_vel, target_angular_vel = controller.get_wheel_torques(robot, dt)
 
     if robot.state_dot[0, 0] < target_vel:
         forward_torque = 30
     else:
-        forward_torque = 29
+        forward_torque = 20
 
     turn_torque = 7 * (target_angular_vel - robot.state_dot[2, 0])
 
@@ -54,7 +53,6 @@ for i in range(2000):
     target_angular_vels.append(target_angular_vel)
 
     if i % draw_step == 0:
-
         plt.clf()
         plt.axis('equal')
         axes = plt.gca()
@@ -73,13 +71,13 @@ for i in range(2000):
 
         plt.savefig('viz_dir/fig_'+str(int(i/draw_step)))
 
-# plt.figure()
-# plt.plot(target_vels)
-# plt.plot(vels)
-# plt.plot(target_angular_vels)
-# plt.plot(angular_vels, label='angular vel')
-# plt.legend()
-# plt.show()
+plt.figure()
+plt.plot(target_vels)
+plt.plot(vels)
+plt.plot(target_angular_vels)
+plt.plot(angular_vels, label='angular vel')
+plt.legend()
+plt.show()
 #
 # plt.figure()
 # plt.plot(controller.errors)

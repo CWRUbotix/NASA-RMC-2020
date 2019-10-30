@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import collections
 from collections import deque
 import sys
@@ -14,64 +15,99 @@ def constrain_angle(angle):
     return (angle + math.pi) % (2 * math.pi) - math.pi
 
 
-class Position(object):
-    def __init__(self, x_pos, y_pos, orientation=0.0):
-        self.x_pos = x_pos
-        self.y_pos = y_pos
-        self.orientation = orientation
+class Position:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
     def getX(self):
-        return self.x_pos
+        return self.x
 
     def getY(self):
-        return self.y_pos
-
-    def getOrientation(self):
-        return self.orientation
-
-    def setOrientation(self, o):
-        self.orientation = o
-
-    def __str__(self):
-        return " x:" + str(self.x_pos) + " y:" + str(self.y_pos) + " angle:" + str(self.orientation)
-
-    def __eq__(self, p):
-        if math.fabs(self.getX() - p.getX()) < ERROR_BOUND and math.fabs(self.getY() - p.getY()) < ERROR_BOUND:
-            return True
-        return False
+        return self.y
 
     def distanceTo(self, p):
-        x = abs(p.getX() - self.x_pos)
-        y = abs(p.getY() - self.y_pos)
+        x = p.getX() - self.getX()
+        y = p.getY() - self.getY()
 
-        dist = (x ** 2 + y ** 2) ** .5
-        if dist < GRID_SIZE:  # TODO: Changing this value drastically affects performance because doesn't penalize distance
-            return 0
-        else:
-            return dist
+        return (x ** 2 + y ** 2) ** .5
 
-    def angleTurnTo(self, p):
-        change = p.getOrientation() - self.orientation
-        change = constrain_angle(change)  # Constrain to [-180, 180]
 
-        if math.fabs(change) < math.pi / 36:  # TODO If less than 5 degrees return 0 for some reason
-            return 0
-        else:
-            return change
+class Vertex(Position):
+    def __init__(self, x, y, row, col):
+        super().__init__(x, y)
+        self.parent = None
+        self.dist = float('inf')
+        self.heuristic = float('inf')
+        self.row = row
+        self.col = col
+        self.prob_blocked = 0
+
+    def __lt__(self, other):
+        return self.dist + self.heuristic < other.getDistance() + other.getHeuristic()
+
+    def __gt__(self, other):
+        return self.dist + self.heuristic > other.getDistance() + other.getHeuristic()
+
+    def __le__(self, other):
+        return self.dist + self.heuristic <= other.getDistance() + other.getHeuristic()
+
+    def __ge__(self, other):
+        return self.dist + self.heuristic >= other.getDistance() + other.getHeuristic()
+
+    def __eq__(self, other):
+        return self.getX() == other.getX() and self.getY() == other.getY()
+
+    def __str__(self):
+        return 'x: ' + '%.4f' % self.getX() + ' y :' + '%.4f' % self.getY()
 
     def angleToFace(self, p):
-        # print(self)
-        # print(p)
         angle = math.atan2(p.getY() - self.getY(), p.getX() - self.getX())
-
-        angle = constrain_angle(angle) # Constrain to [-180, 180]
+        angle = constrain_angle(angle)  # Constrain to [-180, 180]
         return angle
+
+    def getX(self):
+        return self.x
+
+    def getY(self):
+        return self.y
+
+    def getPos(self):
+        return [self.x, self.y]
+
+    def getParent(self):
+        return self.parent
+
+    def setParent(self, parent):
+        self.parent = parent
+
+    def getDistance(self):
+        return self.dist
+
+    def setDistance(self, dist):
+        self.dist = dist
+
+    def getHeuristic(self):
+        return self.heuristic
+
+    def setHeuristic(self, h):
+        self.heuristic = h
+
+    def get_indices(self):
+        return self.row, self.col
+
+    def get_blocked(self):
+        return self.prob_blocked >= 0.6
+
+    def set_prob_blocked(self, prob_blocked):
+        self.prob_blocked = prob_blocked
+
+    def get_prob_blocked(self):
+        return self.prob_blocked
 
 
 class Grid(object):
-    def __init__(self, p1, p2, width, height, grid_width=GRID_SIZE):
-        self.p1 = p1
-        self.p2 = p2
+    def __init__(self, width, height, grid_width=GRID_SIZE):
         self.width = width
         self.height = height
         self.num_cols = int(math.floor(width / grid_width))
@@ -132,7 +168,6 @@ class Grid(object):
                     guassian = 50 * 1/(2 * math.pi * radius_sq) * math.exp(-0.2 * dist_sq / radius_sq)
                     self.vertices[i][j].set_prob_blocked(max(guassian, self.vertices[i][j].get_prob_blocked()))
 
-
     def getGridIndices(self, x_pos, y_pos):
         col_index = min(self.num_cols - 1, max(int(x_pos / self.unit_width), 0))
         row_index = min(self.num_rows - 1, max(int(y_pos / self.unit_height), 0))
@@ -172,31 +207,12 @@ class Obstacle:
         return False
 
 
-# acts as a sequence of instances of the Position class
+# acts as a sequence of positions
 class Path:
-    def __init__(self, positions):
-        self.path = deque(positions)
-
-    def insert(self, newPositions):
-        self.path.append(newPositions)
-
-    def getPosition(self):
-        return self.path.popleft()
-
-    def __getitem__(self, item):
-        return item
-
-    def __len__(self):
-        return len(self.path)
-
-    def delete(self, position):
-        return self.path.remove(position)
-
     def printPath(self):
         for position in self.path:
             print(("X: %s" %(position.getX_pos())))
             print(("Y: %s" %(position.getY_pos())))
-            print(("Orientation: %s\n" % (position.getOrientation())))
 
     def get_angles(self):
         angles = []
@@ -209,70 +225,3 @@ class Path:
             last_direction = direction
 
         return angles
-
-
-class Vertex(Position):
-    def __init__(self, x_pos, y_pos, row, col):
-        super(Vertex, self).__init__(x_pos, y_pos, 0)
-        self.parent = None
-        self.dist = float('inf')
-        self.heuristic = float('inf')
-        self.row = row
-        self.col = col
-        self.prob_blocked = 0
-
-    def __lt__(self, other):
-        return self.dist + self.heuristic < other.getDistance() + other.getHeuristic()
-
-    def __gt__(self, other):
-        return self.dist + self.heuristic > other.getDistance() + other.getHeuristic()
-
-    def __le__(self, other):
-        return self.dist + self.heuristic <= other.getDistance() + other.getHeuristic()
-
-    def __ge__(self, other):
-        return self.dist + self.heuristic >= other.getDistance() + other.getHeuristic()
-
-    def __eq__(self, other):
-        return self.getX() == other.getX() and self.getY() == other.getY()
-
-    def __str__(self):
-        return 'x: ' + '%.4f' % self.getX() + ' y :' + '%.4f' % self.getY()
-
-    def getParent(self):
-        return self.parent
-
-    def setParent(self, parent):
-        self.parent = parent
-
-    def getDistance(self):
-        return self.dist
-
-    def setDistance(self, dist, reset=False):
-        if reset:
-            self.dist = float('inf')
-        else:
-            self.dist = dist
-
-    def getHeuristic(self):
-        return self.heuristic
-
-    def setHeuristic(self, dest, reset=False):
-        if reset:
-            self.heuristic = math.inf
-        else:
-            self.heuristic = dest
-
-    def get_indices(self):
-        return self.row, self.col
-
-    def get_blocked(self):
-        return self.prob_blocked >= 0.6
-
-    def set_prob_blocked(self, prob_blocked):
-        self.prob_blocked = prob_blocked
-
-    def get_prob_blocked(self):
-        return self.prob_blocked
-
-

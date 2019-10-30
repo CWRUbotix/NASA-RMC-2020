@@ -5,15 +5,15 @@ import math
 from PathPlanning.PathPlanning import Grid, Path
 
 
-def create_path(start, end, areana_width, arena_height, obstacles):
-    grid = Grid(start, end, areana_width, arena_height)  # Create a grid and add the obstacles to it
-    for obs in obstacles:
-        grid.addObstacle(obs)
-
+def create_path(start, end, grid):
     path = a_star(start, end, grid)  # a star algorithm to find path
+    path = post_process(path, grid)  # Do theta star algorithm
 
-    # return path, grid
-    return post_process(path, grid), grid  # Do theta star algorithm
+    ret_path = []
+    for v in path:
+        ret_path.append([v.getX(), v.getY()])
+
+    return ret_path
 
 
 def a_star(start, end, grid):
@@ -31,8 +31,6 @@ def a_star(start, end, grid):
     startVertex.setDistance(0)
     updateHeuristic(endVertex, grid)
 
-#    print(str(startVertex))
-#    print(str(endVertex))
     if grid.is_probably_blocked(*startVertex.get_indices()) or grid.is_probably_blocked(*endVertex.get_indices()):
         print("Start or end is blocked")
         return
@@ -52,7 +50,13 @@ def a_star(start, end, grid):
 
         for neighbor in grid.getNeighbors(currentCoordinate[0], currentCoordinate[1]):  # Check all neighbors
             if neighbor not in closedList:  # Unless they were already checked
-                dist = currentVertex.getDistance() + currentVertex.distanceTo(neighbor)
+                dist = currentVertex.distanceTo(neighbor)
+
+                if dist < grid.unit_width:  # Make it so that non-diagonals have distance of 0?
+                    dist = 0
+
+                dist = currentVertex.getDistance() + dist
+
                 heuristic = currentVertex.getHeuristic()  # Get current node's heuristic
 
                 # if the neighbor has not been evaluated yet or has just received a better evaluation (dist + heuristic)
@@ -70,10 +74,10 @@ def a_star(start, end, grid):
 def reconstructPath(v):
     path = [v]
     while v.getParent():  # Loop through parents backwards to reconstruct path
-        path.append(v.getParent())
         v = v.getParent()
+        path.append(v)
     path.reverse()
-    return Path(path)
+    return path
 
 
 def updateHeuristic(end, grid):
@@ -88,7 +92,7 @@ def post_process(path, grid):
 
     # remove any nodes that are right next to each other
     path = remove_adjacents(path, 1.01*(grid.unit_height**2 + grid.unit_width**2)**.5)
-    path.get_angles()  # TODO use to get optimal path with smallest angle change
+    # path.get_angles()  # TODO use to get optimal path with smallest angle change
     return path
 
 
@@ -96,10 +100,10 @@ def theta_star(path, grid):
     index = 0
     counter = 1
     while True:
-        if index < len(path.path) - 2:  # If not at end of path - the nodes that will be joined
-            if not checkBlocked(path.path[index], path.path[index + 2], grid) and counter % 10 != 0:  # if there is a line of sight
-                path.path[index + 2].setParent(path.path[index])  # Join the two end nodes
-                path.delete(path.path[index + 1])  # and cut out the middle node
+        if index < len(path) - 2:  # If not at end of path - the nodes that will be joined
+            if not checkBlocked(path[index], path[index + 2], grid) and counter % 10 != 0:  # if there is a line of sight
+                path[index + 2].setParent(path[index])  # Join the two end nodes
+                path.remove(path[index + 1])  # and cut out the middle node
                 counter += 1
             else:
                 index += 1  # check the next node
@@ -113,15 +117,15 @@ def theta_star(path, grid):
 def remove_adjacents(path, unit_dist):
     index = 0
     while True:
-        pos = path.path[index]  # Get current node
+        pos = path[index]  # Get current node
         if index < len(path) - 1:  # If not last node in path
-            if pos.distanceTo(path.path[index + 1]) <= unit_dist:  # If next node is right next to current
+            if pos.distanceTo(path[index + 1]) <= unit_dist:  # If next node is right next to current
                 if index < len(path) - 2:  # If this is not the second to last node in the path
-                    path.path[index + 2].setParent(pos)  # Skip over that adjacent node
-                    path.delete(path.path[index + 1])  # Delete it
+                    path[index + 2].setParent(pos)  # Skip over that adjacent node
+                    path.remove(path[index + 1])  # Delete it
                 else:  # Can't delete next node because it is last in path
-                    path.path[index - 1].setParent(path.path[index + 1])  # So ignore the current one instead
-                    path.delete(pos)
+                    path[index - 1].setParent(path[index + 1])  # So ignore the current one instead
+                    path.remove(pos)
                     break  # End of path reached
             else:
                 index += 1  # Check next node

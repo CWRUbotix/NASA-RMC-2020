@@ -1,12 +1,21 @@
 import numpy as np
 import PathFollowing.config as config
+from PathPlanning.ThetaStar import create_path
+from PathPlanning.PathPlanning import Position
 import time
 
 
 class PathFollower:
-    def __init__(self, path, reference_point):
+    def __init__(self, robot, goal=None, path=None):
         self.global_path = path
-        self.local_path = path
+        self.local_path = None
+
+        if path is None:
+            self.goal_pos = goal
+        else:
+            self.goal_pos = Position(self.global_path[-1, 0], self.global_path[-1, 1])  # Used if path is manually set
+
+        self.grid = None
         self.current_index = 0  # Fractional index of where robot's reference point is along path
         self.index = 0
 
@@ -14,9 +23,7 @@ class PathFollower:
         self.b = 0
         self.c = 0
 
-        self.robot_state = None
-        self.robot_state_dot = None
-        self.reference_point = reference_point
+        self.robot = robot
 
         self.target_angular_vel = 0
         self.closest_point = None
@@ -29,12 +36,35 @@ class PathFollower:
         self.errors = []
         self.error_dots = []
 
-    def update(self, robot_state, robot_state_dot):
-        self.robot_state = robot_state
-        self.robot_state_dot = robot_state_dot
+        self.done = False
 
-    def get_wheel_torques(self, robot_state, robot_state_dot, dt):
-        self.update(robot_state, robot_state_dot)
+    def update(self, robot):
+        self.robot = robot
+
+        if Position(self.robot.state[0, 0], self.robot.state[1, 0]).distanceTo(self.goal_pos) < 0.1:
+            self.done = True
+
+    def calculate_path(self):
+        # Only update path if robot is more than a 0.5m from the target
+        dist = Position(self.robot.state[0, 0], self.robot.state[1, 0]).distanceTo(self.goal_pos)
+        if not dist < 0.5 or self.global_path is None:
+            self.global_path = create_path(Position(self.robot.state[0], self.robot.state[1]), self.goal_pos, self.grid)
+            self.global_path = np.array(self.global_path)
+
+    def set_path(self, path):
+        self.global_path = path
+
+    def get_path(self):
+        return self.global_path
+
+    def set_goal(self, goal):
+        self.goal_pos = goal
+
+    def update_grid(self, grid):
+        self.grid = grid
+
+    def get_wheel_torques(self, robot, dt):
+        self.update(robot)
 
         error, error_dot, = self.get_cross_track_error()
 
@@ -48,42 +78,46 @@ class PathFollower:
         S = s * config.G_s
         S_dot = s_dot * config.G_s_dot
 
-        target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
-        self.alpha = config.slowdown_controller.crisp_output(self.r)
+        offset = abs(self.get_angular_offset())
+        self.alpha = config.slowdown_controller.crisp_output(offset)
 
-        self.target_angular_vel = target_angular_vel
+        target_vel = 0
+        target_angular_vel = 0
 
-        target_vel = config.target_velocity * self.alpha
+        if not self.done:
+            target_vel = config.target_velocity * self.alpha
+            target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
+
+        self.target_angular_vel = target_angular_vel  # Store value
 
         return target_vel, target_angular_vel
 
     def get_cross_track_error(self):
-        position = self.robot_state[:2]  # global position
-        theta = self.robot_state[2, 0]  # angle
+        position = self.robot.state[:2]  # global position
+        theta = self.robot.state[2, 0]  # angle
 
         # rotation matrices from global to local frame
         rotation_matrix_reverse = np.array([[np.cos(theta), np.sin(theta)],
                                   [-np.sin(theta), np.cos(theta)]])
 
-        x0 = self.reference_point[0, 0]  # reference point coordinates in local frame
-        y0 = self.reference_point[1, 0]
+        x0 = self.robot.reference_point[0, 0]  # reference point coordinates in local frame
+        y0 = self.robot.reference_point[1, 0]
 
         self.local_path = np.dot(rotation_matrix_reverse, (self.global_path-position.T).T).T  # convert path to local coordinates
 
         self.index = min(max(int(self.current_index + 0.2), 0), len(self.local_path) - 2)
 
-        # is_linear = (index >= len(self.local_path) - 2)
         is_linear = True
-        self.a, self.b, self.c, phi, x, y, self.r = self.calculate_path_and_closest_point(self.index, is_linear, x0, y0)
+        self.a, self.b, self.c, phi, x, y, self.r = self._calculate_path_and_closest_point(self.index, is_linear, x0, y0)
 
         self.closest_point = np.array([[x], [y]])
 
-        x_dot = self.robot_state_dot[0, 0]  # get robot's velocity and angular velocity
-        theta_dot = self.robot_state_dot[2, 0]
+        x_dot = self.robot.state_dot[0, 0]  # get robot's velocity and angular velocity
+        theta_dot = self.robot.state_dot[2, 0]
 
         # get cross track error and the derivative of the cross track error
         error = ((x - x0)**2 + (y - y0)**2)**0.5 * np.sign(y)
-        error_dot = x_dot * np.sin(phi) - self.reference_point[0, 0] * theta_dot * np.cos(phi)
+        error_dot = x_dot * np.sin(phi) - self.robot.reference_point[0, 0] * theta_dot * np.cos(phi)
 
         # Find projection of closest point onto line segment to determine how far along the line segment the robot is
         index = min(int(self.current_index), len(self.local_path)-2)
@@ -95,7 +129,13 @@ class PathFollower:
 
         return error, error_dot
 
-    def calculate_path_and_closest_point(self, index, is_linear, x0, y0):
+    def get_angular_offset(self):
+        segment = self.global_path[self.index + 1] - self.global_path[self.index]
+        angle = np.arctan2(segment[1], segment[0])
+
+        return self.robot.state[2, 0] - angle
+
+    def _calculate_path_and_closest_point(self, index, is_linear, x0, y0):
         a, b, c, m, x, y, r = 0, 0, 0, 0, 0, 0, 0  # coefficients of path, slope of tangent at closet point, x and y at point
 
         if is_linear:
@@ -140,13 +180,10 @@ class PathFollower:
 
         return a, b, c, phi, x, y, r
 
-    def set_path(self, path):
-        self.global_path = path
-
     def draw_path_info(self):
         path = []
 
-        theta = self.robot_state[2, 0]  # angle
+        theta = self.robot.state[2, 0]  # angle
         rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
                                     [np.sin(theta), np.cos(theta)]])
 
@@ -158,13 +195,13 @@ class PathFollower:
             path.append([x, y])
 
         path = np.array(path)
-        path = (self.robot_state[:2] + np.dot(rotation_matrix, path.T)).T
+        path = (self.robot.state[:2] + np.dot(rotation_matrix, path.T)).T
 
         # find the global coordinates of the closest point
-        closest_point = np.dot(rotation_matrix, self.closest_point) + self.robot_state[:2]
+        closest_point = np.dot(rotation_matrix, self.closest_point) + self.robot.state[:2]
 
         # find global coords of reference point
-        reference = self.robot_state[:2] + np.dot(rotation_matrix, self.reference_point)
+        reference = self.robot.state[:2] + np.dot(rotation_matrix, self.robot.reference_point)
 
         return path, closest_point, reference
 
