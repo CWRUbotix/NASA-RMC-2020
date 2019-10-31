@@ -17,8 +17,10 @@ int main(int argc, char** argv){
 	ROS_INFO("Hardware Controller Node");
 	ros::init(argc, argv, "hwctrl");
 	ros::NodeHandle n;
-	ros::Rate loop_rate(200); // 5ms loop rate
+	ros::Rate loop_rate(1); // 5ms loop rate
+	ros::AsyncSpinner spinner(4);
 
+	ros::Publisher limit_switch_pub = n.advertise<hwctrl::LimitSwState>("limit_switch", 16);
 	ros::Subscriber test_1_sub = n.subscribe<std_msgs::Empty>("test_1", 3, test_cb);
 	ros::Subscriber test_2_sub = n.subscribe<std_msgs::Empty>("test_2", 1, test_cb_2);
 
@@ -51,18 +53,20 @@ int main(int argc, char** argv){
 
 	ROS_INFO(motor_if.list_motors().c_str());
 
-	async_spinner.reset(new ros::AsyncSpinner(4));
-	async_spinner->start();
+	// async_spinner.reset(new ros::AsyncSpinner(4));
+	// async_spinner->start();
 	// MAIN LOOP
 
-	// while(ros::ok()){
+	std::thread limit_sw_th_obj(limit_switch_thread, limit_switch_pub);
+
+	spinner.start();
+
+	while(ros::ok()){
 
 	// 	// motor_if.maintain_next_motor();
-		
-	// 	loop_rate.sleep();
-	// 	ros::spinOnce();
-	// }
-	// spinner.reset();
+		ROS_INFO("Main Loop");
+		loop_rate.sleep();
+	}
 	ros::waitForShutdown();
 	return 0;
 }
