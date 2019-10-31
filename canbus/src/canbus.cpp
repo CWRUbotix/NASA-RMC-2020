@@ -8,7 +8,7 @@ int main(int argc, char** argv){
 	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
 
-	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
+	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 12);
 	ros::Publisher MotorData = n.advertise<MotorData_msg>("MotorData", 1024);
 	ros::Rate loop_rate(25); // 40ms loop rate
 	
@@ -389,4 +389,5 @@ int read_can_config(std::string fname, std::vector<CanDevice> &devices){
 
 void uwb_timeout_cb(const ros::TimerEvent& event){
 	uwb_range_next = true;
+	
 }
