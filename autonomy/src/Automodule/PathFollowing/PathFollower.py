@@ -2,8 +2,9 @@ import numpy as np
 
 
 class PathFollower:
-    def __init__(self, fuzzy_controller, path, reference_point):
+    def __init__(self, fuzzy_controller, slowdown_controller, path, reference_point):
         self.fuzzy_controller = fuzzy_controller
+        self.slowdown_controller = slowdown_controller
         self.global_path = path
         self.local_path = path
         self.current_index = 0  # Fractional index of where robot's reference point is along path
@@ -19,20 +20,39 @@ class PathFollower:
         self.turn_torque = 0
         self.closest_point = None
 
+        self.alpha = 1
+        self.r = 100
+
+        self.forward_torque = 0
+
+        self.target_speed = 0.5
+
+        self.turn_torque_constant = 1
+
     def update(self, robot_state, robot_state_dot):
         self.robot_state = robot_state
         self.robot_state_dot = robot_state_dot
 
-    def get_turn_torque(self, robot_state, robot_state_dot):
+    def get_wheel_torques(self, robot_state, robot_state_dot):
         self.update(robot_state, robot_state_dot)
 
         error, error_dot, = self.get_cross_track_error()
 
-        torque = self.fuzzy_controller.crisp_output(error, error_dot)
+        turn_torque = self.turn_torque_constant * self.fuzzy_controller.crisp_output(error, error_dot)
+        alpha = self.slowdown_controller.crisp_output(self.r)
 
-        self.turn_torque = torque
+        self.turn_torque = turn_torque
+        self.alpha = alpha
 
-        return torque
+        if self.robot_state_dot[0, 0] < self.target_speed:
+            forward_torque = self.forward_torque
+        else:
+            forward_torque = self.forward_torque - 1
+
+        right_torque = alpha * (forward_torque + turn_torque)
+        left_torque = alpha * (forward_torque - turn_torque)
+
+        return right_torque, left_torque
 
     def get_cross_track_error(self):
         position = self.robot_state[:2]  # global position
@@ -51,7 +71,7 @@ class PathFollower:
 
         is_linear = (index == len(self.local_path) - 2)
         # is_linear = False
-        self.a, self.b, self.c, phi, x, y, r = self.calculate_path_and_closest_point(index, is_linear, x0, y0)
+        self.a, self.b, self.c, phi, x, y, self.r = self.calculate_path_and_closest_point(index, is_linear, x0, y0)
 
         self.closest_point = np.array([[x], [y]])
 
@@ -139,3 +159,5 @@ class PathFollower:
 
         return path, closest_point, reference
 
+    def set_forward_torque(self, torque):
+        self.forward_torque = torque

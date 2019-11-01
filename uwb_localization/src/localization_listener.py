@@ -6,6 +6,7 @@ import math
 import rospy
 import rospkg
 import math
+import time
 import matplotlib
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 from itertools import combinations, permutations
@@ -26,6 +27,7 @@ class LocalizationNode:
         self.topic = 'localization_data'
         self.viz_dir = 'visualizations/'
         self.visualize = visualize
+        self.viz_step = 5
         print('Booting up node...')
         rospy.init_node('localization_listener', anonymous=True)
         self.nodes = []
@@ -110,27 +112,36 @@ class LocalizationNode:
                             break
 
     def position_callback(self, msg):
+        #start_time = time.time()
         for node in self.nodes:
             if node.id == msg.node_id:
                 node.add_measurement(msg.anchor_id, msg.distance, msg.confidence)
                 self.msg_counts[node.id] += 1
+        #print('Adding measurements took %.4f seconds' % (time.time() - start_time))
+        #start_time = time.time()
         for node in self.nodes:
             if self.msg_counts[node.id] >= 3:
                 node.get_position()
+                self.msg_counts[node.id] = 0
+        #print('Triangulation took %.4f seconds' % (time.time() - start_time))
         avg_x = 0
         avg_y = 0
         total = 0
+        #start_time = time.time()
         for node in self.nodes:
             if node.is_valid():
                 avg_x += node.x - node.relative_x
                 avg_y += node.y - node.relative_y
                 total += 1
+        #print('Offset took %.4f seconds' % (time.time() - start_time))
+        #start_time = time.time()
         if total > 0:
             self.robot_x.append(avg_x / total)
             self.robot_y.append(avg_y / total)
             theta = self.get_robot_orientation()
             self.compose_msg()
-        if self.visualize:
+        #print('Orientation took %.4f seconds' % (time.time() - start_time))
+        if self.visualize and len(self.robot_x) % self.viz_step == 0:
             fig = plt.figure(figsize=(6 * 4, 9))
 
             ax = plt.subplot(141)
@@ -161,28 +172,26 @@ class LocalizationNode:
             plt.close()
 
     def compose_msg(self):
-        for node in self.nodes:
-            if node.is_valid():
-                header = Header()
-                header.stamp = rospy.Time.now()
-                header.frame_id = 'map'
-                point_msg = Point(node.x - node.relative_x, node.y - node.relative_y, 0)  # use most recent pos with no z-coord
-                orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
-                pose_cov = np.ones(36) * 1e-9
-                quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
-                pose_with_cov = PoseWithCovariance()
-                pose_with_cov.pose = Pose(point_msg, quat_msg)
-                pose_with_cov.covariance = pose_cov
-                stamped_msg = PoseWithCovarianceStamped()
-                stamped_msg.header = header
-                stamped_msg.pose = pose_with_cov
-                try:
-                    pub = rospy.Publisher('uwb_node_%d' % node.id, PoseWithCovarianceStamped, queue_size=10)
-                    #rospy.loginfo(stamped_msg)
-                    pub.publish(stamped_msg)
-                except rospy.ROSInterruptException as e:
-                    print(e.getMessage())
-                    pass
+            header = Header()
+            header.stamp = rospy.Time.now()
+            header.frame_id = 'map'
+            point_msg = Point(self.robot_x[-1], self.robot_y[-1], 0)  # use most recent pos with no z-coord
+            orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
+            pose_cov = np.diag([0.01, 0.01, 0, 0, 0, 0.04]).flatten()
+            quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
+            pose_with_cov = PoseWithCovariance()
+            pose_with_cov.pose = Pose(point_msg, quat_msg)
+            pose_with_cov.covariance = pose_cov
+            stamped_msg = PoseWithCovarianceStamped()
+            stamped_msg.header = header
+            stamped_msg.pose = pose_with_cov
+            try:
+                pub = rospy.Publisher('uwb_nodes', PoseWithCovarianceStamped, queue_size=1)
+                #rospy.loginfo(stamped_msg)
+                pub.publish(stamped_msg)
+            except rospy.ROSInterruptException as e:
+                print(e.getMessage())
+                pass
 
 
 if __name__ == '__main__':
