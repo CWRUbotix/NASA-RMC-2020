@@ -207,9 +207,11 @@ int main(int argc, char** argv){
 				int8_t id 	= (int8_t)(rx_frame.can_id & 0xFF);
 				switch(cmd){
 					case CAN_PACKET_STATUS:{
+						ROS_INFO("Received STATUS Packet");
 						CanDevice* vesc = &(can_devices[id]);
 
-						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") == 0){
+						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") != 0){
+							ROS_INFO("vesc_msg was NULL or was not a vesc");
 							break;
 						}
 						fill_msg_from_status_packet(rx_frame.data, *(vesc->vesc_msg));
@@ -236,8 +238,10 @@ int main(int argc, char** argv){
 						packet_len 	|= rx_frame.data[ind++];
 						crc 		= (rx_frame.data[ind++] << 8);
 						crc 		|= rx_frame.data[ind++];
-
+						
 						uint16_t chk_crc = crc16(vesc_rx_buf, packet_len);
+						ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x",
+								packet_len, crc, chk_crc);
 
 						if(crc != chk_crc){
 							ROS_INFO("Error: Checksum doesn't match");
@@ -245,7 +249,7 @@ int main(int argc, char** argv){
 							break;
 						}
 						CanDevice* vesc = &(can_devices[vesc_id]);
-						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") == 0){
+						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") != 0){
 							break;
 						}
 						
