@@ -12,7 +12,7 @@ class SkidSteerSimulator:
         self.theta_dot = 0  # angular velocity
 
         self.width = 0.75  # robot width
-        self.length = 1.5  # robot length (between wheels)
+        self.length = 1  # robot length (between wheels)
         self.mass = 50  # robot mass
         self.r = 0.2  # wheel radius
         self.moment_inertia = 4.5  # robot moment of inertia around center of gravity
@@ -37,8 +37,8 @@ class SkidSteerSimulator:
         theta = self.state[2, 0]  # get robot's direction
 
         direction_vectors = self.get_direction_vectors() # Get the direction each wheel of the robot is going
-        # direction_vectors = np.dot(np.array([[np.cos(theta), -np.sin(theta)],
-        #                                      [np.sin(theta), np.cos(theta)]]), direction_vectors.T).T
+        direction_vectors = np.dot(np.array([[np.cos(theta), np.sin(theta)],  # rotate direction vectors to local frame
+                                             [-np.sin(theta), np.cos(theta)]]), direction_vectors.T).T
 
         # The direction the wheels are going determines the friction forces on the robot
         wheel_1 = direction_vectors[0]

@@ -33,10 +33,14 @@ class IMU:
         self.angular_velocity_marker = np.zeros(3)
         self.acceleration = np.zeros(3)
         self.acceleration_marker = np.zeros(3)
+        self.port_encoder = 0
+        self.starboard_encoder = 0
 
         self.orientation_plot = np.zeros(3)
         self.angular_velocity_plot = np.zeros(3)
         self.acceleration_plot = np.zeros(3)
+
+        self.angular_velocity_offset = [-4, 6, 8]
 
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
@@ -47,6 +51,10 @@ class IMU:
             print(e)
 
     def sensor_callback(self, msg):
+        if msg.sensorID == 0:
+            self.port_encoder = msg.value
+        if msg.sensorID == 1:
+            self.starboard_encoder = msg.value
         if msg.sensorID == 30:
             self.orientation[0] = msg.value
             self.orientation_marker[0] = 1
@@ -97,9 +105,9 @@ class IMU:
                 ax.legend(loc='best')
 
                 ax = plt.subplot(132)
-                ax.plot(self.angular_velocity_plot[..., 0], label='x')
-                ax.plot(self.angular_velocity_plot[..., 1], label='y')
-                ax.plot(self.angular_velocity_plot[..., 2], label='z')
+                ax.plot(self.angular_velocity_plot[..., 0] + self.angular_velocity_offset[0], label='x')
+                ax.plot(self.angular_velocity_plot[..., 1] + self.angular_velocity_offset[1], label='y')
+                ax.plot(self.angular_velocity_plot[..., 2] + self.angular_velocity_offset[2], label='z')
                 ax.set_title('Angular Velocity')
                 ax.legend(loc='best')
 
@@ -119,7 +127,7 @@ class IMU:
         orientation_quat = R.from_euler('xyz', self.orientation).as_quat()
         orientation_cov = np.ones(9) * 1e-9
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
-        angular_vel_msg = Vector3(self.angular_velocity[0], self.angular_velocity[1], self.angular_velocity[2])
+        angular_vel_msg = Vector3(self.angular_velocity[0] + self.angular_velocity_offset[0], self.angular_velocity[1]  + self.angular_velocity_offset[1], self.angular_velocity[2] + self.angular_velocity_offset[2])
         angular_vel_cov = np.ones(9) * 1e-9
         accel_msg = Vector3(self.acceleration[0], self.acceleration[1], self.acceleration[2])
         accel_cov = np.ones(9) * 1e-9
@@ -135,7 +143,7 @@ class IMU:
         imu_msg.linear_acceleration_covariance = accel_cov
         try:
             pub = rospy.Publisher('imu', Imu, queue_size=10)
-            rospy.loginfo(imu_msg)
+            #rospy.loginfo(imu_msg)
             pub.publish(imu_msg)
         except rospy.ROSInterruptException as e:
             print(e.getMessage())
@@ -145,17 +153,24 @@ class IMU:
         header = Header()
         header.stamp = rospy.Time.now()
         header.frame_id = 'base_link'
+        #print('Port:', self.port_encoder, 'Starboard:', self.starboard_encoder)
         point_msg = Point(0, 0, 0)
-        orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat() 
-        pose_cov = np.ones(36) * 0
+        orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat()
+        pose_cov = np.zeros(36)
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
         pose_with_cov = PoseWithCovariance()
         pose_with_cov.pose = Pose(point_msg, quat_msg)
         pose_with_cov.covariance = pose_cov
 
-        linear_twist = Vector3(0, 0, 0)
-        angular_twist = Vector3(0, 0, 0)
+        x_dot = (((self.port_encoder * math.pi / 30 * 0.2286) + (self.starboard_encoder * math.pi / 30 * 0.2286)) / 2)# * math.cos(self.orientation[-1])
+        y_dot = 0 #(((self.port_encoder * math.pi / 30 * 0.2286) + (self.starboard_encoder * math.pi / 30 * 0.2286)) / 2) * math.sin(self.orientation[-1])
+        theta_dot = ((self.starboard_encoder * math.pi / 30 * 0.2286) - (self.port_encoder * math.pi / 30 * 0.2286)) / 0.63
 
+        print(x_dot, y_dot, theta_dot)
+        linear_twist = Vector3(x_dot, y_dot, 0)
+        angular_twist = Vector3(0, 0, theta_dot)
+
+        twist_cov = np.diag([0.01, 0.01, 0, 0, 0, 0.02]).flatten()
         twist_with_cov = TwistWithCovariance()
         twist_with_cov.twist = Twist(linear_twist, angular_twist)
         twist_with_cov.covariance = pose_cov
@@ -167,7 +182,7 @@ class IMU:
         stamped_msg.twist = twist_with_cov
         try:
             pub = rospy.Publisher('wheel', Odometry, queue_size=10)
-            rospy.loginfo(stamped_msg)
+            #rospy.loginfo(stamped_msg)
             pub.publish(stamped_msg)
         except rospy.ROSInterruptException as e:
             print(e.getMessage())

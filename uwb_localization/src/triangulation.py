@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -47,6 +48,7 @@ class UltraWideBandNode:
 
     def get_position(self):
         if len(list(self.measurements.keys())) >= 3:
+            start_time = time.time()
             P = Project(mode='2D', solver='LSE_GC')
 
             for i, sensor in self.sensors.iterrows():
@@ -62,13 +64,13 @@ class UltraWideBandNode:
             # Then the target location is:
             position = t.loc
             if position is not None:
-                if self.id == 2:
-                    print('id: %d, X: %.2f, Y: %.2f' % (self.id, position.x - self.relative_x, position.y - self.relative_y))
+                print('id: %d, X: %.2f, Y: %.2f' % (self.id, position.x - self.relative_x, position.y - self.relative_y))
                 #if position.x > 0 and position.y > 0:
                 self.x = position.x
                 self.y = position.y
                 self.x_plot.append(position.x)
                 self.y_plot.append(position.y)
+            #print('Triangulation took %.4f seconds' % (time.time() - start_time))
         else:
             print('Not enough points to triangulate node...')
 

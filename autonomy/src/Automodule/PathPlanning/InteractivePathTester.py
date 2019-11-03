@@ -3,6 +3,11 @@ import collections
 from collections import deque
 from PathPlanning.ThetaStar import create_path
 from PathPlanning.PathPlanning import Position
+from PathFollowing import config
+from PathFollowing.PathFollower import PathFollower
+from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
+import numpy as np
+
 
 
 class InteractivePathTester:
@@ -13,6 +18,8 @@ class InteractivePathTester:
         self.arena_width = arena_width
         self.arena_height = arena_height
         self.obstacles = obstacles
+        self.path = None
+        self.robot = SkidSteerSimulator(2, 0, 1.5)
 
         self.win = GraphWin("Path", self.arena_width*self.SCALE, self.arena_height*self.SCALE, autoflush=False)
 
@@ -23,8 +30,10 @@ class InteractivePathTester:
         self.object_id = -1
 
         self.update_image()
+        self.simulate_robot()
         update(1000)
         self.win.getMouse()
+
 
     def on_click(self, event):
         self.object_id = -1
@@ -56,9 +65,9 @@ class InteractivePathTester:
 
     def update_image(self):
         # t = time.time_ns()
-        path, grid = create_path(self.positions[0], self.positions[1], self.arena_width, self.arena_height, self.obstacles)
+        self.path, grid = create_path(self.positions[0], self.positions[1], self.arena_width, self.arena_height, self.obstacles)
         # print((time.time_ns()-t)*10**-9)
-        self.drawPath(self.win, path, self.obstacles, self.positions, grid)
+        self.drawPath(self.win, self.path, self.obstacles, self.positions, grid)
 
     def drawPath(self, win, path, obstacles, positions, grid):
         for item in win.items[:]:
@@ -68,7 +77,7 @@ class InteractivePathTester:
         lines = deque()
         points = deque()
         for i in range(len(path)):
-            p = path.getPosition()
+            p = path.path[i]
             if lastX != 0 or lastY != 0:
                 l = Line(Point(lastX*self.SCALE, (self.arena_height-lastY)*self.SCALE),
                          Point(p.getX()*self.SCALE, (self.arena_height-p.getY())*self.SCALE))
@@ -98,3 +107,33 @@ class InteractivePathTester:
                     ci.setOutline("green")
                     ci.draw(win)
 
+    def simulate_robot(self):
+        dt = 0.01
+
+        path = []
+        for p in self.path.path:
+            path.append([p.x_pos, p.y_pos])
+        path = np.array(path)
+
+        controller = PathFollower(config.fuzzy_controller, config.slowdown_controller, path, self.robot.reference_point)
+        controller.set_forward_torque(config.forward_torque)
+        for i in range(50):
+            right_torque, left_torque = controller.get_wheel_torques(self.robot.state, self.robot.state_dot)
+            self.robot.update(right_torque, left_torque, dt)
+
+        self.draw_robot(self.robot, self.win)
+
+        self.win.after(int(dt * 1000 * 10), self.simulate_robot)
+
+    def draw_robot(self, robot, win):
+        points, _, _ = robot.draw()
+
+        drawing_points = []
+        for point in points:
+            c = Circle(Point(point[0]*self.SCALE, (self.arena_height-point[1])*self.SCALE), 0.05*self.SCALE)
+            c.setFill("blue")
+            c.setOutline("blue")
+            drawing_points.append(c)
+
+        for x in drawing_points:
+            x.draw(win)

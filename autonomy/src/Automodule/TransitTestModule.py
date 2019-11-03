@@ -5,6 +5,7 @@ import math
 from PathPlanning.PathPlanning import Grid, Obstacle, Position
 from PathPlanning.ThetaStar import create_path, checkBlocked
 from PathPlanning.InteractivePathTester import InteractivePathTester
+
 #from TestModule import turn_algo_2, conservative_drive, testShutdown
 
 ROBOT_WIDTH = 0.75
@@ -19,7 +20,7 @@ def rosTest():
 
 def softwareTest():
     print('checking pathplanning stuff')
-    p1 = Position(2, 0.5)
+    p1 = Position(0, 0)
     p2 = Position(0.5, 6.5)
     grid = Grid(p1, p2, 3.78, 7.38)
     checkBlocked(Position(0, 0), Position(3, 1), grid)
@@ -29,7 +30,7 @@ def softwareTest():
     print(str(grid.unit_height))
     print(str(grid.num_cols))
     print(str(grid.num_rows))
-    obstacles = [Obstacle(3, 2.0, 0.35), Obstacle(0.5, 5, 0.35), Obstacle(2.0, 3.0, 0.35)]
+    obstacles = [Obstacle(3, 2.0, 0.35), Obstacle(0.5, 5, 0.35), Obstacle(0.5, 1.5, 0.35)]
 
     tester = InteractivePathTester(p1, p2, 3.78, 7.38, obstacles)
     tester.update_image()
