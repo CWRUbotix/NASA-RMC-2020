@@ -11,7 +11,6 @@
 #include <canbus/SetVescCmd.h>
 #include <canbus/MotorData.h>
 #include <hwctrl/SetMotor.h>
-#include <hwctrl/LimitSwState.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -103,11 +102,13 @@ public:
 	std::string list_motors();
 	void maintain_next_motor();
 	void maintain_motors(); // loop to run as a thread
+	int get_num_motors();
 private:
 	std::vector<HwMotor>::iterator motor_it;
 };
 
 void limit_switch_thread(ros::Publisher pub);
 
-void maintain_motors(ros::)
+void maintain_motors_thread(HwMotorIf motor_if);
+
 #endif
