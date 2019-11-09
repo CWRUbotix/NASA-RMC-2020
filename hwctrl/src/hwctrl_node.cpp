@@ -1,26 +1,13 @@
 #include <hwctrl.h>
 
-boost::shared_ptr<ros::AsyncSpinner> async_spinner;
-
-
-void test_cb(const std_msgs::EmptyConstPtr& msg){
-  ROS_INFO("TEST 1");
-}
-
-void test_cb_2(const std_msgs::EmptyConstPtr& msg){
-  ROS_INFO("TEST 2");
-}
-
-
-
 int main(int argc, char** argv){
 	ROS_INFO("Hardware Controller Node");
 	ros::init(argc, argv, "hwctrl");
 	ros::NodeHandle n;
-	ros::Rate loop_rate(200); // 5ms loop rate
+	ros::Rate loop_rate(1); // 5ms loop rate
+	ros::AsyncSpinner spinner(4); // create multithreaded spinner
 
-	ros::Subscriber test_1_sub = n.subscribe<std_msgs::Empty>("test_1", 3, test_cb);
-	ros::Subscriber test_2_sub = n.subscribe<std_msgs::Empty>("test_2", 1, test_cb_2);
+	ros::Publisher limit_switch_pub = n.advertise<std_msgs::Int32>("limit_switch", 16);
 
 
 	// client which sends commands to drive the VESC's
@@ -51,18 +38,12 @@ int main(int argc, char** argv){
 
 	ROS_INFO(motor_if.list_motors().c_str());
 
-	async_spinner.reset(new ros::AsyncSpinner(4));
-	async_spinner->start();
 	// MAIN LOOP
+	std::thread limit_sw_th_obj(limit_switch_thread, limit_switch_pub);
+	std::thread motors_thread(maintain_motors_thread, motor_if);
 
-	// while(ros::ok()){
+	spinner.start();
 
-	// 	// motor_if.maintain_next_motor();
-		
-	// 	loop_rate.sleep();
-	// 	ros::spinOnce();
-	// }
-	// spinner.reset();
 	ros::waitForShutdown();
 	return 0;
 }

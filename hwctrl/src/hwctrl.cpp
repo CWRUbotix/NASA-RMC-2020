@@ -1,5 +1,19 @@
 #include <hwctrl.h>
 
+void HwMotorIf::maintain_motors(){
+	while(ros::ok()){
+		this->maintain_next_motor();
+		ros::Duration(MOTOR_LOOP_PERIOD/this->motors.size()).sleep();
+	}
+}
+
+void maintain_motors_thread(HwMotorIf motor_if){
+	while(ros::ok()){
+		motor_if.maintain_next_motor();
+		ros::Duration(MOTOR_LOOP_PERIOD/motor_if.get_num_motors()).sleep();
+	}
+}
+
 void HwMotorIf::maintain_next_motor(){
 	HwMotor* motor = &(*(this->motor_it));
 	ROS_INFO("Maintaining motor %s", motor->name.c_str());
@@ -53,15 +67,17 @@ bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::S
 		return false;
 	}
 
+	ROS_INFO("Setting motor %d", request.id);
 	HwMotor* motor = this->motors.data() + request.id; // pointer to our motor struct
 
 	motor->setpoint = request.setpoint;
-	if(fabs(request.acceleration) > motor->max_accel){
+	if(fabs(request.acceleration) > motor->max_accel || fabs(request.acceleration) == 0.0){
 		motor->accel_setpoint = motor->max_accel;
-	}else{
+	}else {
 		motor->accel_setpoint = request.acceleration;
 	}
 	response.actual_accel = motor->accel_setpoint;
+	response.status = 0; // need to change later to be meaningful
 	
 	return true;
 }
@@ -123,6 +139,10 @@ void HwMotorIf::get_motors_from_csv(std::string fname){
 	this->motor_it = this->motors.begin();
 }
 
+int HwMotorIf::get_num_motors(){
+	return this->motors.size();
+}
+
 InterfaceType get_if_type(std::string type_str){
 	if(type_str.compare("can") == 0){
 		return IF_CANBUS;
@@ -162,4 +182,13 @@ std::string HwMotorIf::list_motors(){
 		retval.append((*mtr).to_string());
 	}
 	return retval;
+}
+
+// LIMIT SWITCH MONITORING THREAD
+void limit_switch_thread(ros::Publisher pub){
+	while(ros::ok()){
+		ROS_INFO("Checking limit switches");
+		ros::Duration(2).sleep();
+		// ros::spinOnce();
+	}
 }
