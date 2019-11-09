@@ -154,28 +154,26 @@ class LocalizationNode:
             plt.close()
 
     def compose_msg(self):
-        for node in self.nodes:
-            if node.is_valid():
-                header = Header()
-                header.stamp = rospy.Time.now()
-                header.frame_id = 'map'
-                point_msg = Point(node.x - node.relative_x, node.y - node.relative_y, 0)  # use most recent pos with no z-coord
-                orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
-                pose_cov = np.ones(36) * 1e-9
-                quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
-                pose_with_cov = PoseWithCovariance()
-                pose_with_cov.pose = Pose(point_msg, quat_msg)
-                pose_with_cov.covariance = pose_cov
-                stamped_msg = PoseWithCovarianceStamped()
-                stamped_msg.header = header
-                stamped_msg.pose = pose_with_cov
-                try:
-                    pub = rospy.Publisher('uwb_node_%d' % node.id, PoseWithCovarianceStamped, queue_size=10)
-                    #rospy.loginfo(stamped_msg)
-                    pub.publish(stamped_msg)
-                except rospy.ROSInterruptException as e:
-                    print(e.getMessage())
-                    pass
+        header = Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = 'map'
+        point_msg = Point(self.robot_x[-1], self.robot_y[-1], 0)  # use most recent pos with no z-coord
+        orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
+        pose_cov = np.diag([0.01, 0.01, 0, 0, 0, 0.04]).flatten()
+        quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
+        pose_with_cov = PoseWithCovariance()
+        pose_with_cov.pose = Pose(point_msg, quat_msg)
+        pose_with_cov.covariance = pose_cov
+        stamped_msg = PoseWithCovarianceStamped()
+        stamped_msg.header = header
+        stamped_msg.pose = pose_with_cov
+        try:
+            pub = rospy.Publisher('uwb_nodes', PoseWithCovarianceStamped, queue_size=1)
+            #rospy.loginfo(stamped_msg)
+            pub.publish(stamped_msg)
+        except rospy.ROSInterruptException as e:
+            print(e.getMessage())
+            pass
 
 
 if __name__ == '__main__':

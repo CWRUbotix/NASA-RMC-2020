@@ -40,6 +40,8 @@ class IMU:
         self.angular_velocity_plot = np.zeros(3)
         self.acceleration_plot = np.zeros(3)
 
+        self.angular_velocity_offset = [-4, 6, 8]
+
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
             files = glob.glob('%s/*' % self.viz_dir)
@@ -125,7 +127,9 @@ class IMU:
         orientation_quat = R.from_euler('xyz', self.orientation).as_quat()
         orientation_cov = np.ones(9) * 1e-9
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
-        angular_vel_msg = Vector3(self.angular_velocity[0], self.angular_velocity[1], self.angular_velocity[2])
+        angular_vel_msg = Vector3(self.angular_velocity[0] + self.angular_velocity_offset[0], 
+                                  self.angular_velocity[1] + self.angular_velocity_offset[1], 
+                                  self.angular_velocity[2] + self.angular_velocity_offset[2])
         angular_vel_cov = np.ones(9) * 1e-9
         accel_msg = Vector3(self.acceleration[0], self.acceleration[1], self.acceleration[2])
         accel_cov = np.ones(9) * 1e-9

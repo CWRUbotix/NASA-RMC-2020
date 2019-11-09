@@ -122,5 +122,5 @@ class KalmanFilterNode:
 
 if __name__ == '__main__':
     kalman_filter_node = KalmanFilterNode()
-    sub = rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback)
+    sub = rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback, queue_size=1)
     rospy.spin()
