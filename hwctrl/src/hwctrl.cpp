@@ -15,7 +15,7 @@ void maintain_motors_thread(HwMotorIf motor_if){
 }
 
 void HwMotorIf::maintain_next_motor(){
-	HwMotor* motor = &(*(this->motor_it));
+	HwMotor* motor = &(this->motors.at(this->motor_ind));
 	ROS_INFO("Maintaining motor %s", motor->name.c_str());
 	switch(motor->motor_type){
 		case(MOTOR_NONE):break;
@@ -55,9 +55,9 @@ void HwMotorIf::maintain_next_motor(){
 			break;}
 	}
 
-	this->motor_it ++;
-	if(this->motor_it == this->motors.end()){
-		this->motor_it = this->motors.begin();
+	this->motor_ind ++;
+	if(this->motor_ind >= this->motors.size()){
+		this->motor_ind = 0;
 	}
 }
 

@@ -94,6 +94,7 @@ DeviceType get_device_type(std::string type_str);
 class HwMotorIf{
 	std::vector<HwMotor> motors;
 	bool limit_sw_states[8]; // we probably won't have a whole 8 limit switches
+	int motor_ind = 0;
 public:
 	ros::ServiceClient vesc_client;
 	bool set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response);
