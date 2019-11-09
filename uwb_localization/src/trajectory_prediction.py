@@ -53,6 +53,7 @@ class TrajectoryPrediction:
         else:  # new state message, predict and measure deviation
             self.new_timestamp = msg.header.stamp.to_nsec()
             t = (self.new_timestamp - self.old_timestamp) * 1e-9  # time elapsed between prediction and observation converted to seconds
+            # get prediction with kinematic transition functions used by robot_localization
             x_new = self.x + self.x_vel * t + 0.5 * self.x_accel * t ** 2
             y_new = self.y + self.y_vel * t + 0.5 * self.y_accel * t ** 2
             yaw_new = self.yaw + self.yaw_vel + 0.5 * self.yaw_accel * t ** 2
@@ -60,24 +61,24 @@ class TrajectoryPrediction:
             y_vel_new = self.y_vel + self.y_accel * t
             yaw_vel_new = self.yaw_vel + self.yaw_accel * t
 
-            x_error = abs(x_new - self.x)
-            y_error = abs(y_new - self.y)
-            yaw_error = abs(yaw_new - self.yaw)
-            x_vel_error = abs(x_vel_new - self.x_vel)
-            y_vel_error = abs(y_vel_new - self.y_vel)
-            yaw_vel_error = abs(yaw_vel_new - self.yaw_vel)
-
-            delta_l = x_vel_error / math.cos(self.yaw) - (self.yaw_vel * 0.63) / 2
-            delta_r = x_vel_error / math.cos(self.yaw) + (self.yaw_vel * 0.63) / 2
-
-            print(delta_r, delta_l)
-
         self.x = pose.position.x
         self.y = pose.position.y
         self.yaw = euler[2]
         self.x_vel = twist.linear.x
         self.y_vel = twist.linear.y
         self.yaw_vel = twist.angular.z
+        # compute deviations from actual observations
+        x_error = x_new - self.x
+        y_error = y_new - self.y
+        yaw_error = yaw_new - self.yaw
+        x_vel_error = x_vel_new - self.x_vel
+        y_vel_error = y_vel_new - self.y_vel
+        yaw_vel_error = yaw_vel_new - self.yaw_vel
+
+        delta_l = x_vel_error / math.cos(self.yaw) - (self.yaw_vel * 0.63) / 2
+        delta_r = x_vel_error / math.cos(self.yaw) + (self.yaw_vel * 0.63) / 2
+
+        print(delta_r, delta_l)
         self.old_timestamp = self.new_timestamp  # set timestamp to be used for prediction as current msg timestamp
 
     def accel_callback(self, msg):
