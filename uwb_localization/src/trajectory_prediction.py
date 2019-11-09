@@ -17,7 +17,7 @@ from scipy.spatial.transform import Rotation as R
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import Quaternion, Vector3
-from geometry_msgs.msg import Pose, Accel
+from geometry_msgs.msg import Pose, AccelWithCovarianceStamped
 from nav_msgs.msg import Odometry
 
 
@@ -48,10 +48,10 @@ class TrajectoryPrediction:
         quat = pose.orientation
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
         if not self.full_state_available():  # first state message received
-            self.old_timestamp = msg.header.stamp.nsec
-            self.new_timestamp = msg.header.stamp.nsec
+            self.old_timestamp = msg.header.stamp.to_nsec()
+            self.new_timestamp = msg.header.stamp.to_nsec()
         else:  # new state message, predict and measure deviation
-            self.new_timestamp = msg.header.stamp.nsec
+            self.new_timestamp = msg.header.stamp.to_nsec()
             t = (self.new_timestamp - self.old_timestamp) * 1e-9  # time elapsed between prediction and observation converted to seconds
             x_new = self.x + self.x_vel * t + 0.5 * self.x_accel * t ** 2
             y_new = self.y + self.y_vel * t + 0.5 * self.y_accel * t ** 2
@@ -70,6 +70,8 @@ class TrajectoryPrediction:
             delta_l = x_vel_error / math.cos(self.yaw) - (self.yaw_vel * 0.63) / 2
             delta_r = x_vel_error / math.cos(self.yaw) + (self.yaw_vel * 0.63) / 2
 
+            print(delta_r, delta_l)
+
         self.x = pose.position.x
         self.y = pose.position.y
         self.yaw = euler[2]
@@ -79,8 +81,8 @@ class TrajectoryPrediction:
         self.old_timestamp = self.new_timestamp  # set timestamp to be used for prediction as current msg timestamp
 
     def accel_callback(self, msg):
-        linear = msg.linear
-        angular = msg.angular
+        linear = msg.accel.accel.linear
+        angular = msg.accel.accel.angular
         self.x_accel = linear.x
         self.y_accel = linear.y
         self.yaw_accel = angular.z
@@ -89,5 +91,5 @@ class TrajectoryPrediction:
 if __name__ == '__main__':
     prediction_node = TrajectoryPrediction()
     rospy.Subscriber(prediction_node.odom_topic, Odometry, prediction_node.odom_callback)
-    rospy.Subscriber(prediction_node.accel_topic, Accel, prediction_node.accel_callback)
+    rospy.Subscriber(prediction_node.accel_topic, AccelWithCovarianceStamped, prediction_node.accel_callback)
     rospy.spin()

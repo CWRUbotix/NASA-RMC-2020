@@ -63,27 +63,18 @@ class LocalizationNode:
         thetas = []  # list to store bearing angles measured between all pairs
         for (start_node, end_node) in node_pairs:
             if start_node.is_valid() and end_node.is_valid():
-                # horizontally parallel but wrong direction
-                if start_node.relative_x == end_node.relative_x and start_node.relative_y > end_node.relative_y:
-                    start_node, end_node = end_node, start_node  # swap nodes
-                # vertically parallel but wrong direction
-                elif start_node.relative_y == end_node.relative_y and start_node.relative_x > end_node.relative_x:
-                    start_node, end_node = end_node, start_node
-                # diagonal and wrong direction
-                elif start_node.relative_y > end_node.relative_y or start_node.relative_x > end_node.relative_x:
-                    start_node, end_node = end_node, start_node
                 # get vector with tail at start node and head at end end
                 robot_edge = -np.array([start_node.relative_x, start_node.relative_y]) + np.array([end_node.relative_x, end_node.relative_y])
                 dot_product = np.dot(robot_edge, np.array([1, 0]))
                 # each edge vector is at a different angle relative to the robot coordinate system
-                theta_offset = math.acos(dot_product / np.linalg.norm(robot_edge))
+                theta_offset = np.arctan2(robot_edge[1], robot_edge[0])
                 dY = end_node.y - start_node.y
                 dX = end_node.x - start_node.x
-                theta = math.atan2(dY, dX) - theta_offset
-                thetas.append(theta)
-        theta = np.mean(thetas)
-        self.robot_theta.append(theta)
-        return theta
+                theta = np.arctan2(dY, dX) - theta_offset
+                thetas.append([np.cos(theta), np.sin(theta)])
+        theta = np.mean(thetas, axis=0)
+        self.robot_theta.append(np.arctan2(theta[1], theta[0]))
+        return self.robot_theta[-1]
 
     @staticmethod
     def euclidean_distance(x1, x2, y1, y2):
@@ -115,8 +106,6 @@ class LocalizationNode:
                 node.add_measurement(msg.anchor_id, msg.distance, msg.confidence)
                 self.msg_counts[node.id] += 1
         for node in self.nodes:
-            if node.id == 2:
-                print(self.msg_counts[node.id])
             if self.msg_counts[node.id] >= 3:
                 node.get_position()
                 self.msg_counts[node.id] = 0
@@ -132,6 +121,7 @@ class LocalizationNode:
             self.robot_x.append(avg_x / total)
             self.robot_y.append(avg_y / total)
             theta = self.get_robot_orientation()
+            print('X: %.3f, Y: %.3f, theta: %.3f' % (self.robot_x[-1], self.robot_y[-1], theta))
             self.compose_msg()
         if self.visualize:
             fig = plt.figure(figsize=(6 * 4, 9))

@@ -176,7 +176,9 @@ class ObstacleDetectionNode:
 
     def listen_for_frames(self):
         while not rospy.is_shutdown():
+            print('waiting for frame...')
             frames = self.listener.waitForNewFrame()
+            print('new frame...')
             depth_frame = frames["depth"]
             color = frames["color"]
             self.registration.apply(color, depth_frame, self.undistorted, self.registered)

@@ -66,7 +66,6 @@ class KalmanFilterNode:
         kwargs : `~matplotlib.patches.Patch` properties
         """
         
-        print(cov)
         pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
         # Using a special case to obtain the eigenvalues of this
         # two-dimensionl dataset.
