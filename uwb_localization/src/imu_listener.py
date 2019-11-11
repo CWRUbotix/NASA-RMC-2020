@@ -41,6 +41,7 @@ class IMU:
         self.acceleration_plot = np.zeros(3)
 
         self.angular_velocity_offset = [-4, 6, 8]
+        self.acceleration_offset = [-0.163, 0.103]
 
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
@@ -131,7 +132,9 @@ class IMU:
                                   self.angular_velocity[1] + self.angular_velocity_offset[1], 
                                   self.angular_velocity[2] + self.angular_velocity_offset[2])
         angular_vel_cov = np.ones(9) * 1e-9
-        accel_msg = Vector3(self.acceleration[0], self.acceleration[1], self.acceleration[2])
+        accel_msg = Vector3(self.acceleration[0] + self.acceleration_offset[0], 
+                            self.acceleration[1] + self.acceleration_offset[1], 
+                            self.acceleration[2])
         accel_cov = np.ones(9) * 1e-9
         header.stamp = rospy.Time.now()
         header.frame_id = 'base_link'
@@ -181,7 +184,7 @@ class IMU:
         stamped_msg.twist = twist_with_cov
         try:
             pub = rospy.Publisher('wheel', Odometry, queue_size=10)
-            rospy.loginfo(stamped_msg)
+            #rospy.loginfo(stamped_msg)
             pub.publish(stamped_msg)
         except rospy.ROSInterruptException as e:
             print(e.getMessage())

@@ -22,9 +22,11 @@ from nav_msgs.msg import Odometry
 
 
 class TrajectoryPrediction:
-    def __init__(self):
+    def __init__(self, visualize=True):
         self.odom_topic = 'odometry/filtered_map'
         self.accel_topic = 'accel/filtered'
+        self.viz_dir = 'velocity_errors/'
+        self.visualize = visualize
         self.x = None
         self.y = None
         self.yaw = None
@@ -36,8 +38,19 @@ class TrajectoryPrediction:
         self.yaw_accel = None
         self.old_timestamp = None
         self.new_timestamp = None
+        self.x_vel_error_plot = []
+        self.x_accel_plot = []
         print('Booting up node...')
         rospy.init_node('trajectory_prediction', anonymous=True)
+
+        os.makedirs(self.viz_dir, exist_ok=True)
+
+        try:
+            files = glob.glob('%s/*' % self.viz_dir)
+            for f in files:
+                os.remove(f)
+        except Exception as e:
+            print(e)
 
     def full_state_available(self):
         return self.x is not None and self.y is not None and self.x_vel is not None and self.y_vel is not None and self.x_accel is not None and self.y_accel is not None
@@ -60,17 +73,20 @@ class TrajectoryPrediction:
             y_vel_new = self.y_vel + self.y_accel * t
             yaw_vel_new = self.yaw_vel + self.yaw_accel * t
 
-            x_error = abs(x_new - self.x)
-            y_error = abs(y_new - self.y)
-            yaw_error = abs(yaw_new - self.yaw)
-            x_vel_error = abs(x_vel_new - self.x_vel)
-            y_vel_error = abs(y_vel_new - self.y_vel)
-            yaw_vel_error = abs(yaw_vel_new - self.yaw_vel)
+            x_error = x_new - self.x
+            y_error = y_new - self.y
+            yaw_error = yaw_new - self.yaw
+            x_vel_error = x_vel_new - self.x_vel
+            y_vel_error = y_vel_new - self.y_vel
+            yaw_vel_error = yaw_vel_new - self.yaw_vel
 
             delta_l = x_vel_error / math.cos(self.yaw) - (self.yaw_vel * 0.63) / 2
             delta_r = x_vel_error / math.cos(self.yaw) + (self.yaw_vel * 0.63) / 2
 
-            print(delta_r, delta_l)
+            self.x_vel_error_plot.append(x_vel_error)
+            self.x_accel_plot.append(self.x_accel)
+
+            print('x_error: %.3f, d_W_r: %.3f, d_W_l: %.3f' % (x_vel_error, delta_r, delta_l))
 
         self.x = pose.position.x
         self.y = pose.position.y
@@ -79,6 +95,21 @@ class TrajectoryPrediction:
         self.y_vel = twist.linear.y
         self.yaw_vel = twist.angular.z
         self.old_timestamp = self.new_timestamp  # set timestamp to be used for prediction as current msg timestamp
+
+        if self.visualize:
+            fig = plt.figure(figsize=(16, 8))
+            ax = plt.subplot(121)
+            ax.set_title('X Velocity Deviation from Prediction')
+            ax.set_ylim(-0.1, 0.1)
+            ax.plot(self.x_vel_error_plot, label='x')
+            ax.axhline(np.mean(self.x_vel_error_plot), label='mean', c='r')
+            ax.legend(loc='best')
+
+            ax = plt.subplot(122)
+            ax.set_title('X Acceleration')
+            ax.plot(self.x_accel_plot)
+            fig.savefig(self.viz_dir + 'x_vel_error_%d.png' % (len(os.listdir(self.viz_dir))))
+            plt.close()
 
     def accel_callback(self, msg):
         linear = msg.accel.accel.linear
@@ -90,6 +121,6 @@ class TrajectoryPrediction:
 
 if __name__ == '__main__':
     prediction_node = TrajectoryPrediction()
-    rospy.Subscriber(prediction_node.odom_topic, Odometry, prediction_node.odom_callback)
-    rospy.Subscriber(prediction_node.accel_topic, AccelWithCovarianceStamped, prediction_node.accel_callback)
+    rospy.Subscriber(prediction_node.odom_topic, Odometry, prediction_node.odom_callback, queue_size=1)
+    rospy.Subscriber(prediction_node.accel_topic, AccelWithCovarianceStamped, prediction_node.accel_callback, queue_size=1)
     rospy.spin()
