@@ -23,23 +23,20 @@ from geometry_msgs.msg import Quaternion, PoseWithCovarianceStamped, PoseWithCov
 
 class LocalizationNode:
     def __init__(self, visualize=True):
-        self.topic = 'localization_data'
-        self.viz_dir = 'visualizations/'
+        self.topic = 'localization_data'  # topic where UWB distances are published
+        self.viz_dir = 'visualizations/'  # directory to store node visualizations
         self.visualize = visualize
         print('Booting up node...')
         rospy.init_node('localization_listener', anonymous=True)
-        self.nodes = []
-        self.robot_x = []
-        self.robot_y = []
-        self.kalman_x = []
-        self.kalman_y = []
-        self.robot_theta = []
-        self.kalman_theta = []
-        self.sensors = None
-        self.msg_counts = {}
+        self.nodes = []  # list of UltraWideBandNode instances, one for each node and one for each anchor
+        self.robot_x = []  # list of past and current x positions
+        self.robot_y = []  # list of past and current y positions
+        self.robot_theta = []  # list of past and current yaw measurements
+        self.sensors = None  # DataFrame of sensors, types, and relative positions
+        self.msg_counts = {}  # dictionary of counts for each node to keep track of number of anchor distances received
 
+        # setup visualization directory and remove all past visualizations
         os.makedirs(self.viz_dir, exist_ok=True)
-
         try:
             files = glob.glob('%s/*' % self.viz_dir)
             for f in files:
@@ -49,11 +46,12 @@ class LocalizationNode:
 
     def init_nodes(self):
         rp = rospkg.RosPack()
+        # find config file in canbus node directory
         script_path = os.path.join(rp.get_path("canbus"), "include", "node_config.csv")
         sensors = pd.read_csv(script_path)
         self.sensors = sensors
         for i in range(len(self.sensors)):
-            self.msg_counts[i] = 0
+            self.msg_counts[i] = 0  # initialize all message counts to zero
         print(sensors)
         return sensors
 
@@ -75,30 +73,6 @@ class LocalizationNode:
         theta = np.mean(thetas, axis=0)
         self.robot_theta.append(np.arctan2(theta[1], theta[0]))
         return self.robot_theta[-1]
-
-    @staticmethod
-    def euclidean_distance(x1, x2, y1, y2):
-        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-
-    def remove_invalid_points(self, epsilon=.2):
-        best_node = self.nodes[0]
-        for node in self.nodes:
-            if node.confidence > best_node.confidence:
-                best_node = node
-        for n1 in self.nodes:
-            if n1.id != best_node.id:  # compare to the highest confidence measure
-                for n2 in self.nodes:
-                    if n1.id != n2.id and n2.id == best_node.id:  # if nodes are not the same
-                        measured_distance = self.euclidean_distance(n1.x, n2.x, n1.y, n2.y)
-                        robot_x1, robot_y1 = n1.get_robot_position()
-                        robot_x2, robot_y2 = n2.get_robot_position()
-                        robot_distance = self.euclidean_distance(robot_x1, robot_x2, robot_y1, robot_y2)
-                        if abs(measured_distance - robot_distance) > epsilon:
-                            n1.x = n1.x_plot[-2]  # set position to most recent valid measure
-                            n1.y = n1.y_plot[-2]
-                            n1.x_plot = n1.x_plot[:-1]
-                            n1.y_plot = n1.y_plot[:-1]
-                            break
 
     def position_callback(self, msg):
         for node in self.nodes:
