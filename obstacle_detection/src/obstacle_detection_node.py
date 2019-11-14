@@ -11,6 +11,10 @@ matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.spatial.transform import Rotation as R
+
+from nav_msgs.msg import Odometry
+
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
 from pylibfreenect2 import createConsoleLogger, setGlobalLogger
@@ -29,7 +33,13 @@ class ObstacleDetectionNode:
     def __init__(self):
         self.h, self.w = 512, 424
         self.save_imgs = True
-        self.viz_dir = 'obstacle_viz'
+        self.save_data = True
+        self.robot_x = []
+        self.robot_y = []
+        self.robot_pitch = []
+        self.localization_topic = 'odometry/filtered_map'
+        self.viz_dir = 'obstacle_viz/'
+        self.data_dir = 'saved_frames/'
         #camera information based on the Kinect v2 hardware
         self.CameraParams = {
           "cx":254.878,
@@ -57,6 +67,9 @@ class ObstacleDetectionNode:
         rospy.init_node('obstacleDetection', anonymous=True)
 
         os.makedirs(self.viz_dir, exist_ok=True)
+        os.makedirs(self.data_dir, exist_ok=True)
+        os.makedirs(self.data_dir + '_color', exist_ok=True)
+        os.makedirs(self.data_dir + '_localization', exist_ok=True)
         try:
             files = glob.glob('%s/*' % self.viz_dir)
             for f in files:
@@ -174,6 +187,17 @@ class ObstacleDetectionNode:
             fig.savefig('%s/%d' % (self.viz_dir, len(os.listdir('saved/'))))
             plt.close()
 
+    def localization_listener(self, msg):
+        pose = msg.pose.pose
+        covariance = msg.pose.covariance
+        covariance = np.reshape(covariance, (6, 6))
+        self.robot_x.append(pose.position.x)
+        self.robot_y.append(pose.position.y)
+        quat = pose.orientation
+        euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
+        self.robot_pitch.append(euler[2])  # rotation about vertical z-axis
+        print('X: %.4f \tY: %.4f \tpitch: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
+
     def listen_for_frames(self):
         while not rospy.is_shutdown():
             print('waiting for frame...')
@@ -181,12 +205,17 @@ class ObstacleDetectionNode:
             print('new frame...')
             depth_frame = frames["depth"]
             color = frames["color"]
+
             self.registration.apply(color, depth_frame, self.undistorted, self.registered)
             color_frame = self.registered.asarray(np.uint8)
+            if self.save_data:
+                np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_frame)
+                np.save('%s/%d.npy' % (self.data_dir + '_color', len(os.listdir(self.data_dir + '_color'))), color_frame)
+                np.save('%s/%d.npy' % (self.data_dir + '_localization', len(os.listdir(self.data_dir + '_localization'))), np.array(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
+
 
             img = depth_frame.asarray(np.float32)
             img = cv2.flip(img, 1)
-            cv2.imshow('frame', img)
             # TODO: Detect obstacles
             self.detect_obstacles_from_above(img)
 
@@ -202,5 +231,8 @@ class ObstacleDetectionNode:
 if __name__ == '__main__':
     obstacle_detection = ObstacleDetectionNode()
     print('Listening for frames...')
+    sub = rospy.Subscriber(obstacle_detection.localization_topic, Odometry, obstacle_detection.localization_listener, queue_size=1)
+    rospy.spin()
     obstacle_detection.listen_for_frames()
+
 
