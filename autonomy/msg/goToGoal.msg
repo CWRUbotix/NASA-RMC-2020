@@ -1,0 +1,2 @@
+bool dig
+bool dump

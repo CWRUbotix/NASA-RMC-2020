@@ -1,6 +1,6 @@
-from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
-from PathFollowing.PathFollower import PathFollower
-from PathPlanning.PathPlanning import Grid
+from SkidSteerSimulator import SkidSteerSimulator
+from PathFollower import PathFollower
+from PathPlanningUtils import Grid
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -14,7 +14,7 @@ robot = SkidSteerSimulator(0, 2, 0)
 path = np.array([[0.5249999999999999, 2.025], [1.4249999999999998, 1.125], [2.775, 0.6749999999999999],
                  [3.975, 1.275], [5.025, 1.8], [6.225, 1.4249999999999998], [6.5, 0.5]])
 
-controller = PathFollower(robot, path=path)
+controller = PathFollower(robot.reference_point_x, path=path)
 controller.set_path(path)
 
 os.makedirs("viz_dir", exist_ok=True)
@@ -33,7 +33,7 @@ angular_vels = []
 vels = []
 
 for i in range(2000):
-    target_vel, target_angular_vel = controller.get_wheel_torques(robot, dt)
+    target_vel, target_angular_vel = controller.get_target_vels(robot.state, robot.state_dot, dt)
 
     if robot.state_dot[0, 0] < target_vel:
         forward_torque = 30

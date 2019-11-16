@@ -1,8 +1,9 @@
 import math
-import numpy as np
-import collections
-from collections import deque
-import sys
+
+try:
+    from nav_msgs.msg import OccupancyGrid
+except:
+    pass
 
 # Global Variables
 ERROR_BOUND = 0.05
@@ -34,14 +35,14 @@ class Position:
 
 
 class Vertex(Position):
-    def __init__(self, x, y, row, col):
+    def __init__(self, x, y, row, col, prob_blocked=0):
         super().__init__(x, y)
         self.parent = None
         self.dist = float('inf')
         self.heuristic = float('inf')
         self.row = row
         self.col = col
-        self.prob_blocked = 0
+        self.prob_blocked = prob_blocked
 
     def __lt__(self, other):
         return self.dist + self.heuristic < other.getDistance() + other.getHeuristic()
@@ -107,20 +108,33 @@ class Vertex(Position):
 
 
 class Grid(object):
-    def __init__(self, width, height, grid_width=GRID_SIZE):
-        self.width = width
-        self.height = height
-        self.num_cols = int(math.floor(width / grid_width))
-        self.num_rows = int(math.floor(height / grid_width))
-        self.unit_width = grid_width
-        self.unit_height = grid_width
+    def __init__(self, width, height, grid_width=GRID_SIZE, occupancies=None):
+        if occupancies:
+            self.num_cols = occupancies.info.width
+            self.num_rows = occupancies.info.height
+            self.unit_width = occupancies.info.resolution
+            self.unit_height = occupancies.info.resolution
+            self.width = self.num_cols * self.unit_width
+            self.height = self.num_rows * self.unit_height
+        else:
+            self.width = width
+            self.height = height
+            self.num_cols = int(math.floor(width / grid_width))
+            self.num_rows = int(math.floor(height / grid_width))
+            self.unit_width = grid_width
+            self.unit_height = grid_width
         self.vertices = []
 
         for i in range(self.num_rows):
             row = []
             for j in range(self.num_cols):
-                row.append(Vertex(j * grid_width + grid_width/2, i * grid_width + grid_width/2,
-                                  i, j))
+                prob, x, y = 0, 0, 0
+                if occupancies:
+                    x = occupancies.info.origin.position.x
+                    y = occupancies.info.origin.position.y
+                    prob = occupancies.data[i * width + j % width] / 100
+                vertex = Vertex(x + (j + 0.5) * grid_width, y + (i + 0.5) * grid_width, i, j, prob_blocked=prob)
+                row.append(vertex)
             self.vertices.append(row)
 
     def getVertex(self, row_index, col_index):

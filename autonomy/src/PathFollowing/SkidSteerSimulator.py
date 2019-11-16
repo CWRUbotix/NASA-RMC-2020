@@ -31,7 +31,7 @@ class SkidSteerSimulator:
                            [0, 1 / self.mass, 0],
                            [0, 0, 1 / self.moment_inertia]])  # Divide by mass matrix for translation and rotation
 
-        self.reference_point = np.array([[self.length/2 + 0, 0]]).T  # Coords of point robot measures path error from
+        self.reference_point_x = self.length/2  # Coords of point robot measures path error from
 
     def update(self, torque_right, torque_left, dt):
         theta = self.state[2, 0]  # get robot's direction

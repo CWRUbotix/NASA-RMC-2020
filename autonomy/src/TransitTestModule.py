@@ -1,8 +1,8 @@
 
 import sys
 # import rospy
-from PathPlanning.PathPlanning import Obstacle, Position
-from PathPlanning.InteractivePathTester import InteractivePathTester
+from PathPlanningUtils import Obstacle, Position
+from InteractivePathTester import InteractivePathTester
 
 ROBOT_WIDTH = 0.75
 ROBOT_LENGTH = 1.5

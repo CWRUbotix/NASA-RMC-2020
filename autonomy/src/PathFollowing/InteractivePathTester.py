@@ -1,8 +1,8 @@
 from graphics import *
 from collections import deque
-from PathPlanning.PathPlanning import Position, Grid
-from PathFollowing.PathFollower import PathFollower
-from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
+from PathPlanningUtils import Position, Grid
+from PathFollower import PathFollower
+from SkidSteerSimulator import SkidSteerSimulator
 
 
 class InteractivePathTester:
@@ -17,7 +17,7 @@ class InteractivePathTester:
         self.path = None
         self.robot = SkidSteerSimulator(2, 0, 1.5)
 
-        self.controller = PathFollower(self.robot, goal=self.goal)
+        self.controller = PathFollower(self.robot.reference_point_x, goal=self.goal)
 
         self.win = GraphWin("Path", self.arena_width*self.SCALE, self.arena_height*self.SCALE, autoflush=False)
 
@@ -29,7 +29,7 @@ class InteractivePathTester:
 
         self.robot_drawings = []
 
-        self.controller.update(self.robot)
+        self.controller.update(self.robot.state, self.robot.state_dot)
         self.update_path_and_draw()
         self.simulate_robot()
 
@@ -115,7 +115,7 @@ class InteractivePathTester:
         self.update_path_and_draw()
 
         for i in range(50):
-            target_vel, target_angular_vel = self.controller.get_wheel_torques(self.robot, dt)
+            target_vel, target_angular_vel = self.controller.get_target_vels(self.robot.state, self.robot.state_dot, dt)
 
             if self.robot.state_dot[0, 0] < target_vel:
                 forward_torque = 30

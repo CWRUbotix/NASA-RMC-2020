@@ -2,7 +2,6 @@
 
 import heapq as heap
 import math
-from PathPlanning.PathPlanning import Grid, Path
 
 
 def create_path(start, end, grid):
