@@ -1,0 +1,9 @@
+# Define the goal
+float32 x
+float32 y
+---
+# Define the result
+bool success
+---
+# Define feedback
+float32[] path

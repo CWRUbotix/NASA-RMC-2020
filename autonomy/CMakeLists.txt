@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
+  actionlib_msgs
+  actionlib
 )
 
 ## System dependencies are found with CMake's conventions
@@ -54,6 +56,11 @@ add_message_files(
     robotState.msg
 )
 
+add_action_files(
+  FILES
+  GoToGoal.action
+) 
+
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -72,6 +79,7 @@ add_message_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  actionlib_msgs
 )
 
 ################################################
