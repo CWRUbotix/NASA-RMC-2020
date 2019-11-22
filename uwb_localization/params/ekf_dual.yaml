@@ -1,7 +1,7 @@
 # For parameter descriptions, please refer to the template parameter files for each node.
 
 ekf_se_odom:
-  frequency: 30
+  frequency: 15
   sensor_timeout: 0.1
   two_d_mode: true
   transform_time_offset: 0.0
@@ -117,7 +117,7 @@ ekf_se_map:
                  false, false, false]
   pose0_differential: false
   pose0_relative: false
-  pose0_queue_size: 5
+  pose0_queue_size: 1
   pose0_nodelay: false
 
   use_control: false

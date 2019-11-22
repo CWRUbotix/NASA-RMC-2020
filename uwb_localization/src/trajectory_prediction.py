@@ -38,8 +38,8 @@ class TrajectoryPrediction:
         self.yaw_accel = None
         self.old_timestamp = None
         self.new_timestamp = None
-        self.x_vel_error_plot = []
-        self.x_accel_plot = []
+        self.delta_l_plot = []
+        self.delta_r_plot = []
         print('Booting up node...')
         rospy.init_node('trajectory_prediction', anonymous=True)
 
@@ -92,22 +92,28 @@ class TrajectoryPrediction:
         delta_l = x_vel_error / math.cos(self.yaw) - (self.yaw_vel * 0.63) / 2
         delta_r = x_vel_error / math.cos(self.yaw) + (self.yaw_vel * 0.63) / 2
 
+        self.delta_l_plot.append(delta_l)
+        self.delta_r_plot.append(delta_r)
+
         print(delta_r, delta_l)
         self.old_timestamp = self.new_timestamp  # set timestamp to be used for prediction as current msg timestamp
 
         if self.visualize:
             fig = plt.figure(figsize=(16, 8))
             ax = plt.subplot(121)
-            ax.set_title('X Velocity Deviation from Prediction')
-            ax.set_ylim(-0.1, 0.1)
-            ax.plot(self.x_vel_error_plot, label='x')
-            ax.axhline(np.mean(self.x_vel_error_plot), label='mean', c='r')
+            ax.set_title('Left side RPM Deviation from Prediction')
+            ax.set_ylim(-50, 50)
+            ax.plot(self.delta_l_plot, label='x')
+            ax.axhline(np.mean(self.delta_l_plot), label='mean', c='r')
             ax.legend(loc='best')
 
             ax = plt.subplot(122)
-            ax.set_title('X Acceleration')
-            ax.plot(self.x_accel_plot)
-            fig.savefig(self.viz_dir + 'x_vel_error_%d.png' % (len(os.listdir(self.viz_dir))))
+            ax.set_title('Right side RPM Deviation from Prediction')
+            ax.set_ylim(-50, 50)
+            ax.plot(self.delta_r_plot, label='x')
+            ax.axhline(np.mean(self.delta_r_plot), label='mean', c='r')
+            ax.legend(loc='best')
+            fig.savefig(self.viz_dir + 'vel_error_%d.png' % (len(os.listdir(self.viz_dir))))
             plt.close()
 
     def accel_callback(self, msg):

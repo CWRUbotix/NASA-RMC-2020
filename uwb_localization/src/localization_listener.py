@@ -26,6 +26,7 @@ class LocalizationNode:
         self.topic = 'localization_data'  # topic where UWB distances are published
         self.viz_dir = 'visualizations/'  # directory to store node visualizations
         self.visualize = visualize
+        self.viz_step = 50
         print('Booting up node...')
         rospy.init_node('localization_listener', anonymous=True)
         self.nodes = []  # list of UltraWideBandNode instances, one for each node and one for each anchor
@@ -97,7 +98,7 @@ class LocalizationNode:
             theta = self.get_robot_orientation()
             print('X: %.3f, Y: %.3f, theta: %.3f' % (self.robot_x[-1], self.robot_y[-1], theta))
             self.compose_msg()
-        if self.visualize:
+        if self.visualize and len(self.robot_x) % self.viz_step == 0:
             fig = plt.figure(figsize=(6 * 4, 9))
 
             ax = plt.subplot(141)
@@ -158,5 +159,5 @@ if __name__ == '__main__':
             uwb_node = UltraWideBandNode(sensor['id'], sensor['x'], sensor['y'], sensor['type'], sensors)
             localization_node.nodes.append(uwb_node)
 
-    sub = rospy.Subscriber(localization_node.topic, UwbData, localization_node.position_callback)
+    sub = rospy.Subscriber(localization_node.topic, UwbData, localization_node.position_callback, queue_size=12)
     rospy.spin()

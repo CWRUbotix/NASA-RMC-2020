@@ -20,12 +20,48 @@ from pylibfreenect2 import FrameType, Registration, Frame
 from pylibfreenect2 import createConsoleLogger, setGlobalLogger
 from pylibfreenect2 import LoggerLevel
 try:
-    from pylibfreenect2 import OpenCLPacketPipeline
-    pipeline = OpenCLPacketPipeline()
+    from pylibfreenect2 import OpenGLPacketPipeline
+    pipeline = OpenGLPacketPipeline()
 except:
-    from pylibfreenect2 import CpuPacketPipeline
-    pipeline = CpuPacketPipeline()
+    try:
+        from pylibfreenect2 import OpenCLPacketPipeline
+        pipeline = OpenCLPacketPipeline()
+    except:
+        from pylibfreenect2 import CpuPacketPipeline
+        pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
+# Create and set logger
+logger = createConsoleLogger(LoggerLevel.Debug)
+setGlobalLogger(logger)
+
+fn = Freenect2()
+num_devices = fn.enumerateDevices()
+if num_devices == 0:
+    print("No device connected!")
+    sys.exit(1)
+
+serial = fn.getDeviceSerialNumber(0)
+device = fn.openDevice(serial, pipeline=pipeline)
+
+listener = SyncMultiFrameListener(
+    FrameType.Color | FrameType.Ir | FrameType.Depth)
+
+# Register listeners
+device.setColorFrameListener(listener)
+device.setIrAndDepthFrameListener(listener)
+
+device.start()
+
+# NOTE: must be called after device.start()
+registration = Registration(device.getIrCameraParams(),
+                            device.getColorCameraParams())
+
+undistorted = Frame(512, 424, 4)
+registered = Frame(512, 424, 4)
+focal_x = device.getIrCameraParams().fx  # focal length x
+focal_y = device.getIrCameraParams().fy  # focal length y
+principal_x = device.getIrCameraParams().cx  # principal point x
+principal_y = device.getIrCameraParams().cy  # principal point y
 
 
 class ObstacleDetectionNode:
@@ -61,55 +97,39 @@ class ObstacleDetectionNode:
             "azimuth": 0, # sensor's yaw angle in degrees.
             "elevation": -30, # sensor's pitch angle in degrees.
         }
-        
-        self.start_kinect()
+
         print('Booting up node...')
         rospy.init_node('obstacleDetection', anonymous=True)
 
         os.makedirs(self.viz_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
-        os.makedirs(self.data_dir + '_color', exist_ok=True)
-        os.makedirs(self.data_dir + '_localization', exist_ok=True)
+        os.makedirs(self.data_dir + 'color', exist_ok=True)
+        os.makedirs(self.data_dir + 'localization', exist_ok=True)
         try:
             files = glob.glob('%s/*' % self.viz_dir)
             for f in files:
                 os.remove(f)
         except Exception as e:
             print(e)
-
-    def start_kinect(self):
-        # Create and set logger
-        logger = createConsoleLogger(LoggerLevel.Debug)
-        setGlobalLogger(None)
-
-        fn = Freenect2()
-        num_devices = fn.enumerateDevices()
-        if num_devices == 0:
-            print("No device connected!")
-            sys.exit(1)
-
-        serial = fn.getDeviceSerialNumber(0)
-        self.device = fn.openDevice(serial, pipeline=pipeline)
-
-        self.listener = SyncMultiFrameListener(FrameType.Color | FrameType.Ir | FrameType.Depth)
-
-        # Register listeners
-        self.device.setColorFrameListener(self.listener)
-        self.device.setIrAndDepthFrameListener(self.listener)
-
-        self.device.start()
-
-        # NOTE: must be called after device.start()
-        self.registration = Registration(self.device.getIrCameraParams(),
-                                    self.device.getColorCameraParams())
-
+        try:
+            files = glob.glob('%s/*' % self.data_dir)
+            for f in files:
+                os.remove(f)
+        except Exception as e:
+            print(e)
+        try:
+            files = glob.glob('%s/*' % self.data_dir + 'color')
+            for f in files:
+                os.remove(f)
+        except Exception as e:
+            print(e)
+        try:
+            files = glob.glob('%s/*' % self.data_dir + 'localization')
+            for f in files:
+                os.remove(f)
+        except Exception as e:
+            print(e)
         
-        self.focal_x = self.device.getIrCameraParams().fx  # focal length x
-        self.focal_y = self.device.getIrCameraParams().fy  # focal length y
-        self.principal_x = self.device.getIrCameraParams().cx  # principal point x
-        self.principal_y = self.device.getIrCameraParams().cy  # principal point y
-        self.undistorted = Frame(self.h, self.w, 4)
-        self.registered = Frame(self.h, self.w, 4)
 
     def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500):
         print(xyz_arr.shape)
@@ -184,7 +204,7 @@ class ObstacleDetectionNode:
             ax = plt.subplot(133)
             ax.imshow(z_projection_thresh, cmap='viridis')
 
-            fig.savefig('%s/%d' % (self.viz_dir, len(os.listdir('saved/'))))
+            fig.savefig('%s/%d' % (self.viz_dir, len(os.listdir(self.viz_dir))))
             plt.close()
 
     def localization_listener(self, msg):
@@ -201,17 +221,18 @@ class ObstacleDetectionNode:
     def listen_for_frames(self):
         while not rospy.is_shutdown():
             print('waiting for frame...')
-            frames = self.listener.waitForNewFrame()
+            frames = listener.waitForNewFrame()
             print('new frame...')
             depth_frame = frames["depth"]
             color = frames["color"]
 
-            self.registration.apply(color, depth_frame, self.undistorted, self.registered)
-            color_frame = self.registered.asarray(np.uint8)
+            registration.apply(color, depth_frame, undistorted, registered)
+            color_frame = registered.asarray(np.uint8)
             if self.save_data:
-                np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_frame)
-                np.save('%s/%d.npy' % (self.data_dir + '_color', len(os.listdir(self.data_dir + '_color'))), color_frame)
-                np.save('%s/%d.npy' % (self.data_dir + '_localization', len(os.listdir(self.data_dir + '_localization'))), np.array(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
+                np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_frame.asarray())
+                cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))), color.asarray())
+                #np.save('%s/%d.npy' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))), color_frame)
+                #np.save('%s/%d.npy' % (self.data_dir + 'localization', len(os.listdir(self.data_dir + 'localization'))), np.array(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
 
 
             img = depth_frame.asarray(np.float32)
@@ -219,20 +240,21 @@ class ObstacleDetectionNode:
             # TODO: Detect obstacles
             self.detect_obstacles_from_above(img)
 
-            self.listener.release(frames)
+            listener.release(frames)
 
-        self.listener.release(frames)
-        self.device.stop()
-        self.device.close()
+        listener.release(frames)
+        device.stop()
+        device.close()
 
         sys.exit(0)
 
 
 if __name__ == '__main__':
-    obstacle_detection = ObstacleDetectionNode()
-    print('Listening for frames...')
-    sub = rospy.Subscriber(obstacle_detection.localization_topic, Odometry, obstacle_detection.localization_listener, queue_size=1)
-    rospy.spin()
-    obstacle_detection.listen_for_frames()
-
-
+	try:
+	    obstacle_detection = ObstacleDetectionNode()
+	    print('Listening for frames...')
+	    #sub = rospy.Subscriber(obstacle_detection.localization_topic, Odometry, obstacle_detection.localization_listener, queue_size=1)
+	    #rospy.spin()
+	    obstacle_detection.listen_for_frames()
+	except rospy.exceptions.ROSInterruptException:
+		pass

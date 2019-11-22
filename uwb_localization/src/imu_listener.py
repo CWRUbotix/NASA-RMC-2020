@@ -41,7 +41,7 @@ class IMU:
         self.acceleration_plot = np.zeros(3)
 
         self.angular_velocity_offset = [-4, 6, 8]
-        self.acceleration_offset = [-0.163, 0.103]
+        self.acceleration_offset = [0, 0]
 
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
@@ -128,12 +128,12 @@ class IMU:
         orientation_quat = R.from_euler('xyz', self.orientation).as_quat()
         orientation_cov = np.ones(9) * 1e-9
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
-        angular_vel_msg = Vector3(self.angular_velocity[0] + self.angular_velocity_offset[0], 
-                                  self.angular_velocity[1] + self.angular_velocity_offset[1], 
+        angular_vel_msg = Vector3(self.angular_velocity[0] + self.angular_velocity_offset[0],
+                                  self.angular_velocity[1] + self.angular_velocity_offset[1],
                                   self.angular_velocity[2] + self.angular_velocity_offset[2])
         angular_vel_cov = np.ones(9) * 1e-9
-        accel_msg = Vector3(self.acceleration[0] + self.acceleration_offset[0], 
-                            self.acceleration[1] + self.acceleration_offset[1], 
+        accel_msg = Vector3(self.acceleration[0] + self.acceleration_offset[0],
+                            self.acceleration[1] + self.acceleration_offset[1],
                             self.acceleration[2])
         accel_cov = np.ones(9) * 1e-9
         header.stamp = rospy.Time.now()
@@ -160,7 +160,7 @@ class IMU:
         header.frame_id = 'base_link'
         #print('Port:', self.port_encoder, 'Starboard:', self.starboard_encoder)
         point_msg = Point(0, 0, 0)
-        orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat() 
+        orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat()
         pose_cov = np.ones(36) * 0
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
         pose_with_cov = PoseWithCovariance()

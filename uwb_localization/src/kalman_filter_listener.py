@@ -31,7 +31,7 @@ class KalmanFilterNode:
         self.robot_y = []
         self.robot_pitch = []
         self.viz_dir = 'robot_localization_viz'
-        self.viz_step = 1
+        self.viz_step = 50
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -65,7 +65,7 @@ class KalmanFilterNode:
         ----------------
         kwargs : `~matplotlib.patches.Patch` properties
         """
-        
+
         pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
         # Using a special case to obtain the eigenvalues of this
         # two-dimensionl dataset.
@@ -106,7 +106,7 @@ class KalmanFilterNode:
         self.robot_pitch.append(euler[2])  # rotation about vertical z-axis
         print('X: %.4f \tY: %.4f \tpitch: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
 
-        if len(self.robot_x) % self. viz_step == 0:
+        if len(self.robot_x) % self.viz_step == 0:
             fig, ax = plt.subplots()
             ax.scatter(self.robot_x, self.robot_y, label='robot')
             self.confidence_ellipse(self.robot_x[-1], self.robot_y[-1], covariance[0: 2, 0: 2], ax, edgecolor='red')
