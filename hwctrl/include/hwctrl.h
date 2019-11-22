@@ -9,7 +9,7 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
 #include <canbus/SetVescCmd.h>
-#include <canbus/MotorData.h>
+#include <canbus/VescData.h>
 #include <hwctrl/SetMotor.h>
 #include <string>
 #include <cstdio>
