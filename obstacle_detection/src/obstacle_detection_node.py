@@ -77,7 +77,8 @@ class ObstacleDetectionNode:
     def __init__(self):
         self.h, self.w = 512, 424
         self.ground_plane_height = -0.23
-        self.grid_size = 50
+        self.resolution = 0.15
+        self.grid_size = 30
         self.tolerance = 0.05
         self.kernel_size = 5
         self.save_imgs = True
@@ -153,8 +154,7 @@ class ObstacleDetectionNode:
         indices = np.clip(indices, 0, 4499)
         proj_img[indices[..., 0], indices[..., 1]] = 255
         proj_img[4500 - cropping:, 4500 - cropping:] = 0
-        #proj_img = proj_img[cropping:4500 - cropping, cropping:4500 - cropping]
-        new_size = 4500 // resize_factor - cropping // resize_factor
+        new_size = 4500 // resize_factor
         proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
         proj_img = cv2.dilate(proj_img, np.ones((3, 3)), iterations=2)
         proj_img = cv2.blur(proj_img, (5, 5))
@@ -181,6 +181,9 @@ class ObstacleDetectionNode:
             xyz_arr[xyz_arr[..., 2] >= self.ground_plane_height + self.tolerance])
         holes = self.project_point_cloud_onto_plane(
             xyz_arr[xyz_arr[..., 2] < self.ground_plane_height - self.tolerance])
+
+        print(rocks.shape, holes.shape)
+
         rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size))
         hole_grid = self.gridify(holes, (self.grid_size, self.grid_size))
         obs_grid = np.maximum(rock_grid, hole_grid)
@@ -214,21 +217,27 @@ class ObstacleDetectionNode:
             pass
 
         if self.save_imgs:
-            fig = plt.figure(figsize=(15, 5))
+            fig = plt.figure(figsize=(20, 5))
 
-            ax = plt.subplot(131)
+            ax = plt.subplot(141)
             ax.set_xticks([])
             ax.set_yticks([])
             ax.imshow(frame / 4500., cmap='Reds')
             ax.set_title('Depth Frame')
 
-            ax = plt.subplot(132)
+            ax = plt.subplot(142)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.imshow(np.maximum(rocks, holes), cmap='Reds')
+            ax.set_title('Projection')
+
+            ax = plt.subplot(143)
             ax.set_xticks([])
             ax.set_yticks([])
             ax.imshow(obs_grid, cmap='Reds')
             ax.set_title('Raw Grid')
 
-            ax = plt.subplot(133)
+            ax = plt.subplot(144)
             ax.set_xticks([])
             ax.set_yticks([])
             ax.imshow(occupancy_grid, cmap='Reds')
@@ -259,14 +268,14 @@ class ObstacleDetectionNode:
             frames = listener.waitForNewFrame()
             print('new frame...')
             depth_frame = frames["depth"]
-            color = frames["color"]
+            color = frames["color"].asarray()
+            color = cv2.flip(color, 1)
 
-            registration.apply(color, depth_frame, undistorted, registered)
-            color_frame = registered.asarray(np.uint8)
+            #registration.apply(color, depth_frame, undistorted, registered)
+            #color_frame = registered.asarray(np.uint8)
             if self.save_data:
                 np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_frame.asarray())
-                cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))),
-                            color.asarray())
+                cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))), color)
 
             img = depth_frame.asarray(np.float32)
             img = cv2.flip(img, 1)
