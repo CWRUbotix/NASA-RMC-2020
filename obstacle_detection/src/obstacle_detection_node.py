@@ -203,7 +203,7 @@ class ObstacleDetectionNode:
         grid_msg = OccupancyGrid()
         grid_msg.header = header
         grid_msg.info = map_meta_data
-        grid_msg.data = list(np.round(occupancy_grid.flatten() * 100))
+        grid_msg.data = list(np.int8(occupancy_grid.flatten() * 100))
 
         try:
             pub = rospy.Publisher('local_occupancy_grid', OccupancyGrid, queue_size=1)
