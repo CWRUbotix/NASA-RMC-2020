@@ -11,6 +11,7 @@ matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy import signal
 from scipy.spatial.transform import Rotation as R
 
 from nav_msgs.msg import Odometry
@@ -68,6 +69,10 @@ class ObstacleDetectionNode:
 
     def __init__(self):
         self.h, self.w = 512, 424
+        self.ground_plane_height = -0.23
+        self.grid_size = 50
+        self.tolerance = 0.05
+        self.kernel_size = 5
         self.save_imgs = True
         self.save_data = True
         self.robot_x = []
@@ -163,46 +168,37 @@ class ObstacleDetectionNode:
     def detect_obstacles_from_above(self, frame):
         frame[frame < 1000] = 0
         xyz_arr = self.depth_matrix_to_point_cloud(frame)
-        print(xyz_arr[..., 2].min(), xyz_arr[..., 2].max())
-        z_projection = self.project_point_cloud_onto_plane(xyz_arr)
-        z_projection_thresh = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 2] > -0.2])
-        cm = plt.get_cmap('viridis')
-        # Apply the colormap like a function to any array:
-        color = cm(z_projection)
-        color = np.uint8(color[:, :, :3] * 255)
-        ret, thresh = cv2.threshold(z_projection_thresh, 16, 255, cv2.THRESH_BINARY)
+        # point_height = xyz_arr[]
+        print(xyz_arr[..., 2].mean())
+        rocks = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 2] >= self.ground_plane_height + self.tolerance])
+        holes = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 2] < self.ground_plane_height - self.tolerance])
+        rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size))
+        hole_grid = self.gridify(holes, (self.grid_size, self.grid_size))
+        obs_grid = np.maximum(rock_grid, hole_grid)
+        kernel = np.ones((self.kernel_size, self.kernel_size))
 
-        # begin contour detection
-        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        for cntr in contours:
-            try:
-                # calculate diameter of equivalent circle
-                # this measurement is only used for checking if countours fit our bounds
-                area = cv2.contourArea(cntr)
-                equi_diameter = np.sqrt(4 * area / np.pi)
-                # Hardcoded Diameter Range in pixels
-                LOW_DIAMETER_BOUND = 10
-                HIGH_DIAMETER_BOUND = 50
-                x, y, obj_length, obj_height = cv2.boundingRect(cntr)
-                if obj_length > LOW_DIAMETER_BOUND and obj_length < HIGH_DIAMETER_BOUND and obj_height > LOW_DIAMETER_BOUND and obj_height < HIGH_DIAMETER_BOUND:
-                    moment = cv2.moments(cntr)  # get the centroid of the obstacle using its moment
-                    cx = int(moment['m10'] / moment['m00'])
-                    cy = int(moment['m01'] / moment['m00'])
-                    cv2.rectangle(color, (x, y), (x + obj_length, y + obj_height), (0, 255, 0), 2)
-
-            except cv2.error as e:
-                print(e)
-                pass
+        occupancy_grid = signal.convolve2d(obs_grid, kernel, boundary='symm', mode='same')
 
         if self.save_imgs:
             fig = plt.figure(figsize=(15, 5))
 
             ax = plt.subplot(131)
-            ax.imshow(color)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.imshow(frame / 4500., cmap='Reds')
+            ax.set_title('Depth Frame')
+
             ax = plt.subplot(132)
-            ax.imshow(z_projection, cmap='viridis')
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.imshow(obs_grid, cmap='Reds')
+            ax.set_title('Raw Grid')
+
             ax = plt.subplot(133)
-            ax.imshow(z_projection_thresh, cmap='viridis')
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.imshow(occupancy_grid, cmap='Reds')
+            ax.set_title('Occupancy Grid')
 
             fig.savefig('%s/%d' % (self.viz_dir, len(os.listdir(self.viz_dir))))
             plt.close()
@@ -217,6 +213,11 @@ class ObstacleDetectionNode:
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
         self.robot_pitch.append(euler[2])  # rotation about vertical z-axis
         print('X: %.4f \tY: %.4f \tpitch: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
+
+    def gridify(self, arr, new_shape):
+        shape = (new_shape[0], arr.shape[0] // new_shape[0],
+                 new_shape[1], arr.shape[1] // new_shape[1])
+        return arr.reshape(shape).mean(-1).mean(1)
 
     def listen_for_frames(self):
         while not rospy.is_shutdown():
