@@ -152,7 +152,8 @@ class ObstacleDetectionNode:
         indices[..., 1] += 4500 // 2
         indices = np.clip(indices, 0, 4499)
         proj_img[indices[..., 0], indices[..., 1]] = 255
-        proj_img = proj_img[cropping:4500 - cropping, cropping:4500 - cropping]
+        proj_img[4500 - cropping:, 4500 - cropping:] = 0
+        #proj_img = proj_img[cropping:4500 - cropping, cropping:4500 - cropping]
         new_size = 4500 // resize_factor - cropping // resize_factor
         proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
         proj_img = cv2.dilate(proj_img, np.ones((3, 3)), iterations=2)
@@ -207,7 +208,6 @@ class ObstacleDetectionNode:
 
         try:
             pub = rospy.Publisher('local_occupancy_grid', OccupancyGrid, queue_size=1)
-            rospy.loginfo(grid_msg)
             pub.publish(grid_msg)
         except rospy.ROSInterruptException as e:
             print(e.getMessage())
