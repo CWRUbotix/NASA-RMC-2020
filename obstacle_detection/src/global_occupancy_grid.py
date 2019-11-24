@@ -14,6 +14,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import signal
 from scipy.spatial.transform import Rotation as R
+from scipy import ndimage
 
 from std_msgs.msg import Header
 from nav_msgs.msg import MapMetaData, OccupancyGrid, Odometry
@@ -82,10 +83,13 @@ class GlobalOccupancyGrid:
                 np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), self.local_grid)
                 np.save('%s/%d.npy' % (self.data_dir + 'localization', len(os.listdir(self.data_dir + 'localization'))),
                         np.array(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
-            local_origin = (self.robot_x[-1] - (grid_size / 2) * self.resolution,
-                            self.robot_y[-1] - (grid_size / 2) * self.resolution)
-            self.global_totals[local_origin[0]: local_origin[0] + grid_size, local_origin[1] + local_origin[1] + grid_size] += self.local_grid
-            self.global_counts[local_origin[0]: local_origin[0] + grid_size, local_origin[1] + local_origin[1] + grid_size] += np.ones_like(self.local_grid)
+            local_origin = (self.robot_x[-1] - (grid_size / 2) * self.resolution * np.cos(self.robot_pitch[-1]),
+                            self.robot_y[-1] - (grid_size / 2) * self.resolution * np.sin(self.robot_pitch[-1]))
+            rotated_grid = ndimage.rotate(self.local_grid, -self.robot_pitch[-1], mode='constant', cval=-1)
+            self.global_totals[local_origin[0]: local_origin[0] + rotated_grid.shape[0], local_origin[1] + local_origin[1] + rotated_grid.shape[1]] += rotated_grid
+            counts = np.ones_like(rotated_grid)
+            counts[rotated_grid == -1] = 0
+            self.global_counts[local_origin[0]: local_origin[0] + rotated_grid.shape[0], local_origin[1] + local_origin[1] + rotated_grid.shape[1]] += counts
             self.global_grid = self.global_totals / self.global_counts
             self.global_grid /= np.max(self.global_grid)  # ensure values are 0-1
 
