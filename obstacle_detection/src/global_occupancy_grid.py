@@ -113,6 +113,7 @@ class GlobalOccupancyGrid:
                 print(e.getMessage())
                 pass
 
+
 if __name__ == '__main__':
     try:
         global_grid = GlobalOccupancyGrid()

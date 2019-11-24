@@ -19,6 +19,7 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Quaternion, Vector3
 from geometry_msgs.msg import Pose, AccelWithCovarianceStamped
 from nav_msgs.msg import Odometry
+from uwb_localization.srv import EffectiveRPM
 
 
 class TrajectoryPrediction:
@@ -41,7 +42,6 @@ class TrajectoryPrediction:
         self.delta_l_plot = []
         self.delta_r_plot = []
         print('Booting up node...')
-        rospy.init_node('trajectory_prediction', anonymous=True)
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -60,61 +60,12 @@ class TrajectoryPrediction:
         twist = msg.twist.twist
         quat = pose.orientation
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-        if not self.full_state_available():  # first state message received
-            self.old_timestamp = msg.header.stamp.to_nsec()
-            self.new_timestamp = msg.header.stamp.to_nsec()
-        else:  # new state message, predict and measure deviation
-            self.new_timestamp = msg.header.stamp.to_nsec()
-            t = (self.new_timestamp - self.old_timestamp) * 1e-9  # time elapsed between prediction and observation converted to seconds
-            # get prediction with kinematic transition functions used by robot_localization
-            x_new = self.x + self.x_vel * t + 0.5 * self.x_accel * t ** 2
-            y_new = self.y + self.y_vel * t + 0.5 * self.y_accel * t ** 2
-            yaw_new = self.yaw + self.yaw_vel + 0.5 * self.yaw_accel * t ** 2
-            x_vel_new = self.x_vel + self.x_accel * t
-            y_vel_new = self.y_vel + self.y_accel * t
-            yaw_vel_new = self.yaw_vel + self.yaw_accel * t
-
-
         self.x = pose.position.x
         self.y = pose.position.y
         self.yaw = euler[2]
         self.x_vel = twist.linear.x
         self.y_vel = twist.linear.y
         self.yaw_vel = twist.angular.z
-        # compute deviations from actual observations
-        x_error = x_new - self.x
-        y_error = y_new - self.y
-        yaw_error = yaw_new - self.yaw
-        x_vel_error = x_vel_new - self.x_vel
-        y_vel_error = y_vel_new - self.y_vel
-        yaw_vel_error = yaw_vel_new - self.yaw_vel
-
-        delta_l = x_vel_error / math.cos(self.yaw) - (self.yaw_vel * 0.63) / 2
-        delta_r = x_vel_error / math.cos(self.yaw) + (self.yaw_vel * 0.63) / 2
-
-        self.delta_l_plot.append(delta_l)
-        self.delta_r_plot.append(delta_r)
-
-        print(delta_r, delta_l)
-        self.old_timestamp = self.new_timestamp  # set timestamp to be used for prediction as current msg timestamp
-
-        if self.visualize:
-            fig = plt.figure(figsize=(16, 8))
-            ax = plt.subplot(121)
-            ax.set_title('Left side RPM Deviation from Prediction')
-            ax.set_ylim(-50, 50)
-            ax.plot(self.delta_l_plot, label='x')
-            ax.axhline(np.mean(self.delta_l_plot), label='mean', c='r')
-            ax.legend(loc='best')
-
-            ax = plt.subplot(122)
-            ax.set_title('Right side RPM Deviation from Prediction')
-            ax.set_ylim(-50, 50)
-            ax.plot(self.delta_r_plot, label='x')
-            ax.axhline(np.mean(self.delta_r_plot), label='mean', c='r')
-            ax.legend(loc='best')
-            fig.savefig(self.viz_dir + 'vel_error_%d.png' % (len(os.listdir(self.viz_dir))))
-            plt.close()
 
     def accel_callback(self, msg):
         linear = msg.accel.accel.linear
@@ -123,9 +74,56 @@ class TrajectoryPrediction:
         self.y_accel = linear.y
         self.yaw_accel = angular.z
 
+    def compute_effective_RPM(self, req):
+
+        x_dot = (((req.left * math.pi / 30 * 0.2286) + (
+                    req.right * math.pi / 30 * 0.2286)) / 2) * math.cos(self.yaw)
+        y_dot = (((req.left * math.pi / 30 * 0.2286) + (
+                    req.right * math.pi / 30 * 0.2286)) / 2) * math.sin(self.yaw)
+        theta_dot = ((req.left * math.pi / 30 * 0.2286) - (
+                    req.right* math.pi / 30 * 0.2286)) / 0.63
+
+        # compute deviations from actual observations
+        x_vel_error = x_dot - self.x_vel
+        y_vel_error = y_dot - self.y_vel
+        yaw_vel_error = theta_dot - self.yaw_vel
+
+        delta_l = x_vel_error / math.cos(self.yaw) - (self.yaw_vel * 0.63) / 2
+        delta_r = x_vel_error / math.cos(self.yaw) + (self.yaw_vel * 0.63) / 2
+
+        self.delta_l_plot.append(delta_l)
+        self.delta_r_plot.append(delta_r)
+
+        print(delta_r, delta_l)
+
+        if self.visualize:
+            fig = plt.figure(figsize=(16, 8))
+            ax = plt.subplot(121)
+            ax.set_title('Left side RPM Deviation from Effective RPM')
+            ax.set_ylim(-50, 50)
+            ax.plot(self.delta_l_plot, label='x')
+            ax.axhline(np.mean(self.delta_l_plot), label='mean', c='r')
+            ax.legend(loc='best')
+
+            ax = plt.subplot(122)
+            ax.set_title('Right side RPM Deviation from Effective RPM')
+            ax.set_ylim(-50, 50)
+            ax.plot(self.delta_r_plot, label='x')
+            ax.axhline(np.mean(self.delta_r_plot), label='mean', c='r')
+            ax.legend(loc='best')
+            fig.savefig(self.viz_dir + 'vel_error_%d.png' % (len(os.listdir(self.viz_dir))))
+            plt.close()
+
+        return EffectiveRPM(delta_l, delta_r)
+
+    def effective_RPM_server(self):
+        rospy.init_node('effective_RPM_server')
+        rospy.Service('effective_RPM', EffectiveRPM, self.compute_effective_RPM)
+        rospy.Subscriber(prediction_node.odom_topic, Odometry, prediction_node.odom_callback, queue_size=1)
+        rospy.Subscriber(prediction_node.accel_topic, AccelWithCovarianceStamped, prediction_node.accel_callback, queue_size=1)
+        rospy.spin()
+
 
 if __name__ == '__main__':
     prediction_node = TrajectoryPrediction()
-    rospy.Subscriber(prediction_node.odom_topic, Odometry, prediction_node.odom_callback, queue_size=1)
-    rospy.Subscriber(prediction_node.accel_topic, AccelWithCovarianceStamped, prediction_node.accel_callback, queue_size=1)
-    rospy.spin()
+
