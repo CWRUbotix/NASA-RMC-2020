@@ -32,8 +32,10 @@ class GlobalOccupancyGrid:
         self.arena_length = 5.4
         self.arena_width = 3.6
         self.resolution = 0.15
-        self.global_grid_shape = ((self.arena_length / self.resolution), (self.arena_width / self.resolution))
+        self.global_grid_shape = (int(self.arena_length // self.resolution), int(self.arena_width // self.resolution))
         self.global_grid = np.zeros(self.global_grid_shape)
+        self.global_counts = np.zeros_like(self.global_grid)  # keeps track of number of measurements for each cell
+        self.global_totals = np.zeros_like(self.global_grid)  # keeps track of sum of measurements for each cell
         self.localization_topic = 'odometry/filtered_map'
         self.local_grid_topic = 'local_occupancy_grid'
         self.viz_dir = 'global_map/'
@@ -75,11 +77,41 @@ class GlobalOccupancyGrid:
     def local_grid_callback(self, msg):
         grid_size = msg.info.width
         self.local_grid = np.reshape(msg.data, (grid_size, grid_size))
-        if self.save_data:
-            np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), self.local_grid)
-            np.save('%s/%d.npy' % (self.data_dir + 'localization', len(os.listdir(self.data_dir + 'localization'))),
-                    np.array(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
+        if self.has_localization_data():
+            if self.save_data:
+                np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), self.local_grid)
+                np.save('%s/%d.npy' % (self.data_dir + 'localization', len(os.listdir(self.data_dir + 'localization'))),
+                        np.array(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
+            local_origin = (self.robot_x[-1] - (grid_size / 2) * self.resolution,
+                            self.robot_y[-1] - (grid_size / 2) * self.resolution)
+            self.global_totals[local_origin[0]: local_origin[0] + grid_size, local_origin[1] + local_origin[1] + grid_size] += self.local_grid
+            self.global_counts[local_origin[0]: local_origin[0] + grid_size, local_origin[1] + local_origin[1] + grid_size] += np.ones_like(self.local_grid)
+            self.global_grid = self.global_totals / self.global_counts
+            self.global_grid /= np.max(self.global_grid)  # ensure values are 0-1
 
+            header = Header()
+            header.stamp = rospy.Time.now()
+            header.frame_id = 'map'
+
+            map_meta_data = MapMetaData()
+            map_meta_data.map_load_time = rospy.Time.now()
+            map_meta_data.resolution = self.resolution  # each cell is 15cm
+            map_meta_data.width = self.global_grid_shape[1]
+            map_meta_data.height = self.global_grid_shape[0]
+            map_meta_data.origin = Pose(Point(0, 0, 0),
+                                        Quaternion(0, 0, 0, 1))
+
+            grid_msg = OccupancyGrid()
+            grid_msg.header = header
+            grid_msg.info = map_meta_data
+            grid_msg.data = list(np.int8(self.global_grid.flatten() * 100))
+
+            try:
+                pub = rospy.Publisher('global_occupancy_grid', OccupancyGrid, queue_size=1)
+                pub.publish(grid_msg)
+            except rospy.ROSInterruptException as e:
+                print(e.getMessage())
+                pass
 
 if __name__ == '__main__':
     try:

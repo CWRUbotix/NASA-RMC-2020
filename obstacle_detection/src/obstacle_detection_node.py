@@ -198,7 +198,7 @@ class ObstacleDetectionNode:
 
         map_meta_data = MapMetaData()
         map_meta_data.map_load_time = rospy.Time.now()
-        map_meta_data.resolution = 0.15  # each cell is 15cm
+        map_meta_data.resolution = self.resolution  # each cell is 15cm
         map_meta_data.width = self.grid_size
         map_meta_data.height = self.grid_size
         map_meta_data.origin = Pose(Point(0, 0, 0),
