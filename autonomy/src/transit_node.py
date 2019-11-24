@@ -45,10 +45,10 @@ class TransitNode:
         self.controller.set_goal(goal)
         self.controller.calculate_path()
 
-        r = rospy.rate(50)  # 50 Hz
-        last_time = rospy.get_rosTime().nsec
+        r = rospy.Rate(50)  # 50 Hz
+        last_time = rospy.get_rostime().nsecs
         while not rospy.is_shutdown() and not self.controller.done:
-            time = rospy.get_rosTime().nsec
+            time = rospy.get_rostime().nsecs
             dt = (time - last_time) * 1e-9
 
             vel, angular_vel = self.controller.get_target_vels(self.robot_state["state"],
