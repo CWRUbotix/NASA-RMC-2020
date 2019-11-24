@@ -4,15 +4,22 @@ from hci.msg import motorCommand
 from autonomy.msg import goToGoal, transitPath, robotState
 from nav_msgs.msg import OccupancyGrid
 from PathFollowing.PathFollower import PathFollower
+from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathPlanning.PathPlanningUtils import Position, Grid
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 import os
 import glob
+matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
+
 
 # Constants
 ARENA_WIDTH = 3.78
 ARENA_HEIGHT = 7.38
-effective_robot_width = 0.75
+ROBOT_WIDTH = 0.75
+ROBOT_LENGTH = 1.5
+effective_robot_width = 1
 reference_point_x = 0.3
 wheel_radius = 0.1
 
@@ -24,10 +31,20 @@ class TransitNode:
 
         self.controller = PathFollower(reference_point_x, goal=(0, 0))
         self.robot_state = dict(state=np.array([[0, 0, 0]]).T, state_dot=np.array([[0, 0, 0]]).T)
+        self.controller.update_grid(Grid(ARENA_WIDTH, ARENA_HEIGHT))
 
         self.viz_dir = "visualizations/"
         self.visualize = visualize
-        self.viz_step = 10
+        self.viz_step = 30
+        self.step = 0
+
+        os.makedirs(self.viz_dir, exist_ok=True)
+        try:
+            files = glob.glob('%s/*' % self.viz_dir)
+            for f in files:
+                os.remove(f)
+        except Exception as e:
+            print(e)
 
         rospy.init_node("transit_node", anonymous=False)
         rospy.loginfo("Booting up node...")
@@ -60,6 +77,8 @@ class TransitNode:
             self.motor_pub.publish(motorID=0, value=left_speed)
             self.motor_pub.publish(motorID=1, value=right_speed)
 
+            self.draw()
+            self.step += 1
             last_time = time
             r.sleep()
 
@@ -92,6 +111,27 @@ class TransitNode:
     def shutdown(self):
         self.motor_pub.publish(motorID=0, value=0)
         self.motor_pub.publish(motorID=0, value=0)
+
+    def draw(self):
+        if self.visualize and self.step % self.viz_step == 0:
+            plt.clf()
+            plt.axis('equal')
+            axes = plt.gca()
+            axes.set_xlim([-2, 8])
+            axes.set_ylim([-3, 7])
+
+            plt.plot([0, ARENA_WIDTH, ARENA_WIDTH, 0], [0, 0, ARENA_HEIGHT, ARENA_HEIGHT], color='black')  # draw field
+            points, _, _ = SkidSteerSimulator.draw(self.robot_state["state"], ROBOT_WIDTH, ROBOT_LENGTH)
+            path_aprox, closest_point, reference = self.controller.draw_path_info()
+            path = self.controller.get_path()
+
+            plt.scatter(points[:, 0], points[:, 1])
+            plt.plot(path[:, 0], path[:, 1])
+            plt.scatter(reference[0, 0], reference[1, 0])
+            plt.scatter(closest_point[0], closest_point[1])
+            plt.plot(path_aprox[:, 0], path_aprox[:, 1])
+
+            plt.savefig(self.viz_dir + 'fig_' + str(int(self.step / self.viz_step)))
 
 
 if __name__ == "__main__":

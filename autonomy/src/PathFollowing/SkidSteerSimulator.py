@@ -36,7 +36,7 @@ class SkidSteerSimulator:
     def update(self, torque_right, torque_left, dt):
         theta = self.state[2, 0]  # get robot's direction
 
-        direction_vectors = self.get_direction_vectors() # Get the direction each wheel of the robot is going
+        direction_vectors, _ = self.get_direction_vectors() # Get the direction each wheel of the robot is going
         direction_vectors = np.dot(np.array([[np.cos(theta), np.sin(theta)],  # rotate direction vectors to local frame
                                              [-np.sin(theta), np.cos(theta)]]), direction_vectors.T).T
 
@@ -134,31 +134,24 @@ class SkidSteerSimulator:
         self.state = self.state + np.dot(rotation_matrix, self.state_dot) * dt
         # self.state = self.state + self.state_dot * dt
 
-    def draw(self):
+    @staticmethod
+    def draw(state, width, length):
         # get x y and theta in global coords
-        x = self.state[0, 0]
-        y = self.state[1, 0]
-        theta = self.state[2, 0]
+        x = state[0, 0]
+        y = state[1, 0]
+        theta = state[2, 0]
 
         # A rotation matrix to convert local coords to global
         rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
                                   [np.sin(theta), np.cos(theta)]])
 
         points = np.array([[1, 1], [1, -1], [-1, -1], [-1, 1]])  # robot edges
-        points = points * np.array([self.length / 2, self.width / 2])  # multiply by width and length
+        points = points * np.array([length / 2, width / 2])  # multiply by width and length
         points = np.dot(rotation_matrix, points.T)  # rotate the points to the global frame
 
         points = points.T + np.array([x, y])  # Translate by the robot's center
 
-        direction_vectors = self.get_direction_vectors()  # Get which way wheels are going
-
-        perp_vectors = np.dot(np.array([[0, -1],  # These are the vectors perpendicular to the direction vectors,
-                                  [1, 0]]), direction_vectors.T).T * 5  # used to find instantaneous center of rotation
-                                                                        # (I'm not doing this, but you could)
-
-        # print(direction_vectors)
-        # print(perp_vectors)
-        return points, direction_vectors, perp_vectors
+        return points
 
     # Returns list of vectors that are which direction each wheel is traveling
     def get_direction_vectors(self):
@@ -182,6 +175,10 @@ class SkidSteerSimulator:
 
         direction_vectors = velocity_vectors + rotation_vectors  # direction is sum of rotation and velocity
 
-        return direction_vectors
+        perp_vectors = np.dot(np.array([[0, -1],  # These are the vectors perpendicular to the direction vectors,
+                                  [1, 0]]), direction_vectors.T).T * 5  # used to find instantaneous center of rotation
+                                                                        # (I'm not doing this, but you could)
+
+        return direction_vectors, perp_vectors
 
 

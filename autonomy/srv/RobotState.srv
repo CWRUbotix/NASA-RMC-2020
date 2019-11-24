@@ -1,7 +1,6 @@
 # service providing up to date robot state
-string client
 ---
 time stamp
 nav_msgs/Odometry odometry
 nav_msgs/OccupancyGrid grid
-autonomy/sensorValue
+autonomy/sensorValue sensors    

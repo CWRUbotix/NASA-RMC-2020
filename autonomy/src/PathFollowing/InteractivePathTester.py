@@ -134,7 +134,7 @@ class InteractivePathTester:
         self.win.after(int(dt * 1000 * self.SIM_DELAY), self.simulate_robot)
 
     def draw_robot(self, robot, controller, win):
-        points, _, _ = robot.draw()
+        points = robot.draw(robot.state, robot.width, robot.length)
         robot_path, _, _ = controller.draw_path_info()
 
         to_draw = []
