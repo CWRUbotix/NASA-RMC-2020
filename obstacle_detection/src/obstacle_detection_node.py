@@ -271,15 +271,12 @@ class ObstacleDetectionNode:
             color = frames["color"].asarray()
             color = cv2.flip(color, 1)
 
-            #registration.apply(color, depth_frame, undistorted, registered)
-            #color_frame = registered.asarray(np.uint8)
             if self.save_data:
                 np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_frame.asarray())
                 cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))), color)
 
             img = depth_frame.asarray(np.float32)
             img = cv2.flip(img, 1)
-            # TODO: Detect obstacles
             self.detect_obstacles_from_above(img)
 
             listener.release(frames)

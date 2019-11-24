@@ -37,7 +37,7 @@ class GlobalOccupancyGrid:
         self.localization_topic = 'odometry/filtered_map'
         self.local_grid_topic = 'local_occupancy_grid'
         self.viz_dir = 'global_map/'
-        self.data_dir = 'saved_frames/'
+        self.data_dir = 'occupancy_grid_data/'
 
         print('Booting up node...')
         rospy.init_node('globalMap', anonymous=True)
@@ -75,6 +75,10 @@ class GlobalOccupancyGrid:
     def local_grid_callback(self, msg):
         grid_size = msg.info.width
         self.local_grid = np.reshape(msg.data, (grid_size, grid_size))
+        if self.save_data:
+            np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), self.local_grid)
+            np.save('%s/%d.npy' % (self.data_dir + 'localization', len(os.listdir(self.data_dir + 'localization'))),
+                    np.array(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
 
 
 if __name__ == '__main__':
