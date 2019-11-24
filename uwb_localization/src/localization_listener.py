@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
-from canbus.msg import UWB_data
+from canbus.msg import UwbData
 from triangulation import UltraWideBandNode
 from unscented_localization import run_localization
 
@@ -23,23 +23,21 @@ from geometry_msgs.msg import Quaternion, PoseWithCovarianceStamped, PoseWithCov
 
 class LocalizationNode:
     def __init__(self, visualize=True):
-        self.topic = 'localization_data'
-        self.viz_dir = 'visualizations/'
+        self.topic = 'localization_data'  # topic where UWB distances are published
+        self.viz_dir = 'visualizations/'  # directory to store node visualizations
         self.visualize = visualize
+        self.viz_step = 50
         print('Booting up node...')
         rospy.init_node('localization_listener', anonymous=True)
-        self.nodes = []
-        self.robot_x = []
-        self.robot_y = []
-        self.kalman_x = []
-        self.kalman_y = []
-        self.robot_theta = []
-        self.kalman_theta = []
-        self.sensors = None
-        self.msg_counts = {}
+        self.nodes = []  # list of UltraWideBandNode instances, one for each node and one for each anchor
+        self.robot_x = []  # list of past and current x positions
+        self.robot_y = []  # list of past and current y positions
+        self.robot_theta = []  # list of past and current yaw measurements
+        self.sensors = None  # DataFrame of sensors, types, and relative positions
+        self.msg_counts = {}  # dictionary of counts for each node to keep track of number of anchor distances received
 
+        # setup visualization directory and remove all past visualizations
         os.makedirs(self.viz_dir, exist_ok=True)
-
         try:
             files = glob.glob('%s/*' % self.viz_dir)
             for f in files:
@@ -49,11 +47,12 @@ class LocalizationNode:
 
     def init_nodes(self):
         rp = rospkg.RosPack()
+        # find config file in canbus node directory
         script_path = os.path.join(rp.get_path("canbus"), "include", "node_config.csv")
         sensors = pd.read_csv(script_path)
         self.sensors = sensors
         for i in range(len(self.sensors)):
-            self.msg_counts[i] = 0
+            self.msg_counts[i] = 0  # initialize all message counts to zero
         print(sensors)
         return sensors
 
@@ -63,51 +62,18 @@ class LocalizationNode:
         thetas = []  # list to store bearing angles measured between all pairs
         for (start_node, end_node) in node_pairs:
             if start_node.is_valid() and end_node.is_valid():
-                # horizontally parallel but wrong direction
-                if start_node.relative_x == end_node.relative_x and start_node.relative_y > end_node.relative_y:
-                    start_node, end_node = end_node, start_node  # swap nodes
-                # vertically parallel but wrong direction
-                elif start_node.relative_y == end_node.relative_y and start_node.relative_x > end_node.relative_x:
-                    start_node, end_node = end_node, start_node
-                # diagonal and wrong direction
-                elif start_node.relative_y > end_node.relative_y or start_node.relative_x > end_node.relative_x:
-                    start_node, end_node = end_node, start_node
                 # get vector with tail at start node and head at end end
                 robot_edge = -np.array([start_node.relative_x, start_node.relative_y]) + np.array([end_node.relative_x, end_node.relative_y])
                 dot_product = np.dot(robot_edge, np.array([1, 0]))
                 # each edge vector is at a different angle relative to the robot coordinate system
-                theta_offset = math.acos(dot_product / np.linalg.norm(robot_edge))
+                theta_offset = np.arctan2(robot_edge[1], robot_edge[0])
                 dY = end_node.y - start_node.y
                 dX = end_node.x - start_node.x
-                theta = math.atan2(dY, dX) - theta_offset
-                thetas.append(theta)
-        theta = np.mean(thetas)
-        self.robot_theta.append(theta)
-        return theta
-
-    @staticmethod
-    def euclidean_distance(x1, x2, y1, y2):
-        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-
-    def remove_invalid_points(self, epsilon=.2):
-        best_node = self.nodes[0]
-        for node in self.nodes:
-            if node.confidence > best_node.confidence:
-                best_node = node
-        for n1 in self.nodes:
-            if n1.id != best_node.id:  # compare to the highest confidence measure
-                for n2 in self.nodes:
-                    if n1.id != n2.id and n2.id == best_node.id:  # if nodes are not the same
-                        measured_distance = self.euclidean_distance(n1.x, n2.x, n1.y, n2.y)
-                        robot_x1, robot_y1 = n1.get_robot_position()
-                        robot_x2, robot_y2 = n2.get_robot_position()
-                        robot_distance = self.euclidean_distance(robot_x1, robot_x2, robot_y1, robot_y2)
-                        if abs(measured_distance - robot_distance) > epsilon:
-                            n1.x = n1.x_plot[-2]  # set position to most recent valid measure
-                            n1.y = n1.y_plot[-2]
-                            n1.x_plot = n1.x_plot[:-1]
-                            n1.y_plot = n1.y_plot[:-1]
-                            break
+                theta = np.arctan2(dY, dX) - theta_offset
+                thetas.append([np.cos(theta), np.sin(theta)])
+        theta = np.mean(thetas, axis=0)
+        self.robot_theta.append(np.arctan2(theta[1], theta[0]))
+        return self.robot_theta[-1]
 
     def position_callback(self, msg):
         for node in self.nodes:
@@ -117,6 +83,7 @@ class LocalizationNode:
         for node in self.nodes:
             if self.msg_counts[node.id] >= 3:
                 node.get_position()
+                self.msg_counts[node.id] = 0
         avg_x = 0
         avg_y = 0
         total = 0
@@ -129,8 +96,9 @@ class LocalizationNode:
             self.robot_x.append(avg_x / total)
             self.robot_y.append(avg_y / total)
             theta = self.get_robot_orientation()
+            print('X: %.3f, Y: %.3f, theta: %.3f' % (self.robot_x[-1], self.robot_y[-1], theta))
             self.compose_msg()
-        if self.visualize:
+        if self.visualize and len(self.robot_x) % self.viz_step == 0:
             fig = plt.figure(figsize=(6 * 4, 9))
 
             ax = plt.subplot(141)
@@ -161,28 +129,26 @@ class LocalizationNode:
             plt.close()
 
     def compose_msg(self):
-        for node in self.nodes:
-            if node.is_valid():
-                header = Header()
-                header.stamp = rospy.Time.now()
-                header.frame_id = 'map'
-                point_msg = Point(node.x - node.relative_x, node.y - node.relative_y, 0)  # use most recent pos with no z-coord
-                orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
-                pose_cov = np.ones(36) * 1e-9
-                quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
-                pose_with_cov = PoseWithCovariance()
-                pose_with_cov.pose = Pose(point_msg, quat_msg)
-                pose_with_cov.covariance = pose_cov
-                stamped_msg = PoseWithCovarianceStamped()
-                stamped_msg.header = header
-                stamped_msg.pose = pose_with_cov
-                try:
-                    pub = rospy.Publisher('uwb_node_%d' % node.id, PoseWithCovarianceStamped, queue_size=10)
-                    #rospy.loginfo(stamped_msg)
-                    pub.publish(stamped_msg)
-                except rospy.ROSInterruptException as e:
-                    print(e.getMessage())
-                    pass
+        header = Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = 'map'
+        point_msg = Point(self.robot_x[-1], self.robot_y[-1], 0)  # use most recent pos with no z-coord
+        orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
+        pose_cov = np.diag([0.01, 0.01, 0, 0, 0, 0.04]).flatten()
+        quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
+        pose_with_cov = PoseWithCovariance()
+        pose_with_cov.pose = Pose(point_msg, quat_msg)
+        pose_with_cov.covariance = pose_cov
+        stamped_msg = PoseWithCovarianceStamped()
+        stamped_msg.header = header
+        stamped_msg.pose = pose_with_cov
+        try:
+            pub = rospy.Publisher('uwb_nodes', PoseWithCovarianceStamped, queue_size=1)
+            #rospy.loginfo(stamped_msg)
+            pub.publish(stamped_msg)
+        except rospy.ROSInterruptException as e:
+            print(e.getMessage())
+            pass
 
 
 if __name__ == '__main__':
@@ -193,5 +159,5 @@ if __name__ == '__main__':
             uwb_node = UltraWideBandNode(sensor['id'], sensor['x'], sensor['y'], sensor['type'], sensors)
             localization_node.nodes.append(uwb_node)
 
-    sub = rospy.Subscriber(localization_node.topic, UWB_data, localization_node.position_callback)
+    sub = rospy.Subscriber(localization_node.topic, UwbData, localization_node.position_callback, queue_size=12)
     rospy.spin()
