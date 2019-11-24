@@ -34,7 +34,7 @@ class KalmanFilterNode:
         self.robot_yaw = []
         self.node_yaw = []
         self.viz_dir = 'robot_localization_viz'
-        self.viz_step = 20
+        self.viz_step = 50
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -134,6 +134,6 @@ class KalmanFilterNode:
 
 if __name__ == '__main__':
     kalman_filter_node = KalmanFilterNode()
-    sub = rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback)
-    rospy.Subscriber('uwb_nodes', PoseWithCovarianceStamped, kalman_filter_node.node_callback)
+    sub = rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback, queue_size=1)
+
     rospy.spin()
