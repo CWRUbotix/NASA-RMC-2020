@@ -3,4 +3,4 @@
 time stamp
 nav_msgs/Odometry odometry
 nav_msgs/OccupancyGrid grid
-autonomy/sensorValue sensors    
+autonomy/sensorValue sensors

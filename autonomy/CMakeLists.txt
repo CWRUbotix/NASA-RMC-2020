@@ -10,6 +10,7 @@ project(autonomy)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  nav_msgs
   message_generation
   actionlib_msgs
   actionlib
@@ -53,7 +54,7 @@ add_message_files(
     FILES
     transitPath.msg
     goToGoal.msg
-    robotState.msg
+    sensorValue.msg    
 )
 
 add_action_files(
@@ -61,12 +62,12 @@ add_action_files(
   GoToGoal.action
 ) 
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+#Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  RobotState.srv
+  start.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -79,6 +80,7 @@ add_action_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  nav_msgs
   actionlib_msgs
 )
 
