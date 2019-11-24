@@ -59,7 +59,8 @@ for i in range(2000):
         axes.set_xlim([-2, 8])
         axes.set_ylim([-3, 7])
 
-        points, direction_vectors, perp_vectors = robot.draw()
+        points = robot.draw(robot.state, robot.width, robot.length)
+        direction_vectors, perp_vectors = robot.get_direction_vectors()
         path_aprox, closest_point, reference = controller.draw_path_info()
 
         plt.scatter(points[:, 0], points[:, 1])
@@ -71,13 +72,13 @@ for i in range(2000):
 
         plt.savefig('viz_dir/fig_'+str(int(i/draw_step)))
 
-plt.figure()
-plt.plot(target_vels)
-plt.plot(vels)
-plt.plot(target_angular_vels)
-plt.plot(angular_vels, label='angular vel')
-plt.legend()
-plt.show()
+# plt.figure()
+# plt.plot(target_vels)
+# plt.plot(vels)
+# plt.plot(target_angular_vels)
+# plt.plot(angular_vels, label='angular vel')
+# plt.legend()
+# plt.show()
 #
 # plt.figure()
 # plt.plot(controller.errors)
