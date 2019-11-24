@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 import rospy
+# from tf.transformations import euler_from_quaternion
+from scipy.spatial.transform import Rotation as R
 from hci.msg import motorCommand
 from autonomy.msg import goToGoal, transitPath, robotState
 from nav_msgs.msg import OccupancyGrid
+from autonomy.srv import RobotState
 from PathFollowing.PathFollower import PathFollower
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathPlanning.PathPlanningUtils import Position, Grid
@@ -47,24 +50,30 @@ class TransitNode:
             print(e)
 
         rospy.init_node("transit_node", anonymous=False)
-        rospy.loginfo("Booting up node...")
-        self.subscribe()
+        rospy.loginfo("Waiting for services...")
+        rospy.wait_for_service('robot_state')
+        self.get_robot_state = rospy.ServiceProxy('robot_state', RobotState)
+        rospy.loginfo("Services acquired")
+        # self.subscribe()
         rospy.on_shutdown(self.shutdown)
         rospy.spin()
 
     def go_to_goal(self, msg):
-        if msg.dig:
-            goal = Position(2, 6)
-        else:
-            goal = Position(0.5, 0.5)
+        goal = Position(msg.x, msg.y)
 
         self.controller.reset()
         self.controller.set_goal(goal)
         self.controller.calculate_path()
 
-        r = rospy.Rate(50)  # 50 Hz
+        rate = 30
+        r = rospy.Rate(rate)  # 'rate' Hz
         last_time = rospy.get_rostime().nsecs
         while not rospy.is_shutdown() and not self.controller.done:
+            msg = self.get_robot_state()
+            self.receive_state(msg.odometry)
+            if self.step % rate == 0:
+                self.receive_grid(msg.grid)
+
             time = rospy.get_rostime().nsecs
             dt = (time - last_time) * 1e-9
 
@@ -83,8 +92,12 @@ class TransitNode:
             r.sleep()
 
     def receive_state(self, msg):
-        state = np.array(msg.state).reshape(-1, 1)
-        state_dot = np.array(msg.state_dot).reshape(-1, 1)
+        pose = msg.pose.pose
+        twist = msg.twist.twist
+        o = pose.orientation
+        angle = R.from_quat([o.x, o.y, o.z, o.w]).as_euler('zyx')[-1]
+        state = np.array([[pose.position.x, pose.position.y, angle]]).reshape(3, 1)
+        state_dot = np.array([[twist.linear.x, twist.linear.y, twist.angular.z]]).reshape(-1, 1)
 
         self.robot_state["state"] = state
         self.robot_state["state_dot"] = state_dot
@@ -96,9 +109,11 @@ class TransitNode:
         self.publish_path()
 
     def subscribe(self):
-        rospy.Subscriber("transit_command", goToGoal, self.go_to_goal)
-        rospy.Subscriber("robot_state", robotState, self.receive_state)
-        rospy.Subscriber("occupancy_grid", OccupancyGrid, self.receive_grid)
+        # rospy.Subscriber("transit_command", goToGoal, self.go_to_goal)
+        # rospy.Subscriber("robot_state", robotState, self.receive_state)
+        # rospy.Subscriber("occupancy_grid", OccupancyGrid, self.receive_grid)
+        pass
+
 
     def publish_path(self):
         path = self.controller.get_path()
