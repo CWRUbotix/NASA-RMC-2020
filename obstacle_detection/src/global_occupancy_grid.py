@@ -85,7 +85,7 @@ class GlobalOccupancyGrid:
                         np.array(self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
             local_origin = (self.robot_x[-1] - (grid_size / 2) * self.resolution * np.cos(self.robot_pitch[-1]),
                             self.robot_y[-1] - (grid_size / 2) * self.resolution * np.sin(self.robot_pitch[-1]))
-            rotated_grid = ndimage.rotate(self.local_grid, -self.robot_pitch[-1], mode='constant', cval=-1)
+            rotated_grid = ndimage.rotate(self.local_grid, -self.robot_pitch[-1] * 180 / math.pi, mode='constant', cval=-1)
             self.global_totals[local_origin[0]: local_origin[0] + rotated_grid.shape[0], local_origin[1] + local_origin[1] + rotated_grid.shape[1]] += rotated_grid
             counts = np.ones_like(rotated_grid)
             counts[rotated_grid == -1] = 0
