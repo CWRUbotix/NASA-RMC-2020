@@ -1,8 +1,8 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import rospy
 from autonomy.msg import goToGoal
 
-goal_pub = rospy.Publisher("goToGoal", goToGoal, queue_size=10)
+goal_pub = rospy.Publisher("transit_command", goToGoal, queue_size=10)
 
 def on_shut_down():
     global goal_pub

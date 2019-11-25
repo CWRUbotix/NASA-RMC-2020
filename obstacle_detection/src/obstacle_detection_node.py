@@ -132,13 +132,13 @@ class ObstacleDetectionNode:
         except Exception as e:
             print(e)
         try:
-            files = glob.glob('%s/*' % self.data_dir + 'color')
+            files = glob.glob('%s/*' % (self.data_dir + 'color'))
             for f in files:
                 os.remove(f)
         except Exception as e:
             print(e)
         try:
-            files = glob.glob('%s/*' % self.data_dir + 'localization')
+            files = glob.glob('%s/*' % (self.data_dir + 'localization'))
             for f in files:
                 os.remove(f)
         except Exception as e:
@@ -158,6 +158,7 @@ class ObstacleDetectionNode:
         proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
         proj_img = cv2.dilate(proj_img, np.ones((3, 3)), iterations=2)
         proj_img = cv2.blur(proj_img, (5, 5))
+        proj_img = cv2.flip(proj_img, 0)
         return np.uint8(proj_img)
 
     def depth_matrix_to_point_cloud(self, z, scale=1000):

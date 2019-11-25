@@ -3,13 +3,15 @@ import rospy
 # from tf.transformations import euler_from_quaternion
 from scipy.spatial.transform import Rotation as R
 from hci.msg import motorCommand
-from autonomy.msg import goToGoal, transitPath, robotState
+from autonomy.msg import goToGoal, transitPath
 from nav_msgs.msg import OccupancyGrid
 from autonomy.srv import RobotState
+from uwb_localization.srv import EffectiveRPM
 from PathFollowing.PathFollower import PathFollower
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathPlanning.PathPlanningUtils import Position, Grid
 import numpy as np
+import math
 import matplotlib
 import matplotlib.pyplot as plt
 import os
@@ -20,11 +22,11 @@ matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 # Constants
 ARENA_WIDTH = 3.78
 ARENA_HEIGHT = 7.38
-ROBOT_WIDTH = 0.75
-ROBOT_LENGTH = 1.5
-effective_robot_width = 1
+ROBOT_WIDTH = 0.63
+ROBOT_LENGTH = 1.3
+effective_robot_width = 0.8
 reference_point_x = 0.3
-wheel_radius = 0.1
+wheel_radius = 0.2286
 
 
 class TransitNode:
@@ -38,7 +40,7 @@ class TransitNode:
 
         self.viz_dir = "visualizations/"
         self.visualize = visualize
-        self.viz_step = 30
+        self.viz_step = 15
         self.step = 0
 
         os.makedirs(self.viz_dir, exist_ok=True)
@@ -54,7 +56,7 @@ class TransitNode:
         rospy.wait_for_service('robot_state')
         self.get_robot_state = rospy.ServiceProxy('robot_state', RobotState)
         rospy.loginfo("Services acquired")
-        # self.subscribe()
+        self.subscribe()
         rospy.on_shutdown(self.shutdown)
         rospy.spin()
 
@@ -72,7 +74,8 @@ class TransitNode:
             msg = self.get_robot_state()
             self.receive_state(msg.odometry)
             if self.step % rate == 0:
-                self.receive_grid(msg.grid)
+                #self.receive_grid(msg.grid)
+                pass
 
             time = rospy.get_rostime().nsecs
             dt = (time - last_time) * 1e-9
@@ -82,6 +85,23 @@ class TransitNode:
 
             right_speed = (vel + angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
             left_speed = (vel - angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
+            '''
+            goal_right = right_speed
+            goal_left = left_speed
+
+            rospy.wait_for_service("effective_RPM")
+            effective_rpm = rospy.ServiceProxy("effective_RPM", EffectiveRPM)
+            true_rpm = effective_rpm(left=left_speed, right=right_speed)
+            num_iter = 50
+
+            while num_iter > 0 and (math.fabs(true_rpm.effectiveLeft - goal_left) > 0.1 or math.fabs(true_rpm.effectiveRight - goal_right) > 0.1):
+                num_iter -= 1
+                left_diff = goal_left - true_rpm.effectiveLeft
+                right_diff = goal_right - true_rpm.effectiveRight
+                left_speed += 0.025 * left_diff
+                right_speed += 0.025 * right_diff
+                true_rpm = effective_rpm(left=left_speed, right=right_speed)
+            '''
 
             self.motor_pub.publish(motorID=0, value=left_speed)
             self.motor_pub.publish(motorID=1, value=right_speed)
@@ -95,7 +115,7 @@ class TransitNode:
         pose = msg.pose.pose
         twist = msg.twist.twist
         o = pose.orientation
-        angle = R.from_quat([o.x, o.y, o.z, o.w]).as_euler('zyx')[-1]
+        angle = R.from_quat([o.x, o.y, o.z, o.w]).as_euler('zyx')[0]
         state = np.array([[pose.position.x, pose.position.y, angle]]).reshape(3, 1)
         state_dot = np.array([[twist.linear.x, twist.linear.y, twist.angular.z]]).reshape(-1, 1)
 
@@ -109,10 +129,10 @@ class TransitNode:
         self.publish_path()
 
     def subscribe(self):
-        # rospy.Subscriber("transit_command", goToGoal, self.go_to_goal)
+        rospy.Subscriber("transit_command", goToGoal, self.go_to_goal)
         # rospy.Subscriber("robot_state", robotState, self.receive_state)
         # rospy.Subscriber("occupancy_grid", OccupancyGrid, self.receive_grid)
-        pass
+        #pass
 
 
     def publish_path(self):
@@ -136,7 +156,7 @@ class TransitNode:
             axes.set_ylim([-3, 7])
 
             plt.plot([0, ARENA_WIDTH, ARENA_WIDTH, 0], [0, 0, ARENA_HEIGHT, ARENA_HEIGHT], color='black')  # draw field
-            points, _, _ = SkidSteerSimulator.draw(self.robot_state["state"], ROBOT_WIDTH, ROBOT_LENGTH)
+            points = SkidSteerSimulator.draw(self.robot_state["state"], ROBOT_WIDTH, ROBOT_LENGTH)
             path_aprox, closest_point, reference = self.controller.draw_path_info()
             path = self.controller.get_path()
 
@@ -151,6 +171,6 @@ class TransitNode:
 
 if __name__ == "__main__":
     try:
-        transit_node = TransitNode(visualize=False)
+        transit_node = TransitNode(visualize=True)
     except rospy.ROSInterruptException:
         pass
