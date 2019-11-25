@@ -103,6 +103,21 @@ class TransitNode:
                 true_rpm = effective_rpm(left=left_speed, right=right_speed)
             '''
 
+            goal_right = right_speed
+            goal_left = left_speed
+            rospy.wait_for_service("effective_RPM")
+            effective_rpm = rospy.ServiceProxy("effective_RPM", EffectiveRPM)
+            true_rpm = effective_rpm(left=left_speed, right=right_speed)
+            num_iter = 50
+
+            while num_iter > 0 and (math.fabs(true_rpm.effectiveLeft - goal_left) > 0.1 or math.fabs(true_rpm.effectiveRight - goal_right) > 0.1):
+                num_iter -= 1
+                left_diff = goal_left - true_rpm.effectiveLeft
+                right_diff = goal_right - true_rpm.effectiveRight
+                left_speed += 0.025 * left_diff
+                right_speed += 0.025 * right_diff
+                true_rpm = effective_rpm(left=left_speed, right=right_speed)
+
             self.motor_pub.publish(motorID=0, value=left_speed)
             self.motor_pub.publish(motorID=1, value=right_speed)
 
