@@ -3,6 +3,7 @@
 float32 bcAttitudePortPot
 float32 bcAttitudeStarboardPot
 float32 depLoadCell
+float32 excLoadCell
 float32 depLowerLimit
 float32 depUpperLimit
 float32 excForeLimit
