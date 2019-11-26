@@ -89,9 +89,8 @@ if __name__ == "__main__":
     print(fuzzy_controller.crisp_output(0, 0))
     print(fuzzy_controller_2.crisp_output(0))
 
-    curvature_set = [[1e99, 0, 5], [5, 5, 5], [5, 10, 5], [5, 15, 5], [5, 20, 1e99]]
-
-    curvature_rules = np.array([0.5, 0.675, 0.75, 0.825, 1])
+    curvature_set = [[1e99, 0, 0.75], [0.75, 0.75, 0.75], [0.75, 1.5, 1e99]]
+    curvature_rules = np.array([1, 0.3, 0])
 
     curvature_set = FuzzySet(curvature_set)
     curvature_controller = FuzzyLogic(curvature_rules, curvature_set)
@@ -100,11 +99,15 @@ if __name__ == "__main__":
     for member in members:
         plt.plot(member[:, 0], member[:, 1])
     axes = plt.gca()
-    axes.set_xlim([-5, 30])
+    axes.set_xlim([-1, 2])
 
     plt.show()
+    plt.figure()
+    xs = np.arange(0, 2, 0.05)
+    plt.plot(xs, [curvature_controller.crisp_output(x) for x in xs])
+    plt.show()
 
-    print(curvature_controller.crisp_output(1000))
+    print(curvature_controller.crisp_output(0))
 
     # x = np.arange(-1, 1, 0.1)
     # y = np.array([-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3])
