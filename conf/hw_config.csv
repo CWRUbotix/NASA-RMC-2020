@@ -1,6 +1,6 @@
 id,name,category,device_type,interface,device_id,aux_1,aux_2,aux_3,aux_4,units,notes
-0,PORT DRIVE,motor,vesc,can,5,0,245,140,50,rpm,aux_2=gear_reduction*pole_pairs | aux_3=max_rpm | aux_4=max_acceleration
-1,STARBOARD DRIVE,motor,vesc,can,6,0,245,140,50,rpm,aux_2=gear_reduction*pole_pairs | aux_3=max_rpm | aux_4=max_acceleration
+0,PORT DRIVE,motor,vesc,can,5,0,630,100,70,rpm,aux_2=gear_reduction*pole_pairs | aux_3=max_rpm | aux_4=max_acceleration
+1,STARBOARD DRIVE,motor,vesc,can,6,0,630,100,70,rpm,aux_2=gear_reduction*pole_pairs | aux_3=max_rpm | aux_4=max_acceleration
 2,DEP DUNKERINO,motor,vesc,can,7,0,245,140,50,rpm,aux_2=gear_reduction*pole_pairs | aux_3=max_rpm | aux_4=max_acceleration
 3,EXC BELT DRIVE,motor,vesc,can,8,0,245,140,50,rpm,aux_2=gear_reduction*pole_pairs | aux_3=max_rpm | aux_4=max_acceleration
 4,EXC PORT ACTUATOR,motor,sabertooth,uart,128,0,0,60,0,degrees,aux_1=which_motor | aux_2=min_pos | aux_3=max_pos
