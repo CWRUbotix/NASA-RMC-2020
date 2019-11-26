@@ -12,7 +12,7 @@ int main(int argc, char** argv){
 
 	// client which sends commands to drive the VESC's
 	ros::ServiceClient set_vesc_client = n.serviceClient<canbus::SetVescCmd>("set_vesc");
-	
+
 	// make the HwMotorIf object
 	HwMotorIf motor_if;
 	motor_if.vesc_client = set_vesc_client;
