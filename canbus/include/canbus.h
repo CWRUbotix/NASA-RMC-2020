@@ -5,7 +5,7 @@
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
 #include <canbus/UwbData.h>
-#include <canbus/MotorData.h>
+#include <canbus/VescData.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -52,7 +52,7 @@ int uwb_timeout = 0;
 ros::Duration uwb_timeout_period(0.25);
 
 typedef canbus::UwbData UWB_msg;
-typedef canbus::MotorData MotorData_msg;
+typedef canbus::VescData VescData_msg;
 
 typedef struct {
 	int id;
@@ -73,7 +73,7 @@ typedef struct {
 	uint8_t can_id;
 	string name;
 	canbus::UwbData* uwb_msg;
-	canbus::MotorData* vesc_msg;
+	canbus::VescData* vesc_msg;
 
 }CanDevice;
 

@@ -9,7 +9,7 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
 #include <canbus/SetVescCmd.h>
-#include <canbus/MotorData.h>
+#include <canbus/VescData.h>
 #include <hwctrl/SetMotor.h>
 #include <string>
 #include <cstdio>
@@ -34,6 +34,10 @@ const std::string aux_4_hddr 		= "aux_4";
 const std::string category_motor 	= "motor";
 
 const std::string config_file_fname = "conf/hw_config.csv";
+
+const std::string vesc_log_fname 	= "hwctrl/vesc_log.csv";
+
+static std::string vesc_log_path 	= "";
 
 #define DEFAULT_MAX_ACCEL 	30.0
 #define DEFAULT_MAX_RPM 	50.0
@@ -70,6 +74,7 @@ class HwMotor{
 private:
 	char scratch_buf[1024];
 public:
+	bool online = false;
 	int id;
 	std::string name;
 	int device_id; // could be the CAN id, or something else
@@ -104,6 +109,7 @@ public:
 	void maintain_next_motor();
 	void maintain_motors(); // loop to run as a thread
 	int get_num_motors();
+	void vesc_data_callback(const canbus::VescData& msg);
 private:
 	std::vector<HwMotor>::iterator motor_it;
 };
@@ -111,5 +117,7 @@ private:
 void limit_switch_thread(ros::Publisher pub);
 
 void maintain_motors_thread(HwMotorIf motor_if);
+
+void vesc_data_callback(const canbus::VescData& msg);
 
 #endif

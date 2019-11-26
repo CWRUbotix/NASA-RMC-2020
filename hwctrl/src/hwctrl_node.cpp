@@ -9,7 +9,6 @@ int main(int argc, char** argv){
 
 	ros::Publisher limit_switch_pub = n.advertise<std_msgs::Int32>("limit_switch", 16);
 
-
 	// client which sends commands to drive the VESC's
 	ros::ServiceClient set_vesc_client = n.serviceClient<canbus::SetVescCmd>("set_vesc");
 
@@ -17,7 +16,7 @@ int main(int argc, char** argv){
 	HwMotorIf motor_if;
 	motor_if.vesc_client = set_vesc_client;
 
-	// read config csv
+	// DO FILE STUFF
 	std::string ros_package_path(std::getenv("ROS_PACKAGE_PATH"));
 	std::istringstream path_stream(ros_package_path);
 
@@ -27,12 +26,16 @@ int main(int argc, char** argv){
 		src_dir_path.push_back('/');
 	}
 	std::string config_file_path = src_dir_path.append(config_file_fname);
+	vesc_log_path = src_dir_path.append(vesc_log_fname);
+
+	// VESC DATA SUBSCRIBER
+	ros::Subscriber vesc_data_sub = n.subscribe("VescData", 1, &HwMotorIf::vesc_data_callback, &motor_if);
 
 	// make motor structs
 	motor_if.get_motors_from_csv(config_file_path);
 
 	// server which provides the set_motor service
-	ros::ServiceServer set_motor_srv = n.advertiseService("set_motor", &HwMotorIf::set_motor_callback, &motor_if);
+	ros::ServiceServer set_motor_srv = n.advertiseService("SetMotor", &HwMotorIf::set_motor_callback, &motor_if);
 
 	ROS_INFO("ROS init success");
 
