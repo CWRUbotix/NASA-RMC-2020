@@ -21,33 +21,37 @@ void HwMotorIf::maintain_next_motor(){
 		case(MOTOR_NONE):break;
 		case(MOTOR_VESC):{
 
-			// figure out next velocity setpoint based on acceleration & last sent RPM
-			float delta 	=  motor->setpoint - motor->last_setpoint;
-			float dt 		= (float)(ros::Time::now().toSec() - motor->update_t.toSec());
-			float accel 	= fabs(delta/dt); // proposed acceleration
+			if(motor->online){
+				// figure out next velocity setpoint based on acceleration & last sent RPM
+				float delta 	=  motor->setpoint - motor->last_setpoint;
+				float dt 		= (float)(ros::Time::now().toSec() - motor->update_t.toSec());
+				float accel 	= fabs(delta/dt); // proposed acceleration
 
-			// if proposed acceleration is higher than requested accleration, accelerate only at requested acceleration.
-			// else the delta we calculated is ok
-			if(accel > fabs(motor->accel_setpoint)){
-				if(delta > 0){
-					delta = fabs(motor->accel_setpoint) * dt; // new delta (is positive)
-				}else{
-					delta = -1.0 * fabs(motor->accel_setpoint) * dt; // new delta (needs to be negative)
+				// if proposed acceleration is higher than requested accleration, accelerate only at requested acceleration.
+				// else the delta we calculated is ok
+				if(accel > fabs(motor->accel_setpoint)){
+					if(delta > 0){
+						delta = fabs(motor->accel_setpoint) * dt; // new delta (is positive)
+					}else{
+						delta = -1.0 * fabs(motor->accel_setpoint) * dt; // new delta (needs to be negative)
+					}
 				}
+				motor->last_setpoint = motor->last_setpoint + delta; // the new setpoint based on delta
 			}
-			motor->last_setpoint = motor->last_setpoint + delta; // the new setpoint based on delta
 			
 			canbus::SetVescCmd cmd;
-			cmd.request.can_id 	= motor->id; // motor id should be the can_id
+			cmd.request.can_id 	= motor->device_id; // device_id should be the can_id
 			cmd.request.e_rpm 	= motor->rpm_coef * motor->last_setpoint;
 
 			if(this->vesc_client.call(cmd)){
 				// presumed success
 				if(cmd.response.status == 0){
 					motor->update_t = cmd.response.timestamp;
+					motor->online = true;
 				}
 			}else{
 				ROS_INFO("No dice");
+				motor->online = false;
 			}
 			break;}
 		case(MOTOR_BRUSHED):{
@@ -71,12 +75,15 @@ bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::S
 	HwMotor* motor = this->motors.data() + request.id; // pointer to our motor struct
 
 	motor->setpoint = request.setpoint;
-	if(fabs(request.acceleration) > motor->max_accel || fabs(request.acceleration) == 0.0){
-		motor->accel_setpoint = motor->max_accel;
-	}else {
-		motor->accel_setpoint = request.acceleration;
+
+	if(motor->ctrl_type == CTRL_RPM){
+		if(fabs(request.acceleration) > motor->max_accel || fabs(request.acceleration) == 0.0){
+			motor->accel_setpoint = motor->max_accel;
+		}else {
+			motor->accel_setpoint = request.acceleration;
+		}
+		response.actual_accel = motor->accel_setpoint;
 	}
-	response.actual_accel = motor->accel_setpoint;
 	response.status = 0; // need to change later to be meaningful
 	
 	return true;
@@ -130,6 +137,11 @@ void HwMotorIf::get_motors_from_csv(std::string fname){
 				motor.max_rpm 		= std::stof((*line)[aux_3_ind]); // our max rpm
 				motor.max_accel		= std::stof((*line)[aux_4_ind]); // our max acceleration
 
+				if(motor.motor_type == DEVICE_VESC){
+					motor.ctrl_type = CTRL_RPM;
+				}else{
+					motor.ctrl_type = CTRL_POSITION;
+				}
 				this->add_motor(motor);
 			}
 
@@ -191,4 +203,24 @@ void limit_switch_thread(ros::Publisher pub){
 		ros::Duration(2).sleep();
 		// ros::spinOnce();
 	}
+}
+
+// callback for the VescData topic subscriber
+void HwMotorIf::vesc_data_callback(const canbus::VescData& msg){
+	FILE * pFile;
+	pFile = fopen(vesc_log_path.c_str(), "a");
+	// ID, TIME(s), VOLTAGE, CURRENT
+	ros::Time raw_time 	= msg.timestamp;
+	int id 				= msg.can_id;
+	float time_s 		= 1.0*raw_time.sec + 1.0*raw_time.nsec/10e9;
+	float volts 		= msg.v_in;
+	float current 		= msg.current_in;
+	fprintf(pFile, "%d,%f.3,%f.3,%f.3", id, time_s, volts, current);
+
+	// hwctrl::MotorData motor_data;
+	// HwMotor * motor;
+	
+	// motor_data.id = 0;
+	// motor_data.timestamp = msg.timestamp;
+	// motor_data.setpoint 	= 0.0;
 }

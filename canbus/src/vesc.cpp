@@ -133,8 +133,10 @@ bool VescCan::set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::Se
 	int retval = set_rpm(this->can_sock, request.can_id, this->self_can_id, request.e_rpm);
 	if(retval == 0){
 		response.status = 0;
+		response.timestamp = ros::Time::now();
 		return true;
 	}else{
+		response.status = 2;
 		return false;
 	}
 }
