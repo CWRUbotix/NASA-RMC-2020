@@ -108,16 +108,12 @@ class KalmanFilterNode:
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
         self.robot_yaw.append(euler[2])  # rotation about vertical z-axis
         print('X: %.4f \tY: %.4f \tyaw: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_yaw[-1]))
-        print('X: %.4f \tY: %.4f\tyaw: %.4f\n' % (self.node_x[-1], self.node_y[-1], self.node_yaw[-1]))
 
         if len(self.robot_x) % self.viz_step == 0:
             fig, ax = plt.subplots()
             ax.scatter(self.robot_x, self.robot_y, label='kalman filter', alpha=0.2)
-            ax.scatter(self.node_x, self.node_y, label='node', alpha=0.2)
             self.confidence_ellipse(self.robot_x[-1], self.robot_y[-1], covariance[0: 2, 0: 2], ax, edgecolor='red')
             ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(self.robot_yaw[-1]), .3 * math.sin(self.robot_yaw[-1]), head_width=0.1)
-            ax.arrow(self.node_x[-1], self.node_y[-1], .3 * math.cos(self.node_yaw[-1]), .3 * math.sin(self.node_yaw[-1]), head_width=0.1)
-            ax.legend(loc='best')
             ax.set_xlim(0, 5.2)
             ax.set_ylim(0, 6.05)
             plt.tight_layout()
@@ -134,6 +130,6 @@ class KalmanFilterNode:
 
 if __name__ == '__main__':
     kalman_filter_node = KalmanFilterNode()
-    sub = rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback)
-    rospy.Subscriber('uwb_nodes', PoseWithCovarianceStamped, kalman_filter_node.node_callback)
+    sub = rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback, queue_size=1)
+
     rospy.spin()

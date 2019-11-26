@@ -1,25 +1,23 @@
 from graphics import *
-import collections
 from collections import deque
-from PathPlanning.ThetaStar import create_path
-from PathPlanning.PathPlanning import Position
-from PathFollowing import config
-from PathFollowing.PathFollower import PathFollower
-from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
-import numpy as np
-
+from PathPlanningUtils import Position, Grid
+from PathFollower import PathFollower
+from SkidSteerSimulator import SkidSteerSimulator
 
 
 class InteractivePathTester:
     SCALE = 75  # px/meter
+    SIM_DELAY = 4  # realtime = 50
 
-    def __init__(self, start, end, arena_width, arena_height, obstacles):
-        self.positions = [start, end]
+    def __init__(self, goal, arena_width, arena_height, obstacles):
+        self.goal = goal
         self.arena_width = arena_width
         self.arena_height = arena_height
         self.obstacles = obstacles
         self.path = None
         self.robot = SkidSteerSimulator(2, 0, 1.5)
+
+        self.controller = PathFollower(self.robot.reference_point_x, goal=self.goal)
 
         self.win = GraphWin("Path", self.arena_width*self.SCALE, self.arena_height*self.SCALE, autoflush=False)
 
@@ -29,11 +27,14 @@ class InteractivePathTester:
 
         self.object_id = -1
 
-        self.update_image()
+        self.robot_drawings = []
+
+        self.controller.update(self.robot.state, self.robot.state_dot)
+        self.update_path_and_draw()
         self.simulate_robot()
+
         update(1000)
         self.win.getMouse()
-
 
     def on_click(self, event):
         self.object_id = -1
@@ -46,10 +47,9 @@ class InteractivePathTester:
             if Position(x, y).distanceTo(Position(obstacle.center_x, obstacle.center_y)) < obstacle.getRadius():
                 self.object_id = i
                 break
-        for i, position in enumerate(self.positions):
-            if Position(x, y).distanceTo(position) < 0.1:
-                self.object_id = i + len(self.obstacles)
-                break
+
+        if Position(x, y).distanceTo(self.goal) < 0.1:
+            self.object_id = len(self.obstacles)
 
     def update_drag_position(self, event):
         x, y = event.widget.winfo_pointerxy()
@@ -58,18 +58,25 @@ class InteractivePathTester:
 
         if 0 <= self.object_id < len(self.obstacles):
             self.obstacles[self.object_id].setCenter(x, y)
-            self.update_image()
+            self.update_path_and_draw()
         elif self.object_id > 0:
-            self.positions[self.object_id - len(self.obstacles)] = Position(x, y)
-            self.update_image()
+            self.goal = Position(x, y)
+            self.controller.set_goal(self.goal)
+            self.update_path_and_draw()
 
-    def update_image(self):
-        # t = time.time_ns()
-        self.path, grid = create_path(self.positions[0], self.positions[1], self.arena_width, self.arena_height, self.obstacles)
-        # print((time.time_ns()-t)*10**-9)
-        self.drawPath(self.win, self.path, self.obstacles, self.positions, grid)
+    def update_path_and_draw(self):
+        grid = Grid(self.arena_width, self.arena_height)  # Create a grid and add the obstacles to it
+        for obs in self.obstacles:
+            grid.addObstacle(obs)
 
-    def drawPath(self, win, path, obstacles, positions, grid):
+        self.controller.update_grid(grid)
+        self.controller.calculate_path()
+
+        self.path = self.controller.get_path()
+
+        self.drawPath(self.win, self.path, grid)
+
+    def drawPath(self, win, path, grid):
         for item in win.items[:]:
             item.undraw()
         lastX = 0
@@ -77,22 +84,17 @@ class InteractivePathTester:
         lines = deque()
         points = deque()
         for i in range(len(path)):
-            p = path.path[i]
+            p = path[i]
             if lastX != 0 or lastY != 0:
                 l = Line(Point(lastX*self.SCALE, (self.arena_height-lastY)*self.SCALE),
-                         Point(p.getX()*self.SCALE, (self.arena_height-p.getY())*self.SCALE))
+                         Point(p[0]*self.SCALE, (self.arena_height-p[1])*self.SCALE))
                 lines.append(l)
-            c = Circle(Point(p.getX()*self.SCALE, (self.arena_height-p.getY())*self.SCALE), 0.06*self.SCALE)
+            c = Circle(Point(p[0]*self.SCALE, (self.arena_height-p[1])*self.SCALE), 0.06*self.SCALE)
             c.setFill("blue")
             c.setOutline("blue")
             points.append(c)
-            lastX = p.getX()
-            lastY = p.getY()
-        for obstacle in obstacles:
-            c = Circle(Point(obstacle.center_x*self.SCALE, (self.arena_height-obstacle.center_y)*self.SCALE), obstacle.getRadius()*self.SCALE)
-            c.setFill("red")
-            c.setOutline("red")
-            points.append(c)
+            lastX = p[0]
+            lastY = p[1]
         for x in lines:
             x.draw(win)
         for x in points:
@@ -110,30 +112,52 @@ class InteractivePathTester:
     def simulate_robot(self):
         dt = 0.01
 
-        path = []
-        for p in self.path.path:
-            path.append([p.x_pos, p.y_pos])
-        path = np.array(path)
+        self.update_path_and_draw()
 
-        controller = PathFollower(config.fuzzy_controller, config.slowdown_controller, path, self.robot.reference_point)
-        controller.set_forward_torque(config.forward_torque)
         for i in range(50):
-            right_torque, left_torque = controller.get_wheel_torques(self.robot.state, self.robot.state_dot)
+            target_vel, target_angular_vel = self.controller.get_target_vels(self.robot.state, self.robot.state_dot, dt)
+
+            if self.robot.state_dot[0, 0] < target_vel:
+                forward_torque = 30
+            else:
+                forward_torque = 0
+
+            turn_torque = 7 * (target_angular_vel - self.robot.state_dot[2, 0])
+
+            right_torque = forward_torque + turn_torque
+            left_torque = forward_torque - turn_torque
+
             self.robot.update(right_torque, left_torque, dt)
 
-        self.draw_robot(self.robot, self.win)
+        self.draw_robot(self.robot, self.controller, self.win)
 
-        self.win.after(int(dt * 1000 * 10), self.simulate_robot)
+        self.win.after(int(dt * 1000 * self.SIM_DELAY), self.simulate_robot)
 
-    def draw_robot(self, robot, win):
-        points, _, _ = robot.draw()
+    def draw_robot(self, robot, controller, win):
+        points = robot.draw(robot.state, robot.width, robot.length)
+        robot_path, _, _ = controller.draw_path_info()
 
-        drawing_points = []
+        to_draw = []
         for point in points:
             c = Circle(Point(point[0]*self.SCALE, (self.arena_height-point[1])*self.SCALE), 0.05*self.SCALE)
             c.setFill("blue")
             c.setOutline("blue")
-            drawing_points.append(c)
+            to_draw.append(c)
 
-        for x in drawing_points:
+        lastX = 0
+        lastY = 0
+        for p in robot_path:
+            if lastX != 0 or lastY != 0:
+                l = Line(Point(lastX * self.SCALE, (self.arena_height - lastY) * self.SCALE),
+                         Point(p[0] * self.SCALE, (self.arena_height - p[1]) * self.SCALE))
+                to_draw.append(l)
+            lastX = p[0]
+            lastY = p[1]
+
+        for item in self.robot_drawings:
+            item.undraw()
+
+        for x in to_draw:
             x.draw(win)
+
+        self.robot_drawings = to_draw
