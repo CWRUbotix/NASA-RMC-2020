@@ -10,19 +10,21 @@ from autonomy.srv import RobotState, RobotStateResponse
 odometry = None
 occupancy_grid = None
 service = None
-sensors = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+sensors = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 sensormap = {
-    5  : 0,  # bcAttitudePortPot
-    6  : 1,  # bcAttitudeStarboardPot
-    9  : 2,  # depLoadCell
-    10 : 3,  # excLoadCell
-    23 : 4,  # depLowerLimit
-    24 : 5,  # depUpperLimit
-    25 : 6,  # excForeLimit
-    26 : 7, # excAftLimit
-    27 : 8, # bcLowerLimit
-    28 : 9  # bcUpperLimit
+    0  : 0,  # port encoder
+    1  : 1,  # starboard encoder
+    5  : 2,  # bcAttitudePortPot
+    6  : 3,  # bcAttitudeStarboardPot
+    9  : 4,  # depLoadCell
+    10 : 5,  # excLoadCell
+    23 : 6,  # depLowerLimit
+    24 : 7,  # depUpperLimit
+    25 : 8,  # excForeLimit
+    26 : 9, # excAftLimit
+    27 : 10, # bcLowerLimit
+    28 : 11  # bcUpperLimit
 }
 
 def update_odometry(msg):
@@ -45,9 +47,10 @@ def subscribe():
 
 def send_robot_state(req):
     global odometry, occupancy_grid
-    (s0, s1, s2, s3, s4, s5, s6, s7, s8, s9) = tuple(sensors)
-    sensor_msg = sensor_value(bcAttitudePortPot=s0, bcAttitudeStarboardPot=s1, depLoadCell=s2, excLoadCell=s3, depLowerLimit=s4,
-                              depUpperLimit=s5, excForeLimit=s6, excAftLimit=s7, bcLowerLimit=s8, bcUpperLimit=s9)
+    (s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11) = tuple(sensors)
+    sensor_msg = sensor_value(portDriveEncoder=s0, starboardDriveEncoder=s1, bcAttitudePortPot=s2, bcAttitudeStarboardPot=s3,
+                              depLoadCell=s4, excLoadCell=s5, depLowerLimit=s6, depUpperLimit=s7, excForeLimit=s8, excAftLimit=s9,
+                              bcLowerLimit=s10, bcUpperLimit=s11)
     return RobotStateResponse(odometry=odometry, grid=occupancy_grid, sensors=sensor_msg)
 
 def on_shut_down():
