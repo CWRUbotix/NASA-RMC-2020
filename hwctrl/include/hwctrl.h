@@ -6,9 +6,10 @@
 #include <ros/callback_queue.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
 #include <canbus/SetVescCmd.h>
-#include <canbus/MotorData.h>
+#include <canbus/VescData.h>
 #include <hwctrl/SetMotor.h>
 #include <string>
 #include <cstdio>
@@ -17,6 +18,7 @@
 #include <iostream>
 #include <fstream>
 #include <parse_csv.h>
+#include <thread>
 
 const std::string id_hddr 			= "id";
 const std::string name_hddr 		= "name";
@@ -33,8 +35,13 @@ const std::string category_motor 	= "motor";
 
 const std::string config_file_fname = "conf/hw_config.csv";
 
+const std::string vesc_log_fname 	= "hwctrl/vesc_log.csv";
+
+static std::string vesc_log_path 	= "";
+
 #define DEFAULT_MAX_ACCEL 	30.0
 #define DEFAULT_MAX_RPM 	50.0
+#define MOTOR_LOOP_PERIOD 	0.02
 
 typedef enum MotorType {
 	MOTOR_NONE,
@@ -67,6 +74,7 @@ class HwMotor{
 private:
 	char scratch_buf[1024];
 public:
+	bool online = false;
 	int id;
 	std::string name;
 	int device_id; // could be the CAN id, or something else
@@ -90,6 +98,8 @@ DeviceType get_device_type(std::string type_str);
 // class to manage the interfaces to motors, be it canbus, uart, etc.
 class HwMotorIf{
 	std::vector<HwMotor> motors;
+	bool limit_sw_states[8]; // we probably won't have a whole 8 limit switches
+	int motor_ind = 0;
 public:
 	ros::ServiceClient vesc_client;
 	bool set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response);
@@ -97,8 +107,17 @@ public:
 	void get_motors_from_csv(std::string fname);
 	std::string list_motors();
 	void maintain_next_motor();
+	void maintain_motors(); // loop to run as a thread
+	int get_num_motors();
+	void vesc_data_callback(const canbus::VescData& msg);
 private:
 	std::vector<HwMotor>::iterator motor_it;
 };
+
+void limit_switch_thread(ros::Publisher pub);
+
+void maintain_motors_thread(HwMotorIf motor_if);
+
+void vesc_data_callback(const canbus::VescData& msg);
 
 #endif

@@ -9,7 +9,7 @@ int main(int argc, char** argv){
 	ros::NodeHandle n;
 
 	ros::Publisher can_pub = n.advertise<UWB_msg>("localization_data", 1024);
-	ros::Publisher MotorData = n.advertise<MotorData_msg>("MotorData", 1024);
+	ros::Publisher VescData = n.advertise<VescData_msg>("VescData", 1024);
 	ros::Rate loop_rate(25); // 40ms loop rate
 	
 	ROS_INFO("ROS init success");
@@ -69,7 +69,7 @@ int main(int argc, char** argv){
 
 	// allocate memory for the messages
 	canbus::UwbData UWB_msgs_arr[nUwbNodes];
-	canbus::MotorData motor_msgs_arr[nVescs];
+	canbus::VescData motor_msgs_arr[nVescs];
 	
 	int UwbInd 			= 0;
 	int VescInd 		= 0;
@@ -111,7 +111,7 @@ int main(int argc, char** argv){
 	nAnchors 		= NUM_ANCHORS; // set in canbus.h
 
 	UWB_msg msg;
-	MotorData_msg motor_msg;
+	VescData_msg motor_msg;
 	int s;
 	int nbytes;
 	struct sockaddr_can addr;
@@ -207,13 +207,15 @@ int main(int argc, char** argv){
 				int8_t id 	= (int8_t)(rx_frame.can_id & 0xFF);
 				switch(cmd){
 					case CAN_PACKET_STATUS:{
+						ROS_INFO("Received STATUS Packet");
 						CanDevice* vesc = &(can_devices[id]);
 
-						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") == 0){
+						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") != 0){
+							ROS_INFO("vesc_msg was NULL or was not a vesc");
 							break;
 						}
 						fill_msg_from_status_packet(rx_frame.data, *(vesc->vesc_msg));
-						MotorData.publish(*(vesc->vesc_msg));
+						VescData.publish(*(vesc->vesc_msg));
 						break;}
 					case CAN_PACKET_FILL_RX_BUFFER:{
 						if(id != 0x00){
@@ -236,8 +238,10 @@ int main(int argc, char** argv){
 						packet_len 	|= rx_frame.data[ind++];
 						crc 		= (rx_frame.data[ind++] << 8);
 						crc 		|= rx_frame.data[ind++];
-
+						
 						uint16_t chk_crc = crc16(vesc_rx_buf, packet_len);
+						ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x",
+								packet_len, crc, chk_crc);
 
 						if(crc != chk_crc){
 							ROS_INFO("Error: Checksum doesn't match");
@@ -245,7 +249,7 @@ int main(int argc, char** argv){
 							break;
 						}
 						CanDevice* vesc = &(can_devices[vesc_id]);
-						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") == 0){
+						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") != 0){
 							break;
 						}
 						
@@ -259,7 +263,7 @@ int main(int argc, char** argv){
 								
 								fill_msg_from_buffer(vesc_rx_buf, *(vesc->vesc_msg));
 
-								MotorData.publish(*(vesc->vesc_msg)); // publish motor data
+								VescData.publish(*(vesc->vesc_msg)); // publish motor data
 								break;}
 						}
 
@@ -389,4 +393,5 @@ int read_can_config(std::string fname, std::vector<CanDevice> &devices){
 
 void uwb_timeout_cb(const ros::TimerEvent& event){
 	uwb_range_next = true;
+	
 }
