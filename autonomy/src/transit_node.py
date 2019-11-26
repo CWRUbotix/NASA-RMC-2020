@@ -43,6 +43,9 @@ class TransitNode:
         self.viz_step = 15
         self.step = 0
 
+        self.prev_left_rpm = 0
+        self.prev_right_rpm = 0
+
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
             files = glob.glob('%s/*' % self.viz_dir)
@@ -85,6 +88,10 @@ class TransitNode:
 
             right_speed = (vel + angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
             left_speed = (vel - angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
+            right_acce = (right_speed - self.prev_right_rpm) / ((time - last_time) * 1e-9)
+            left_acce = (left_speed - self.prev_left_rpm) / ((time - last_time) * 1e-9)
+
+            
             '''
             goal_right = right_speed
             goal_left = left_speed
