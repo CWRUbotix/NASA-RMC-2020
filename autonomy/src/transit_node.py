@@ -102,6 +102,8 @@ class TransitNode:
                 right_speed += 0.025 * right_diff
                 true_rpm = effective_rpm(left=left_speed, right=right_speed)
             '''
+            self.motor_pub.publish(motorID=0, value=left_speed)
+            self.motor_pub.publish(motorID=1, value=right_speed)
 
             self.draw()
             self.step += 1
