@@ -20,7 +20,7 @@ curvature_set = FuzzySet(curvature_set)
 sliding_controller = FuzzyLogic(rules, s_set, s_dot_set)
 slowdown_controller = FuzzyLogic(curvature_rules, curvature_set)
 
-target_velocity = 0.2
+target_velocity = 0.12
 
 lambda_e = 2
 G_s = 0.4
