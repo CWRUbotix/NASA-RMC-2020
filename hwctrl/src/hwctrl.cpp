@@ -7,20 +7,22 @@ void HwMotorIf::maintain_motors(){
 	}
 }
 
-void maintain_motors_thread(HwMotorIf motor_if){
+void maintain_motors_thread(HwMotorIf* motor_if){
 	while(ros::ok()){
-		motor_if.maintain_next_motor();
-		ros::Duration(MOTOR_LOOP_PERIOD/motor_if.get_num_motors()).sleep();
+		motor_if->maintain_next_motor();
+		ros::Duration(MOTOR_LOOP_PERIOD/motor_if->get_num_motors()).sleep();
 	}
 }
 
 void HwMotorIf::maintain_next_motor(){
-	HwMotor* motor = &(this->motors.at(this->motor_ind));
-	ROS_INFO("Maintaining motor %s", motor->name.c_str());
+	HwMotor* motors = this->motors.data();
+	HwMotor* motor = &(motors[this->motor_ind]);
+	// HwMotor* motor = &(this->motors.at(this->motor_ind));
+	// ROS_INFO("Maintaining motor %s", motor->name.c_str());
 	switch(motor->motor_type){
-		case(MOTOR_NONE):break;
-		case(MOTOR_VESC):{
-
+		case(DEVICE_NONE):break;
+		case(DEVICE_VESC):{
+			ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
 			if(motor->online){
 				// figure out next velocity setpoint based on acceleration & last sent RPM
 				float delta 	=  motor->setpoint - motor->last_setpoint;
@@ -37,24 +39,29 @@ void HwMotorIf::maintain_next_motor(){
 					}
 				}
 				motor->last_setpoint = motor->last_setpoint + delta; // the new setpoint based on delta
+			}else{
+				ROS_INFO("Motor %d offline",motor->id);
 			}
 			
+			float eRPM = motor->rpm_coef * motor->last_setpoint;	
 			canbus::SetVescCmd cmd;
 			cmd.request.can_id 	= motor->device_id; // device_id should be the can_id
-			cmd.request.e_rpm 	= motor->rpm_coef * motor->last_setpoint;
-
+			cmd.request.e_rpm 	= eRPM;
 			if(this->vesc_client.call(cmd)){
 				// presumed success
+				ROS_INFO("VESC Service call successful");
 				if(cmd.response.status == 0){
 					motor->update_t = cmd.response.timestamp;
 					motor->online = true;
+				}else{
+					ROS_INFO("Motor online");
 				}
 			}else{
 				ROS_INFO("No dice");
 				motor->online = false;
 			}
 			break;}
-		case(MOTOR_BRUSHED):{
+		case(DEVICE_SABERTOOTH):{
 
 			break;}
 	}
@@ -70,20 +77,17 @@ bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::S
 	if(request.id >= this->motors.size()){
 		return false;
 	}
-
-	ROS_INFO("Setting motor %d", request.id);
-	HwMotor* motor = this->motors.data() + request.id; // pointer to our motor struct
-
-	motor->setpoint = request.setpoint;
-
-	if(motor->ctrl_type == CTRL_RPM){
-		if(fabs(request.acceleration) > motor->max_accel || fabs(request.acceleration) == 0.0){
-			motor->accel_setpoint = motor->max_accel;
-		}else {
-			motor->accel_setpoint = request.acceleration;
-		}
-		response.actual_accel = motor->accel_setpoint;
+	int id = request.id;
+	ROS_INFO("Setting motor %d to %f at %f", id, request.setpoint, request.acceleration);
+	HwMotor* motors = this->motors.data(); // pointer to our motor struct
+	
+	motors[id].setpoint = request.setpoint;
+	if(fabs(request.acceleration) > motors[id].max_accel || fabs(request.acceleration) == 0.0){
+		motors[id].accel_setpoint = motors[id].max_accel;
+	}else {
+		motors[id].accel_setpoint = request.acceleration;
 	}
+	response.actual_accel = motors[id].accel_setpoint;
 	response.status = 0; // need to change later to be meaningful
 	
 	return true;
@@ -142,7 +146,7 @@ void HwMotorIf::get_motors_from_csv(std::string fname){
 				}else{
 					motor.ctrl_type = CTRL_POSITION;
 				}
-				this->add_motor(motor);
+				this->motors.push_back(motor);
 			}
 
 		}

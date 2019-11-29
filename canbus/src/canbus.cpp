@@ -157,7 +157,7 @@ int main(int argc, char** argv){
 	
 	// Provide the set_vesc service
 	// we have to do it after CAN is set up
-	ros::ServiceServer ser_vesc_srv = n.advertiseService("set_vesc", &VescCan::set_vesc_callback, &vesc_can_obj);
+	ros::ServiceServer ser_vesc_srv = n.advertiseService("SetVesc", &VescCan::set_vesc_callback, &vesc_can_obj);
 	
 	// timer to continue to next UWB node in case of dropped packets
 	ros::Timer uwb_timeout_timer = n.createTimer(ros::Duration(0.25), uwb_timeout_cb, true); // this is a oneshot timer
@@ -207,11 +207,11 @@ int main(int argc, char** argv){
 				int8_t id 	= (int8_t)(rx_frame.can_id & 0xFF);
 				switch(cmd){
 					case CAN_PACKET_STATUS:{
-						ROS_INFO("Received STATUS Packet");
+						// ROS_INFO("Received STATUS Packet");
 						CanDevice* vesc = &(can_devices[id]);
 
 						if(vesc->vesc_msg == NULL || vesc->type.compare("vesc") != 0){
-							ROS_INFO("vesc_msg was NULL or was not a vesc");
+							// ROS_INFO("vesc_msg was NULL or was not a vesc");
 							break;
 						}
 						fill_msg_from_status_packet(rx_frame.data, *(vesc->vesc_msg));
@@ -240,8 +240,7 @@ int main(int argc, char** argv){
 						crc 		|= rx_frame.data[ind++];
 						
 						uint16_t chk_crc = crc16(vesc_rx_buf, packet_len);
-						ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x",
-								packet_len, crc, chk_crc);
+						// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
 
 						if(crc != chk_crc){
 							ROS_INFO("Error: Checksum doesn't match");
@@ -282,7 +281,7 @@ int main(int argc, char** argv){
 					dist_data.anchor_id = rx_buf[1];
 					memcpy(&(dist_data.distance), rx_buf+2, sizeof(dist_data.distance));
 					memcpy(&(dist_data.confidence), rx_buf+6, 2);
-					ROS_INFO("Distance from node %d to anchor %d: %.3f m", rx_id, dist_data.anchor_id, dist_data.distance);
+					// ROS_INFO("Distance from node %d to anchor %d: %.3f m", rx_id, dist_data.anchor_id, dist_data.distance);
 					uwb_boi->uwb_msg->timestamp 	= ros::Time::now();
 					uwb_boi->uwb_msg->node_id 	= rx_id;
 					uwb_boi->uwb_msg->anchor_id 	= dist_data.anchor_id;

@@ -130,6 +130,7 @@ void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::VescData &motor_msg
 }
 
 bool VescCan::set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response){
+	ROS_INFO("Setting VESC %d to %f eRPM",request.can_id, request.e_rpm);
 	int retval = set_rpm(this->can_sock, request.can_id, this->self_can_id, request.e_rpm);
 	if(retval == 0){
 		response.status = 0;

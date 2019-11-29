@@ -5,12 +5,12 @@ int main(int argc, char** argv){
 	ros::init(argc, argv, "hwctrl");
 	ros::NodeHandle n;
 	ros::Rate loop_rate(1); // 5ms loop rate
-	ros::AsyncSpinner spinner(4); // create multithreaded spinner
+	ros::AsyncSpinner spinner(1); // create multithreaded spinner
 
 	ros::Publisher limit_switch_pub = n.advertise<std_msgs::Int32>("limit_switch", 16);
 
 	// client which sends commands to drive the VESC's
-	ros::ServiceClient set_vesc_client = n.serviceClient<canbus::SetVescCmd>("set_vesc");
+	ros::ServiceClient set_vesc_client = n.serviceClient<canbus::SetVescCmd>("SetVesc");
 
 	// make the HwMotorIf object
 	HwMotorIf motor_if;
@@ -29,7 +29,7 @@ int main(int argc, char** argv){
 	vesc_log_path = src_dir_path.append(vesc_log_fname);
 
 	// VESC DATA SUBSCRIBER
-	ros::Subscriber vesc_data_sub = n.subscribe("VescData", 1, &HwMotorIf::vesc_data_callback, &motor_if);
+	// ros::Subscriber vesc_data_sub = n.subscribe("VescData", 1, &HwMotorIf::vesc_data_callback, &motor_if);
 
 	// make motor structs
 	motor_if.get_motors_from_csv(config_file_path);
@@ -43,7 +43,7 @@ int main(int argc, char** argv){
 
 	// MAIN LOOP
 	std::thread limit_sw_th_obj(limit_switch_thread, limit_switch_pub);
-	std::thread motors_thread(maintain_motors_thread, motor_if);
+	std::thread motors_thread(maintain_motors_thread, &motor_if);
 
 	spinner.start();
 

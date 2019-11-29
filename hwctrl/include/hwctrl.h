@@ -116,7 +116,7 @@ private:
 
 void limit_switch_thread(ros::Publisher pub);
 
-void maintain_motors_thread(HwMotorIf motor_if);
+void maintain_motors_thread(HwMotorIf* motor_if);
 
 void vesc_data_callback(const canbus::VescData& msg);
 
