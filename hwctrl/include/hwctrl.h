@@ -41,7 +41,7 @@ static std::string vesc_log_path 	= "";
 
 #define DEFAULT_MAX_ACCEL 	30.0
 #define DEFAULT_MAX_RPM 	50.0
-#define MOTOR_LOOP_PERIOD 	0.02
+#define MOTOR_LOOP_PERIOD 	0.005
 
 typedef enum MotorType {
 	MOTOR_NONE,

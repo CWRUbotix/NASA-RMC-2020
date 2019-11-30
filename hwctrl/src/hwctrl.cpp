@@ -22,7 +22,7 @@ void HwMotorIf::maintain_next_motor(){
 	switch(motor->motor_type){
 		case(DEVICE_NONE):break;
 		case(DEVICE_VESC):{
-			ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
+			// ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
 			if(motor->online){
 				// figure out next velocity setpoint based on acceleration & last sent RPM
 				float delta 	=  motor->setpoint - motor->last_setpoint;
@@ -49,15 +49,15 @@ void HwMotorIf::maintain_next_motor(){
 			cmd.request.e_rpm 	= eRPM;
 			if(this->vesc_client.call(cmd)){
 				// presumed success
-				ROS_INFO("VESC Service call successful");
+				// ROS_INFO("VESC Service call successful");
 				if(cmd.response.status == 0){
 					motor->update_t = cmd.response.timestamp;
 					motor->online = true;
 				}else{
-					ROS_INFO("Motor online");
+					ROS_INFO("Motor offline");
 				}
 			}else{
-				ROS_INFO("No dice");
+				ROS_INFO("Set VESC service call failed");
 				motor->online = false;
 			}
 			break;}
