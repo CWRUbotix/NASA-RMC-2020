@@ -8,17 +8,28 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
-#include <canbus/SetVescCmd.h>
-#include <canbus/VescData.h>
+#include <message_forward.h>
+#include <hwctrl/UwbData.h>
+#include <hwctrl/VescData.h>
+#include <hwctrl/SetVescCmd.h>
+#include <hwctrl/VescData.h>
 #include <hwctrl/SetMotor.h>
+#include <hwctrl/CanFrame.h>
+#include <hwctrl/LimitSwState.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
 #include <inttypes.h>
 #include <iostream>
 #include <fstream>
-#include <parse_csv.h>
 #include <thread>
+
+#include <canbus.h>
+#include <parse_csv.h>
+
+#define DEFAULT_MAX_ACCEL 	30.0
+#define DEFAULT_MAX_RPM 	50.0
+#define MOTOR_LOOP_PERIOD 	0.005
 
 const std::string id_hddr 			= "id";
 const std::string name_hddr 		= "name";
@@ -39,9 +50,12 @@ const std::string vesc_log_fname 	= "hwctrl/vesc_log.csv";
 
 static std::string vesc_log_path 	= "";
 
-#define DEFAULT_MAX_ACCEL 	30.0
-#define DEFAULT_MAX_RPM 	50.0
-#define MOTOR_LOOP_PERIOD 	0.005
+static std::vector<CanDevice> can_devices_vect;
+static ros::Publisher uwb_pub; 			// so the hwctrl_node can publish uwb frames
+static ros::Publisher vesc_data_pub;	// so the hwctrl_node can publish VescData to be consumed by HwMotorIf
+static ros::Publisher limit_switch_pub; // so limit switch thread can publish limit switch data
+
+static ros::Subscriber vesc_data_sub;
 
 typedef enum MotorType {
 	MOTOR_NONE,
@@ -78,6 +92,7 @@ public:
 	int id;
 	std::string name;
 	int device_id; // could be the CAN id, or something else
+	VescData vesc_data;
 	float rpm_coef;
 	ControlType ctrl_type = CTRL_NONE;
 	DeviceType motor_type = DEVICE_NONE;
@@ -97,27 +112,49 @@ DeviceType get_device_type(std::string type_str);
 
 // class to manage the interfaces to motors, be it canbus, uart, etc.
 class HwMotorIf{
-	std::vector<HwMotor> motors;
-	bool limit_sw_states[8]; // we probably won't have a whole 8 limit switches
-	int motor_ind = 0;
+private:
+	uint8_t vesc_rx_buf[1024];
+	std::vector<HwMotor>::iterator motor_it;
+	ros::NodeHandle nh;
+	ros::Publisher can_tx_pub; 		// publisher to publish CAN frames to send out
+	ros::Publisher motor_data_pub;	// to publish motor data
+	ros::Subscriber can_rx_sub; 	// to get vesc data frames
+	ros::Subscriber sensor_data_sub;// to get sensor data
+	ros::Subscriber limit_sw_sub; 	// listen for limit switch interrupts
+	ros::ServiceServer set_motor_srv; // to provide the set_motor service
+	ros::Rate loop_rate(1000); 		// 1ms delay in each loop
 public:
-	ros::ServiceClient vesc_client;
+	HwMotorIf(ros::NodeHandle);
+	std::vector<HwMotor> motors;
+	int motor_ind = 0;
 	bool set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response);
 	void add_motor(HwMotor mtr);
-	void get_motors_from_csv(std::string fname);
+	void get_motors_from_csv();
 	std::string list_motors();
 	void maintain_next_motor();
-	void maintain_motors(); // loop to run as a thread
 	int get_num_motors();
-	void vesc_data_callback(const canbus::VescData& msg);
-private:
-	std::vector<HwMotor>::iterator motor_it;
+	void vesc_data_callback(const boost::shared_ptr<hwctrl::VescData>& msg);
+	void can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame); 	// to process received can frames
+	void sensor_data_callback(const hwctrl::SensorData& data);
+	void limit_sw_callback(const boost::shared_ptr<hwctrl::LimitSwState>& state);
+	HwMotor* get_vesc_from_can_id(int can_id);
 };
 
-void limit_switch_thread(ros::Publisher pub);
+
+// class to handle sensor stuff
+class SensorIf{
+private:
+	ros::NodeHandle nh;
+	ros::Publisher sensor_data_pub; // send data to rest of ROS system
+	ros::Publisher can_tx_pub;		// send data to canbus
+	ros::publisher limit_sw_pub; 	// send out limit switch states
+	ros::Subscriber can_rx_sub; 	// get data from canbus
+	ros::Rate loop_rate(100); 		// 10ms sleep in every loop
+public:
+	SensorIf(ros::NodeHandle);
+	void can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame); 			// do things when 
+};
 
 void maintain_motors_thread(HwMotorIf* motor_if);
-
-void vesc_data_callback(const canbus::VescData& msg);
 
 #endif
