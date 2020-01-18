@@ -35,7 +35,6 @@ class LocalizationNode:
         self.robot_y = []  # list of past and current y positions
         self.robot_theta = []  # list of past and current yaw measurements
         self.sensors = None  # DataFrame of sensors, types, and relative positions
-        self.msg_counts = {}  # dictionary of counts for each node to keep track of number of anchor distances received
 
         # setup visualization directory and remove all past visualizations
         os.makedirs(self.viz_dir, exist_ok=True)
@@ -52,8 +51,6 @@ class LocalizationNode:
         script_path = os.path.join(rp.get_path("canbus"), "include", "node_config.csv")
         sensors = pd.read_csv(script_path)
         self.sensors = sensors
-        for i in range(len(self.sensors)):
-            self.msg_counts[i] = 0  # initialize all message counts to zero
         print(sensors)
         return sensors
 
@@ -78,16 +75,12 @@ class LocalizationNode:
 
     def position_callback(self, msg):
         #start_time = time.time()
-        for node in self.nodes:
-            if node.id == msg.node_id:
-                node.add_measurement(msg.anchor_id, msg.distance, msg.confidence)
-                self.msg_counts[node.id] += 1
         #print('Adding measurements took %.4f seconds' % (time.time() - start_time))
         #start_time = time.time()
         for node in self.nodes:
-            if self.msg_counts[node.id] >= 3:
-                node.get_position()
-                self.msg_counts[node.id] = 0
+            if node.id == msg.node_id:
+                node.add_measurement(msg.anchor_id, msg.distance, msg.confidence)
+            node.get_position()
         #print('Triangulation took %.4f seconds' % (time.time() - start_time))
         avg_x = 0
         avg_y = 0
@@ -100,6 +93,7 @@ class LocalizationNode:
                 total += 1
         #print('Offset took %.4f seconds' % (time.time() - start_time))
         #start_time = time.time()
+        print('Total:', total)
         if total > 0:
             self.robot_x.append(avg_x / total)
             self.robot_y.append(avg_y / total)
