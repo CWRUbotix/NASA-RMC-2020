@@ -11,7 +11,6 @@ from PathFollowing.PathFollower import PathFollower
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathPlanning.PathPlanningUtils import Position, Grid
 import numpy as np
-import math
 import matplotlib
 import matplotlib.pyplot as plt
 import os
@@ -24,7 +23,7 @@ ARENA_WIDTH = 3.78
 ARENA_HEIGHT = 7.38
 ROBOT_WIDTH = 0.63
 ROBOT_LENGTH = 1.3
-effective_robot_width = 0.8
+effective_robot_width = 0.7
 reference_point_x = 0.3
 wheel_radius = 0.2286
 
@@ -38,14 +37,16 @@ class TransitNode:
         self.robot_state = dict(state=np.array([[0, 0, 0]]).T, state_dot=np.array([[0, 0, 0]]).T)
         self.controller.update_grid(Grid(ARENA_WIDTH, ARENA_HEIGHT))
 
-        self.viz_dir = "visualizations/"
+        self.viz_dir = "transit_viz/"
         self.visualize = visualize
         self.viz_step = 15
         self.step = 0
-
-        self.prev_left_rpm = 0
-        self.prev_right_rpm = 0
-
+        self.target_vels = []
+        self.vels = []
+        self.target_ang_vels = []
+        self.ang_vels = []
+        self.target_wheel_speeds = []
+        self.wheel_speeds = []
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
             files = glob.glob('%s/*' % self.viz_dir)
@@ -65,8 +66,13 @@ class TransitNode:
 
     def go_to_goal(self, msg):
         goal = Position(msg.x, msg.y)
+        rospy.loginfo("Going to ({}, {})".format(msg.x, msg.y))
+
+        msg = self.get_robot_state()
+        self.receive_state(msg.odometry)
 
         self.controller.reset()
+        self.controller.update(self.robot_state["state"], self.robot_state["state_dot"])
         self.controller.set_goal(goal)
         self.controller.calculate_path()
 
@@ -88,10 +94,14 @@ class TransitNode:
 
             right_speed = (vel + angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
             left_speed = (vel - angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
-            right_acce = (right_speed - self.prev_right_rpm) / ((time - last_time) * 1e-9)
-            left_acce = (left_speed - self.prev_left_rpm) / ((time - last_time) * 1e-9)
 
-            
+            self.target_vels.append(vel)
+            self.target_ang_vels.append(angular_vel)
+            self.vels.append(self.robot_state["state_dot"][0, 0])
+            self.ang_vels.append(self.robot_state["state_dot"][2, 1])
+            self.target_wheel_speeds.append([right_speed, left_speed])
+            self.wheel_speeds.append([msg.sensors.right_speed, msg.sensors.left_speed])
+
             '''
             goal_right = right_speed
             goal_left = left_speed
@@ -140,7 +150,6 @@ class TransitNode:
         # rospy.Subscriber("occupancy_grid", OccupancyGrid, self.receive_grid)
         #pass
 
-
     def publish_path(self):
         path = self.controller.get_path()
         data = []
@@ -155,24 +164,40 @@ class TransitNode:
 
     def draw(self):
         if self.visualize and self.step % self.viz_step == 0:
-            plt.clf()
-            plt.axis('equal')
-            axes = plt.gca()
-            axes.set_xlim([-2, 8])
-            axes.set_ylim([-3, 7])
+            fig = plt.figure(figsize=(12, 4))
 
-            plt.plot([0, ARENA_WIDTH, ARENA_WIDTH, 0], [0, 0, ARENA_HEIGHT, ARENA_HEIGHT], color='black')  # draw field
+            ax = plt.subplot(131)
+            ax.axis('equal')
+            ax.set_xlim([-2, 8])
+            ax.set_ylim([-3, 7])
+
             points = SkidSteerSimulator.draw(self.robot_state["state"], ROBOT_WIDTH, ROBOT_LENGTH)
             path_aprox, closest_point, reference = self.controller.draw_path_info()
             path = self.controller.get_path()
 
-            plt.scatter(points[:, 0], points[:, 1])
-            plt.plot(path[:, 0], path[:, 1])
-            plt.scatter(reference[0, 0], reference[1, 0])
-            plt.scatter(closest_point[0], closest_point[1])
-            plt.plot(path_aprox[:, 0], path_aprox[:, 1])
+            ax.plot([0, ARENA_WIDTH, ARENA_WIDTH, 0], [0, 0, ARENA_HEIGHT, ARENA_HEIGHT], color='black')  # draw field
+            ax.scatter(points[:, 0], points[:, 1])
+            ax.plot(path[:, 0], path[:, 1])
+            ax.scatter(reference[0, 0], reference[1, 0])
+            ax.scatter(closest_point[0], closest_point[1])
+            # ax.plot(path_aprox[:, 0], path_aprox[:, 1])
+            ax.set_title("Arena")
 
-            plt.savefig(self.viz_dir + 'fig_' + str(int(self.step / self.viz_step)))
+            ax = plt.subplot(132)
+            ax.plot(self.target_vels, label='target vels')
+            ax.plot(self.vels, label='vels')
+            ax.plot(self.target_ang_vels, label='target ang vels')
+            ax.plot(self.ang_vels, label='ang vels')
+            ax.set_title('Vels')
+            ax.legend()
+
+            ax = plt.subplot(133)
+            ax.plot(self.target_wheel_speeds, label='target wheels')
+            ax.plot(self.wheel_speeds, label='wheels')
+            ax.set_title('Wheels')
+            ax.legend()
+
+            fig.savefig(self.viz_dir + 'fig_' + str(int(self.step / self.viz_step)))
 
 
 if __name__ == "__main__":

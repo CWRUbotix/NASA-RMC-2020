@@ -1,5 +1,7 @@
 #Sensor values that autonomy need that is not part of perception data
 
+float32 portDriveEncoder
+float32 starboardDriveEncoder
 float32 bcAttitudePortPot
 float32 bcAttitudeStarboardPot
 float32 depLoadCell
