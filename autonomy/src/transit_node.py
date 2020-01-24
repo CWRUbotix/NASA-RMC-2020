@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import os
+import sys
 import glob
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 
@@ -82,6 +83,8 @@ class TransitNode:
         while not rospy.is_shutdown() and not self.controller.done:
             msg = self.get_robot_state()
             self.receive_state(msg.odometry)
+
+
             if self.step % rate == 0:
                 #self.receive_grid(msg.grid)
                 pass
@@ -202,6 +205,11 @@ class TransitNode:
 
 if __name__ == "__main__":
     try:
-        transit_node = TransitNode(visualize=True)
+        visualize = (sys.argv[1] != "false")  # defaults to true
+    except IndexError:
+        visualize = True
+
+    try:
+        transit_node = TransitNode(visualize=visualize)
     except rospy.ROSInterruptException:
         pass

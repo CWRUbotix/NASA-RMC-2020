@@ -1,0 +1,5 @@
+<launch>
+	<node name="transit_node" pkg="autonomy" type="transit_node.py">
+	<node name="autonomy_node" pkg="autonomy" type="autonomy_node.py">
+	<node name="robot_state_node" pkg="autonomy" type="robot_state.py">
+</launch>
