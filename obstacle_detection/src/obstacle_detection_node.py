@@ -7,10 +7,10 @@ import math
 import rospy
 import math
 import matplotlib
-
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import numpy as np
 import pandas as pd
+import pyrealsense2 as rs
 import matplotlib.pyplot as plt
 from scipy import signal
 from scipy.spatial.transform import Rotation as R
@@ -19,57 +19,28 @@ from std_msgs.msg import Header
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion
 
-from pylibfreenect2 import Freenect2, SyncMultiFrameListener
-from pylibfreenect2 import FrameType, Registration, Frame
-from pylibfreenect2 import createConsoleLogger, setGlobalLogger
-from pylibfreenect2 import LoggerLevel
+from realsense_utils import *
 
-try:
-    from pylibfreenect2 import OpenGLPacketPipeline
+# Configure depth and color streams
+pipeline = rs.pipeline()
+config = rs.config()
+config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
-    pipeline = OpenGLPacketPipeline()
-except:
-    try:
-        from pylibfreenect2 import OpenCLPacketPipeline
+# Start streaming
+pipeline.start(config)
 
-        pipeline = OpenCLPacketPipeline()
-    except:
-        from pylibfreenect2 import CpuPacketPipeline
+# Get stream profile and camera intrinsics
+profile = pipeline.get_active_profile()
+depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
+depth_intrinsics = depth_profile.get_intrinsics()
+w, h = depth_intrinsics.width, depth_intrinsics.height
 
-        pipeline = CpuPacketPipeline()
-print("Packet pipeline:", type(pipeline).__name__)
-# Create and set logger
-logger = createConsoleLogger(LoggerLevel.Debug)
-setGlobalLogger(logger)
-
-fn = Freenect2()
-num_devices = fn.enumerateDevices()
-if num_devices == 0:
-    print("No device connected!")
-    sys.exit(1)
-
-serial = fn.getDeviceSerialNumber(0)
-device = fn.openDevice(serial, pipeline=pipeline)
-
-listener = SyncMultiFrameListener(
-    FrameType.Color | FrameType.Ir | FrameType.Depth)
-
-# Register listeners
-device.setColorFrameListener(listener)
-device.setIrAndDepthFrameListener(listener)
-
-device.start()
-
-# NOTE: must be called after device.start()
-registration = Registration(device.getIrCameraParams(),
-                            device.getColorCameraParams())
-
-undistorted = Frame(512, 424, 4)
-registered = Frame(512, 424, 4)
-focal_x = device.getIrCameraParams().fx  # focal length x
-focal_y = device.getIrCameraParams().fy  # focal length y
-principal_x = device.getIrCameraParams().cx  # principal point x
-principal_y = device.getIrCameraParams().cy  # principal point y
+# Processing blocks
+pc = rs.pointcloud()
+decimate = rs.decimation_filter()
+decimate.set_option(rs.option.filter_magnitude, 2 ** state.decimate)
+colorizer = rs.colorizer()
 
 
 class ObstacleDetectionNode:
@@ -174,9 +145,42 @@ class ObstacleDetectionNode:
 
         return np.column_stack((z.ravel() / scale, R.ravel(), -C.ravel()))
 
-    def detect_obstacles_from_above(self, frame):
-        xyz_arr = self.depth_matrix_to_point_cloud(frame)
-        # point_height = xyz_arr[]
+    def detect_obstacles_from_above(self, depth_frame, color_frame):
+        out = np.empty((h, w, 3), dtype=np.uint8)
+        depth_image = np.asanyarray(depth_frame.get_data())
+        color_image = np.asanyarray(color_frame.get_data())
+        depth_colormap = np.asanyarray(
+            colorizer.colorize(depth_frame).get_data())
+
+        if state.color:
+            mapped_frame, color_source = color_frame, color_image
+        else:
+            mapped_frame, color_source = depth_frame, depth_colormap
+
+        points = pc.calculate(depth_frame)
+        pc.map_to(mapped_frame)
+
+        # Pointcloud data to arrays
+        v, t = points.get_vertices(), points.get_texture_coordinates()
+        xyz_arr = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+        texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  #
+
+        out.fill(0)
+
+        grid(out, (0, 0.5, 1), size=1, n=10)
+        frustum(out, depth_intrinsics)
+        axes(out, view([0, 0, 0]), state.rotation, size=0.1, thickness=1)
+
+        if not state.scale or out.shape[:2] == (h, w):
+            pointcloud(out, xyz_arr, texcoords, color_source)
+        else:
+            tmp = np.zeros((h, w, 3), dtype=np.uint8)
+            pointcloud(tmp, xyz_arr, texcoords, color_source)
+            tmp = cv2.resize(
+                tmp, out.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
+            np.putmask(out, tmp > 0, tmp)
+
+
         print(xyz_arr[..., 2].mean())
         rocks = self.project_point_cloud_onto_plane(
             xyz_arr[xyz_arr[..., 2] >= self.ground_plane_height + self.tolerance])
@@ -223,13 +227,13 @@ class ObstacleDetectionNode:
             ax = plt.subplot(141)
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.imshow(frame / 4500., cmap='Reds')
+            ax.imshow(depth_image, cmap='Reds')
             ax.set_title('Depth Frame')
 
             ax = plt.subplot(142)
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.imshow(np.maximum(rocks, holes), cmap='Reds')
+            ax.imshow(out)
             ax.set_title('Projection')
 
             ax = plt.subplot(143)
@@ -265,28 +269,21 @@ class ObstacleDetectionNode:
 
     def listen_for_frames(self):
         while not rospy.is_shutdown():
-            print('waiting for frame...')
-            frames = listener.waitForNewFrame()
-            print('new frame...')
-            depth_frame = frames["depth"]
-            color = frames["color"].asarray()
-            color = cv2.flip(color, 1)
+            # Wait for a coherent pair of frames: depth and color
+            frames = pipeline.wait_for_frames()
+            depth_frame = frames.get_depth_frame()
+            color_frame = frames.get_color_frame()
+            if not depth_frame or not color_frame:
+                continue
+
+            # Convert images to numpy arrays
+            depth_image = np.asanyarray(depth_frame.get_data())
+            color_image = np.asanyarray(color_frame.get_data())
 
             if self.save_data:
-                np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_frame.asarray())
-                cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))), color)
-
-            img = depth_frame.asarray(np.float32)
-            img = cv2.flip(img, 1)
-            self.detect_obstacles_from_above(img)
-
-            listener.release(frames)
-
-        listener.release(frames)
-        device.stop()
-        device.close()
-
-        sys.exit(0)
+                np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_image)
+                cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))), color_image)
+            self.detect_obstacles_from_above(depth_frame)
 
 
 if __name__ == '__main__':
@@ -296,3 +293,6 @@ if __name__ == '__main__':
         obstacle_detection.listen_for_frames()
     except rospy.exceptions.ROSInterruptException:
         pass
+    finally:
+        # Stop streaming
+        pipeline.stop()
