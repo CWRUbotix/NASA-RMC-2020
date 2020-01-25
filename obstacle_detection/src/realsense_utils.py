@@ -8,8 +8,8 @@ class AppState:
 
     def __init__(self, *args, **kwargs):
         self.WIN_NAME = 'RealSense'
-        self.pitch, self.yaw = math.radians(-10), math.radians(-15)
-        self.translation = np.array([0, 0, -1], dtype=np.float32)
+        self.pitch, self.yaw = math.radians(-90), 0
+        self.translation = np.array([1, 1, 2], dtype=np.float32)
         self.distance = 2
         self.prev_mouse = 0, 0
         self.mouse_btns = [False, False, False]
@@ -58,8 +58,8 @@ def view(v):
 
 def line3d(out, pt1, pt2, color=(0x80, 0x80, 0x80), thickness=1):
     """draw a 3d line from pt1 to pt2"""
-    p0 = project(pt1.reshape(-1, 3))[0]
-    p1 = project(pt2.reshape(-1, 3))[0]
+    p0 = project(pt1.reshape(-1, 3), out)[0]
+    p1 = project(pt2.reshape(-1, 3), out)[0]
     if np.isnan(p0).any() or np.isnan(p1).any():
         return
     p0 = tuple(p0.astype(int))
@@ -126,9 +126,9 @@ def pointcloud(out, verts, texcoords, color, painter=True):
         # https://gist.github.com/stevenvo/e3dad127598842459b68
         v = view(verts)
         s = v[:, 2].argsort()[::-1]
-        proj = project(v[s])
+        proj = project(v[s], out)
     else:
-        proj = project(view(verts))
+        proj = project(view(verts), out)
 
     if state.scale:
         proj *= 0.5**state.decimate

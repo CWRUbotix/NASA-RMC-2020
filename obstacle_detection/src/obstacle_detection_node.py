@@ -227,12 +227,13 @@ class ObstacleDetectionNode:
             ax = plt.subplot(141)
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.imshow(depth_image, cmap='Reds')
+            ax.imshow(depth_image, cmap='jet')
             ax.set_title('Depth Frame')
 
             ax = plt.subplot(142)
             ax.set_xticks([])
             ax.set_yticks([])
+            #ax.imshow(np.maximum(rocks, holes))
             ax.imshow(out)
             ax.set_title('Projection')
 
@@ -283,7 +284,7 @@ class ObstacleDetectionNode:
             if self.save_data:
                 np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_image)
                 cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))), color_image)
-            self.detect_obstacles_from_above(depth_frame)
+            self.detect_obstacles_from_above(depth_frame, color_frame)
 
 
 if __name__ == '__main__':
