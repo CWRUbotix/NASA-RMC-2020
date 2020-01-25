@@ -86,7 +86,7 @@ class LocalizationNode:
                 # must correct for current orientation of robot as well
                 phi = math.atan2(node.relative_y, node.relative_x)
                 z = math.sqrt(node.relative_x ** 2 + node.relative_y ** 2)
-                avg_x += node.x - - z * math.cos(theta - phi)
+                avg_x += node.x - z * math.cos(theta - phi)
                 avg_y += node.y - z * math.sin(theta - phi)
                 total += 1
 
