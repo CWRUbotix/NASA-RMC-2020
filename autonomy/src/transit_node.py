@@ -95,8 +95,8 @@ class TransitNode:
             vel, angular_vel = self.controller.get_target_vels(self.robot_state["state"],
                                                                self.robot_state["state_dot"], dt)
 
-            right_speed = (vel + angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
-            left_speed = (vel - angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
+            right_speed = (vel + angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
+            left_speed = (vel - angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
 
             self.target_vels.append(vel)
             self.target_ang_vels.append(angular_vel)
