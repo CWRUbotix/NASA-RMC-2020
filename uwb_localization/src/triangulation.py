@@ -48,7 +48,6 @@ class UltraWideBandNode:
 
     def get_position(self):
         if len(list(self.measurements.keys())) >= 3:
-            start_time = time.time()
             P = Project(mode='2D', solver='LSE_GC')
 
             for i, sensor in self.sensors.iterrows():
@@ -59,7 +58,6 @@ class UltraWideBandNode:
 
             for sensor in self.measurements.keys():
                 t.add_measure(sensor, self.measurements[sensor])
-
             P.solve()
             # Then the target location is:
             position = t.loc

@@ -132,19 +132,6 @@ class ObstacleDetectionNode:
         proj_img = cv2.flip(proj_img, 0)
         return np.uint8(proj_img)
 
-    def depth_matrix_to_point_cloud(self, z, scale=1000):
-        C, R = np.indices(z.shape)
-
-        R = np.subtract(R, self.CameraParams['cx'])
-        R = np.multiply(R, z)
-        R = np.divide(R, self.CameraParams['fx'] * scale)
-
-        C = np.subtract(C, self.CameraParams['cy'])
-        C = np.multiply(C, z)
-        C = np.divide(C, self.CameraParams['fy'] * scale)
-
-        return np.column_stack((z.ravel() / scale, R.ravel(), -C.ravel()))
-
     def detect_obstacles_from_above(self, depth_frame, color_frame):
         out = np.empty((h, w, 3), dtype=np.uint8)
         depth_image = np.asanyarray(depth_frame.get_data())

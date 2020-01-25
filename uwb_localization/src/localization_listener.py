@@ -2,21 +2,19 @@
 import os
 import sys
 import glob
-import math
 import rospy
 import rospkg
 import math
 import time
 import matplotlib
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
-from itertools import combinations, permutations
+from itertools import combinations
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from canbus.msg import UwbData
 from triangulation import UltraWideBandNode
-from unscented_localization import run_localization
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import Quaternion, PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point
@@ -74,30 +72,26 @@ class LocalizationNode:
         return self.robot_theta[-1]
 
     def position_callback(self, msg):
-        #start_time = time.time()
-        #print('Adding measurements took %.4f seconds' % (time.time() - start_time))
-        #start_time = time.time()
         for node in self.nodes:
             if node.id == msg.node_id:
                 node.add_measurement(msg.anchor_id, msg.distance, msg.confidence)
             node.get_position()
-        #print('Triangulation took %.4f seconds' % (time.time() - start_time))
         avg_x = 0
         avg_y = 0
         total = 0
-        #start_time = time.time()
+        theta = self.get_robot_orientation()
         for node in self.nodes:
             if node.is_valid():
-                avg_x += node.x - node.relative_x
-                avg_y += node.y - node.relative_y
+                # offset node measurements by their relative positions to the center of the robot
+                # must correct for current orientation of robot as well
+                avg_x += node.x - (node.relative_x * math.cos(theta) + node.relative_y * math.sin(theta))
+                avg_y += node.y - (node.relative_y * math.cos(theta) + node.relative_x * math.sin(theta))
                 total += 1
-        #print('Offset took %.4f seconds' % (time.time() - start_time))
-        #start_time = time.time()
+
         print('Total:', total)
         if total > 0:
             self.robot_x.append(avg_x / total)
             self.robot_y.append(avg_y / total)
-            theta = self.get_robot_orientation()
             print('X: %.3f, Y: %.3f, theta: %.3f' % (self.robot_x[-1], self.robot_y[-1], theta))
             self.compose_msg()
 
@@ -147,12 +141,10 @@ class LocalizationNode:
         stamped_msg.pose = pose_with_cov
         try:
             pub = rospy.Publisher('uwb_nodes', PoseWithCovarianceStamped, queue_size=1)
-            #rospy.loginfo(stamped_msg)
             pub.publish(stamped_msg)
         except rospy.ROSInterruptException as e:
             print(e.getMessage())
             pass
-
 
 
 if __name__ == '__main__':
