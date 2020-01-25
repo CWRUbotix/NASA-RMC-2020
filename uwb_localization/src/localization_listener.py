@@ -84,8 +84,10 @@ class LocalizationNode:
             if node.is_valid():
                 # offset node measurements by their relative positions to the center of the robot
                 # must correct for current orientation of robot as well
-                avg_x += node.x - (node.relative_x * math.cos(theta) + node.relative_y * math.sin(theta))
-                avg_y += node.y - (node.relative_y * math.cos(theta) + node.relative_x * math.sin(theta))
+                phi = math.atan2(node.relative_y, node.relative_x)
+                z = math.sqrt(node.relative_x ** 2 + node.relative_y ** 2)
+                avg_x += node.x - - z * math.cos(theta - phi)
+                avg_y += node.y - z * math.sin(theta - phi)
                 total += 1
 
         print('Total:', total)
