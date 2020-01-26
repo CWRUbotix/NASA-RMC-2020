@@ -25,7 +25,7 @@ class LocalizationNode:
         self.topic = 'localization_data'  # topic where UWB distances are published
         self.viz_dir = 'visualizations/'  # directory to store node visualizations
         self.visualize = visualize
-        self.viz_step = 50
+        self.viz_step = 100
         print('Booting up node...')
         rospy.init_node('localization_listener', anonymous=True)
         self.nodes = []  # list of UltraWideBandNode instances, one for each node and one for each anchor
@@ -80,17 +80,31 @@ class LocalizationNode:
         avg_y = 0
         total = 0
         theta = self.get_robot_orientation()
-        for node in self.nodes:
-            if node.is_valid():
-                # offset node measurements by their relative positions to the center of the robot
-                # must correct for current orientation of robot as well
-                phi = math.atan2(node.relative_y, node.relative_x)
-                z = math.sqrt(node.relative_x ** 2 + node.relative_y ** 2)
-                avg_x += node.x - z * math.cos(theta - phi)
-                avg_y += node.y - z * math.sin(theta - phi)
-                total += 1
+        non_anchors = [x for x in self.nodes if x.type == 'node']  # get all nodes on the robot
+        node_pairs = combinations(non_anchors, 2)  # get all pairwise combinations of nodes
+        for (start_node, end_node) in node_pairs:
+            if start_node.is_valid() and end_node.is_valid():
+                #print(start_node.id, end_node.id, start_node.relative_x, end_node.relative_x, start_node.relative_y, end_node.relative_y)
+                if start_node.relative_x == -end_node.relative_x and start_node.relative_y == -end_node.relative_y:
+                    start_node.robot_x = (start_node.x + end_node.x) * 0.5
+                    end_node.robot_x = start_node.robot_x
+                    start_node.robot_y = (start_node.y + end_node.y) * 0.5
+                    end_node.robot_y = start_node.robot_y
+                    avg_x += start_node.robot_x
+                    avg_y += start_node.robot_y
+                    total += 1
 
-        print('Total:', total)
+        #for node in self.nodes:
+        #    if node.is_valid():
+        #        # offset node measurements by their relative positions to the center of the robot
+        #        # must correct for current orientation of robot as well
+        #        phi = math.atan2(node.relative_y, node.relative_x)
+        #        z = math.sqrt(node.relative_x ** 2 + node.relative_y ** 2)
+        #        avg_x += node.x + z * math.cos(theta - phi)
+        #        avg_y += node.y - z * math.sin(theta - phi)
+        #        total += 1
+
+        #print('Total:', total)
         if total > 0:
             self.robot_x.append(avg_x / total)
             self.robot_y.append(avg_y / total)
@@ -103,7 +117,7 @@ class LocalizationNode:
             ax = plt.subplot(141)
             ax.set_title('Position')
             for node in self.nodes:
-                node.plot_position(ax=ax)
+                node.plot_position(theta, ax=ax)
 
             ax.legend(loc='best')
             ax.set_xlim(0, 5.2)
@@ -133,7 +147,7 @@ class LocalizationNode:
         header.frame_id = 'map'
         point_msg = Point(self.robot_x[-1], self.robot_y[-1], 0)  # use most recent pos with no z-coord
         orientation_quat = R.from_euler('xyz', [0, 0, self.robot_theta[-1]]).as_quat()  # pitch is rotation about z-axis in euler angles
-        pose_cov = np.diag([0.01, 0.01, 0, 0, 0, 0.04]).flatten()
+        pose_cov = np.diag([0.05, 0.05, 0, 0, 0, 0.01]).flatten()
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
         pose_with_cov = PoseWithCovariance()
         pose_with_cov.pose = Pose(point_msg, quat_msg)

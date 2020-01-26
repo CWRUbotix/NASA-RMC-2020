@@ -29,12 +29,15 @@ class KalmanFilterNode:
         rospy.init_node('kalman_filter_listener', anonymous=True)
         self.robot_x = []
         self.robot_y = []
+        self.unfiltered_x = []
+        self.unfiltered_y = []
+        self.unfiltered_yaw = []
         self.node_x = []
         self.node_y = []
         self.robot_yaw = []
         self.node_yaw = []
         self.viz_dir = 'robot_localization_viz'
-        self.viz_step = 20
+        self.viz_step = 50
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -98,6 +101,15 @@ class KalmanFilterNode:
         ellipse.set_transform(transf + ax.transData)
         return ax.add_patch(ellipse)
 
+    def unfiltered_callback(self, msg):
+        pose = msg.pose.pose
+        self.unfiltered_x.append(pose.position.x)
+        self.unfiltered_y.append(pose.position.y)
+        quat = pose.orientation
+        euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
+        self.unfiltered_yaw.append(euler[2])  # rotation about vertical z-axis
+        #print('Var(X): %0.6f' % np.var(self.unfiltered_x), 'Var(Y): %0.6f' % np.var(self.unfiltered_y))
+
     def position_callback(self, msg):
         pose = msg.pose.pose
         covariance = msg.pose.covariance
@@ -110,12 +122,15 @@ class KalmanFilterNode:
         print('X: %.4f \tY: %.4f \tyaw: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_yaw[-1]))
 
         if len(self.robot_x) % self.viz_step == 0:
-            fig, ax = plt.subplots()
-            ax.scatter(self.robot_x, self.robot_y, label='kalman filter', alpha=0.2)
+            fig, ax = plt.subplots(figsize=(6, 9))
+            if len(self.unfiltered_x) > 0 and len(self.unfiltered_y) > 0 and len(self.unfiltered_x) == len(self.unfiltered_y):
+                ax.scatter(self.unfiltered_x, self.unfiltered_y, label='raw UWB', alpha=0.2, marker='+')
+            ax.plot(self.robot_x, self.robot_y, label='kalman filter', alpha=0.75, c='tab:orange')
             self.confidence_ellipse(self.robot_x[-1], self.robot_y[-1], covariance[0: 2, 0: 2], ax, edgecolor='red')
             ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(self.robot_yaw[-1]), .3 * math.sin(self.robot_yaw[-1]), head_width=0.1)
             ax.set_xlim(0, 5.2)
             ax.set_ylim(0, 6.05)
+            ax.legend(loc='best')
             plt.tight_layout()
             fig.savefig(self.viz_dir + '/localization_%d.png' % (len(os.listdir(self.viz_dir))))
             plt.close()
@@ -130,6 +145,7 @@ class KalmanFilterNode:
 
 if __name__ == '__main__':
     kalman_filter_node = KalmanFilterNode()
-    sub = rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback, queue_size=1)
+    rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback, queue_size=1)
+    rospy.Subscriber('uwb_nodes', PoseWithCovarianceStamped, kalman_filter_node.unfiltered_callback, queue_size=1)
 
     rospy.spin()

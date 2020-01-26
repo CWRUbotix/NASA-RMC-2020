@@ -33,6 +33,9 @@ pipeline.start(config)
 # Get stream profile and camera intrinsics
 profile = pipeline.get_active_profile()
 depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
+depth_sensor = profile.get_device().first_depth_sensor()
+depth_scale = depth_sensor.get_depth_scale()
+print('Depth scale:', depth_scale)
 depth_intrinsics = depth_profile.get_intrinsics()
 w, h = depth_intrinsics.width, depth_intrinsics.height
 
@@ -47,7 +50,7 @@ class ObstacleDetectionNode:
 
     def __init__(self):
         self.h, self.w = 512, 424
-        self.ground_plane_height = -0.23
+        self.ground_plane_height = 0
         self.resolution = 0.15
         self.grid_size = 30
         self.tolerance = 0.05
@@ -117,19 +120,25 @@ class ObstacleDetectionNode:
 
     def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500):
         print(xyz_arr.shape)
+        #print('Max X:', np.max(xyz_arr[..., 0]), 'Max Y:', np.max(xyz_arr[..., 1]), 'Max Z:', np.max(xyz_arr[..., 2]))
         normal = np.array([[1, 0, 0], [0, 1, 0]])
         proj = np.matmul(xyz_arr, normal.T)
         proj_img = np.zeros((4500, 4500))
         indices = np.int32(proj * 1000)
-        indices[..., 1] += 4500 // 2
-        indices = np.clip(indices, 0, 4499)
-        proj_img[indices[..., 0], indices[..., 1]] = 255
-        proj_img[4500 - cropping:, 4500 - cropping:] = 0
-        new_size = 4500 // resize_factor
-        proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
-        proj_img = cv2.dilate(proj_img, np.ones((3, 3)), iterations=2)
-        proj_img = cv2.blur(proj_img, (5, 5))
-        proj_img = cv2.flip(proj_img, 0)
+        print(indices)
+        try:
+            indices -= indices.min()
+            #indices[..., 1] += 4500 // 2
+            indices = np.clip(indices, 0, 4499)
+            proj_img[indices[..., 0], indices[..., 1]] = 255
+            #proj_img[4500 - cropping:, 4500 - cropping:] = 0
+            new_size = 4500 // resize_factor
+            proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
+            proj_img = cv2.dilate(proj_img, np.ones((3, 3)), iterations=2)
+            proj_img = cv2.blur(proj_img, (5, 5))
+            proj_img = cv2.flip(proj_img, 0)
+        except ValueError:
+            pass
         return np.uint8(proj_img)
 
     def detect_obstacles_from_above(self, depth_frame, color_frame):
@@ -211,26 +220,32 @@ class ObstacleDetectionNode:
         if self.save_imgs:
             fig = plt.figure(figsize=(20, 5))
 
-            ax = plt.subplot(141)
+            ax = plt.subplot(241)
             ax.set_xticks([])
             ax.set_yticks([])
             ax.imshow(depth_image, cmap='jet')
             ax.set_title('Depth Frame')
 
-            ax = plt.subplot(142)
+            ax = plt.subplot(245)
             ax.set_xticks([])
             ax.set_yticks([])
-            #ax.imshow(np.maximum(rocks, holes))
-            ax.imshow(out)
+            ax.imshow(color_image)
+            ax.set_title('Color Frame')
+
+            ax = plt.subplot(242)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.imshow(rocks)
+            #ax.imshow(out)
             ax.set_title('Projection')
 
-            ax = plt.subplot(143)
+            ax = plt.subplot(243)
             ax.set_xticks([])
             ax.set_yticks([])
             ax.imshow(obs_grid, cmap='Reds')
             ax.set_title('Raw Grid')
 
-            ax = plt.subplot(144)
+            ax = plt.subplot(244)
             ax.set_xticks([])
             ax.set_yticks([])
             ax.imshow(occupancy_grid, cmap='Reds')
