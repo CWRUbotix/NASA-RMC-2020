@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import os
+import sys
 import glob
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 
@@ -82,6 +83,8 @@ class TransitNode:
         while not rospy.is_shutdown() and not self.controller.done:
             msg = self.get_robot_state()
             self.receive_state(msg.odometry)
+
+
             if self.step % rate == 0:
                 #self.receive_grid(msg.grid)
                 pass
@@ -92,15 +95,15 @@ class TransitNode:
             vel, angular_vel = self.controller.get_target_vels(self.robot_state["state"],
                                                                self.robot_state["state_dot"], dt)
 
-            right_speed = (vel + angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
-            left_speed = (vel - angular_vel * effective_robot_width / 2) * 120 * np.pi * wheel_radius
+            right_speed = (vel + angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
+            left_speed = (vel - angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
 
             self.target_vels.append(vel)
             self.target_ang_vels.append(angular_vel)
             self.vels.append(self.robot_state["state_dot"][0, 0])
-            self.ang_vels.append(self.robot_state["state_dot"][2, 1])
+            self.ang_vels.append(self.robot_state["state_dot"][2, 0])
             self.target_wheel_speeds.append([right_speed, left_speed])
-            self.wheel_speeds.append([msg.sensors.right_speed, msg.sensors.left_speed])
+            self.wheel_speeds.append([msg.sensors.starboardDriveEncoder, msg.sensors.portDriveEncoder])
 
             '''
             goal_right = right_speed
@@ -202,6 +205,11 @@ class TransitNode:
 
 if __name__ == "__main__":
     try:
-        transit_node = TransitNode(visualize=True)
+        visualize = (sys.argv[1] != "false")  # defaults to true
+    except IndexError:
+        visualize = True
+
+    try:
+        transit_node = TransitNode(visualize=visualize)
     except rospy.ROSInterruptException:
         pass
