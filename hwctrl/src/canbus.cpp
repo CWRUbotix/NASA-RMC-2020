@@ -7,9 +7,13 @@ void canbus_thread(CanbusIf* canbus_if){
 	}
 }
 
+/**
+ * Constructor for the CanbusIf object
+ * initializes the can socket, creates publisher and subscriber for CanFrame messages
+ */
 CanbusIf::CanbusIf(ros::NodeHandle n){
 	this->nh = n;
-	
+
 	int canbus_init = this->init(); // do setup things
 
 	if(canbus_init != 0){
@@ -23,8 +27,6 @@ CanbusIf::CanbusIf(ros::NodeHandle n){
 
 	// SUBSCRIBERS
 	this->can_tx_sub 	= this->nh.subscribe("can_frames_tx", 128, &CanbusIf::can_tx_cb, this);
-
-
 }
 
 int CanbusIf::init(){
@@ -35,8 +37,8 @@ int CanbusIf::init(){
 	struct ifreq ifr;
 	struct timeval tv;
 	tv.tv_sec = 0;
-	tv.tv_usec = 10000; // 10ms CAN bus read timeout 
-	
+	tv.tv_usec = 10000; // 10ms CAN bus read timeout
+
 	const char* ifname = "can1";
 
 	// initialize the CAN socket
@@ -45,7 +47,7 @@ int CanbusIf::init(){
 		this->sock_ready = false;
 		return -1;
 	}
-	
+
 	strcpy(ifr.ifr_name, ifname);
 	ioctl(this->sock, SIOCGIFINDEX, &ifr);
 
@@ -53,9 +55,10 @@ int CanbusIf::init(){
 	addr.can_ifindex = ifr.ifr_ifindex;
 
 	ROS_INFO("%s at index %d", ifname, ifr.ifr_ifindex);
-	
+
 	setsockopt(this->sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
-	
+
+	// socket bind
 	if(bind(this->sock, (struct sockaddr *)&addr, sizeof(addr)) < 0){
 		ROS_INFO("Error in CAN socket bind");
 		this->sock_ready = false;
@@ -120,7 +123,7 @@ void CanbusIf::can_tx_cb(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 	f.data[i] = frame->data[i];
 	i++;
 	f.data[i] = frame->data[i];
-	
+
 	// WRITE CAN FRAME TO SOCKET IMMEDIATELY
 	if(this->sock_ready){
 		int n_bytes = write(this->sock, &f, sizeof(f));
@@ -130,13 +133,13 @@ void CanbusIf::can_tx_cb(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 /*
 int CanbusIf::get_nodes_from_file(string fname, string sType){
 	return 0;
-	
+
 	ifstream node_data(fname.c_str());
 
 	string line;
-	
+
 	int retval;
-	
+
 	if(node_data.is_open()){
 
 		while(getline(node_data, line, '\n')){
@@ -207,7 +210,7 @@ int CanbusIf::read_can_config(std::string fname){
 				}
 			}
 			line_num++;
-			
+
 			words.clear();
 		}
 	}else{

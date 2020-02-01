@@ -93,7 +93,7 @@ int set_rpm_can(int sock, int target_id, int self_id, float rpm){
 	int n_rpm = (int)rpm;
 	struct can_frame frame;
 	frame.can_id = (CAN_PACKET_SET_RPM << 8) | target_id | CAN_EFF_FLAG;
-	
+
 	// memcpy(frame.data, &n_rpm, sizeof(n_rpm));
 	frame.data[0] = (uint8_t)(n_rpm >> 24);
 	frame.data[1] = (uint8_t)(n_rpm >> 16);
@@ -123,6 +123,7 @@ int get_values(int sock, int target_id, int self_id){
 void handle_vesc_frame(struct can_frame frame, boost::shared_ptr<hwctrl::VescData>& motor_msg){
 
 }
+
 void fill_data_from_buffer(uint8_t* rx_buf, VescData* data){
 	int ind = 1;
 	data->temp_mos1 			= buffer_get_float16(rx_buf, 10.0, 	&ind);

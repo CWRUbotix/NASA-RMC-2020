@@ -2,10 +2,6 @@
 #define CANBUS_H_
 
 #include <ros/ros.h>
-#include <std_msgs/String.h>
-#include <std_msgs/Float32.h>
-#include <hwctrl/UwbData.h>
-#include <hwctrl/VescData.h>
 #include <hwctrl/CanFrame.h>
 #include <string>
 #include <cstdio>
@@ -55,49 +51,19 @@ bool node_done 	= false;
 bool uwb_range_next = true;
 int anchor_frames = 0;
 int uwb_timeout = 0;
-ros::Duration uwb_timeout_period(0.25);
-
-typedef canbus::UwbData UWB_msg;
-typedef canbus::VescData VescData_msg;
-
-typedef struct {
-	int id;
-	string type;
-	float x;
-	float y;
-} UwbNode;
-
-typedef struct {
-	uint8_t type;
-	uint8_t anchor_id;
-	float distance;
-	uint16_t confidence;
-} DistanceFrame;
-
-typedef struct {
-	string type;
-	uint8_t can_id;
-	string name;
-	canbus::UwbData* uwb_msg;
-	canbus::VescData* vesc_msg;
-}CanDevice;
 
 class CanbusIf{
 private:
-	std::vector<CanDevice> devices;
-	// int read_can_config(string fname, string sType);
-	// int get_nodes_from_file(string fname);
-	bool uwb_range_next = false;
 	ros::NodeHandle nh;
 	ros::Publisher can_rx_pub;
+	ros::Subscriber can_tx_sub;
 public:
 	CanbusIf(ros::NodeHandle);
 	int init(); 					// do all the setup of the canbus
 	int sock; 						// our can interface socket
 	bool sock_ready = false; 		// flag that says if the socket is opened, etc.
 	ros::Rate loop_rate(100); 		// 10ms sleep in each loop
-	// void uwb_timeout_cb(const ros::TimerEvent& event);
-	int read_can_frames(); 			// put received frames in can_rx_queue, send all frames in can_tx_queue
+	int read_can_frames(); 			// publish received frames with can_rx_pub
 	void can_tx_cb(const boost::shared_ptr<hwctrl::CanFrame>& frame);
 };
 

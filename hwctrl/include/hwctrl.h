@@ -25,6 +25,7 @@
 #include <thread>
 
 #include <canbus.h>
+#include <uwb.h>
 #include <parse_csv.h>
 
 #define DEFAULT_MAX_ACCEL 	30.0
@@ -43,6 +44,7 @@ const std::string aux_3_hddr 		= "aux_3";
 const std::string aux_4_hddr 		= "aux_4";
 
 const std::string category_motor 	= "motor";
+const std::string category_sensor = "sensor";
 
 const std::string config_file_fname = "conf/hw_config.csv";
 
@@ -50,12 +52,18 @@ const std::string vesc_log_fname 	= "hwctrl/vesc_log.csv";
 
 static std::string vesc_log_path 	= "";
 
-static std::vector<CanDevice> can_devices_vect;
-static ros::Publisher uwb_pub; 			// so the hwctrl_node can publish uwb frames
-static ros::Publisher vesc_data_pub;	// so the hwctrl_node can publish VescData to be consumed by HwMotorIf
-static ros::Publisher limit_switch_pub; // so limit switch thread can publish limit switch data
-
-static ros::Subscriber vesc_data_sub;
+const std::string adc_1_cs 			= "/sys/class/gpio/gpio67/"; 		// gpio file for ADC 1 chip select
+const std::string adc_2_cs			= "/sys/class/gpio/gpio68/";
+const std::string temp_sensor_cs= "/sys/class/gpio/gpio69/";
+const std::string imu_cs 				= "/sys/class/gpio/gpio66/";
+const std::string sys_power_on 	= "/sys/class/gpio/gpio45/";
+const std::string ext_5V_ok 		= "/sys/class/gpio/gpio26/";
+const std::string limit_1_gpio 	= "/sys/class/gpio/gpio60/";
+const std::string limit_2_gpio 	= "/sys/class/gpio/gpio48/";
+const std::string limit_3_gpio 	= "/sys/class/gpio/gpio49/";
+const std::string limit_4_gpio 	= "/sys/class/gpio/gpio117/";
+const std::string limit_5_gpio 	= "/sys/class/gpio/gpio115/";
+const std::string limit_6_gpio 	= "/sys/class/gpio/gpio20/";
 
 typedef enum MotorType {
 	MOTOR_NONE,
@@ -68,13 +76,16 @@ typedef enum DeviceType {
 	DEVICE_UWB,
 	DEVICE_VESC,
 	DEVICE_SABERTOOTH,
-	DEVICE_QUAD_ENC
+	DEVICE_QUAD_ENC,
+	DEVICE_LIMIT_SW
 }DeviceType;
 
 typedef enum InterfaceType {
 	IF_NONE,
 	IF_CANBUS,
-	IF_UART
+	IF_UART,
+	IF_SPI,
+	IF_GPIO
 }InterfaceType;
 
 typedef enum ControlType {
@@ -92,7 +103,7 @@ public:
 	int id;
 	std::string name;
 	int device_id; // could be the CAN id, or something else
-	VescData vesc_data;
+	VescData vesc_data; // struct to hold VESC data
 	float rpm_coef;
 	ControlType ctrl_type = CTRL_NONE;
 	DeviceType motor_type = DEVICE_NONE;
@@ -147,12 +158,23 @@ private:
 	ros::NodeHandle nh;
 	ros::Publisher sensor_data_pub; // send data to rest of ROS system
 	ros::Publisher can_tx_pub;		// send data to canbus
-	ros::publisher limit_sw_pub; 	// send out limit switch states
+	ros::Publisher limit_sw_pub; 	// send out limit switch states
+	ros::Publisher uwb_data_pub; 	// publish uwb data
 	ros::Subscriber can_rx_sub; 	// get data from canbus
 	ros::Rate loop_rate(100); 		// 10ms sleep in every loop
+	int spi_handle; 							// for the spi interface
+	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
+	ros::Duration uwb_update_period(0.1); // how long to wait before we request data from next UWB node
+	ros::Timer uwb_update_timer;  // when to call the uwb_update_callback
+	int uwb_ind = 0;
+	QuadEncoder quad_encoder; 		// object for our quadrature encoder
+	void get_sensors_from_csv();
 public:
+	UwbNode* get_uwb_by_can_id(int can_id);
 	SensorIf(ros::NodeHandle);
-	void can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame); 			// do things when 
+	void can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame); 			// do things when
+	int setup_gpio();
+	void uwb_update_callback(const ros::TimerEvent&);
 };
 
 void maintain_motors_thread(HwMotorIf* motor_if);
