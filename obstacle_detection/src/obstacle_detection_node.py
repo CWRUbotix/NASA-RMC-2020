@@ -119,24 +119,19 @@ class ObstacleDetectionNode:
             print(e)
 
     def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500):
-        print(xyz_arr.shape)
-        #print('Max X:', np.max(xyz_arr[..., 0]), 'Max Y:', np.max(xyz_arr[..., 1]), 'Max Z:', np.max(xyz_arr[..., 2]))
-        normal = np.array([[1, 0, 0], [0, 1, 0]])
-        proj = np.matmul(xyz_arr, normal.T)
+        proj = xyz_arr[..., [0, 2]]
         proj_img = np.zeros((4500, 4500))
         indices = np.int32(proj * 1000)
-        print(indices)
         try:
-            indices -= indices.min()
-            #indices[..., 1] += 4500 // 2
+            indices[..., 1] += 4500 // 2
+            indices[..., 0] += 4500 // 2
             indices = np.clip(indices, 0, 4499)
             proj_img[indices[..., 0], indices[..., 1]] = 255
-            #proj_img[4500 - cropping:, 4500 - cropping:] = 0
             new_size = 4500 // resize_factor
             proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
             proj_img = cv2.dilate(proj_img, np.ones((3, 3)), iterations=2)
             proj_img = cv2.blur(proj_img, (5, 5))
-            proj_img = cv2.flip(proj_img, 0)
+            proj_img = cv2.rotate(proj_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
         except ValueError:
             pass
         return np.uint8(proj_img)
@@ -177,13 +172,8 @@ class ObstacleDetectionNode:
             np.putmask(out, tmp > 0, tmp)
 
 
-        print(xyz_arr[..., 2].mean())
-        rocks = self.project_point_cloud_onto_plane(
-            xyz_arr[xyz_arr[..., 2] >= self.ground_plane_height + self.tolerance])
-        holes = self.project_point_cloud_onto_plane(
-            xyz_arr[xyz_arr[..., 2] < self.ground_plane_height - self.tolerance])
-
-        print(rocks.shape, holes.shape)
+        rocks = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] >= self.ground_plane_height + self.tolerance])
+        holes = self.project_point_cloud_onto_plane(xyz_arr)
 
         rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size))
         hole_grid = self.gridify(holes, (self.grid_size, self.grid_size))
