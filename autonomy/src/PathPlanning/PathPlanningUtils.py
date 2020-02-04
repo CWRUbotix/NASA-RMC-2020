@@ -67,12 +67,6 @@ class Vertex(Position):
         angle = constrain_angle(angle)  # Constrain to [-180, 180]
         return angle
 
-    def getX(self):
-        return self.x
-
-    def getY(self):
-        return self.y
-
     def getPos(self):
         return [self.x, self.y]
 

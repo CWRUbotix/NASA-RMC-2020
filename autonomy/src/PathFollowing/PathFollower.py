@@ -43,7 +43,14 @@ class PathFollower:
         self.state = state
         self.state_dot = state_dot
 
-        if Position(self.state[0, 0], self.state[1, 0]).distanceTo(self.goal_pos) < 0.1:
+        # Take dot product of vector going from last point to robot and from last point to second to last point
+        # When this dot product is less than 0 the robot has "passed" the last point
+        dx_r = self.state[0, 0] - self.global_path[-1, 0]
+        dy_r = self.state[1, 0] - self.global_path[-1, 1]
+        dx = self.global_path[-2, 0] - self.global_path[-1, 0]
+        dy = self.global_path[-2, 1] - self.global_path[-1, 1]
+
+        if dx * dx_r + dy * dy_r < 0:
             self.done = True
 
     def calculate_path(self):

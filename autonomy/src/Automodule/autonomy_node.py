@@ -16,13 +16,15 @@ def main():
 
     print("TEST 2019/11/24")
     print("Testing simple stuff for transit")
+    while True:
+        x = float(input("Enter x-coordinate of where you want to go\n"))
+        y = float(input("Enter y-coordinate of where you want to go\n"))
 
-    x = float(input("Enter x-coordinate of where you want to go"))
-    y = float(input("Enter y-coordinate of where you wnat to go"))
+        input("Hit <Enter> when you are ready")
+        print("Sent\n")
 
-    input("Hit <Enter> when you are ready")
+        goal_pub.publish(stop=False, x=x, y=y)
 
-    goal_pub.publish(stop=False, x=x, y=y)
     while not rospy.is_shutdown():
         rospy.spin()
 

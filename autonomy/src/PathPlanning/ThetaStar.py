@@ -24,8 +24,8 @@ def a_star(start, end, grid):
     startVertex = grid.getVertex(start_coord[0], start_coord[1])
     endVertex = grid.getVertex(end_coord[0], end_coord[1])
 
-    endVertex.x_pos = end.getX()
-    endVertex.y_pos = end.getY()
+    endVertex.x = end.getX()
+    endVertex.y = end.getY()
 
     startVertex.setDistance(0)
     updateHeuristic(endVertex, grid)

@@ -3,7 +3,7 @@ import rospy
 # from tf.transformations import euler_from_quaternion
 from scipy.spatial.transform import Rotation as R
 from hci.msg import motorCommand
-from autonomy.msg import goToGoal, transitPath
+from autonomy.msg import goToGoal, transitPath, transitControlData
 from nav_msgs.msg import OccupancyGrid
 from autonomy.srv import RobotState
 from uwb_localization.srv import EffectiveRPM
@@ -25,7 +25,7 @@ ARENA_HEIGHT = 7.38
 ROBOT_WIDTH = 0.63
 ROBOT_LENGTH = 1.3
 effective_robot_width = 0.7
-reference_point_x = 0.3
+reference_point_x = 0.5
 wheel_radius = 0.2286
 
 
@@ -33,6 +33,7 @@ class TransitNode:
     def __init__(self, visualize=False):
         self.motor_pub = rospy.Publisher("motorCommand", motorCommand, queue_size=100)
         self.path_pub = rospy.Publisher("transitPath", transitPath, queue_size=4)
+        self.control_data_pub = rospy.Publisher("transitControlData", transitControlData, queue_size=4)
 
         self.controller = PathFollower(reference_point_x, goal=(0, 0))
         self.robot_state = dict(state=np.array([[0, 0, 0]]).T, state_dot=np.array([[0, 0, 0]]).T)
@@ -48,6 +49,8 @@ class TransitNode:
         self.ang_vels = []
         self.target_wheel_speeds = []
         self.wheel_speeds = []
+
+        print("Creating directory: " + os.path.abspath(self.viz_dir))
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
             files = glob.glob('%s/*' % self.viz_dir)
@@ -73,8 +76,9 @@ class TransitNode:
         self.receive_state(msg.odometry)
 
         self.controller.reset()
-        self.controller.update(self.robot_state["state"], self.robot_state["state_dot"])
         self.controller.set_goal(goal)
+        self.controller.state = self.robot_state["state"]
+        self.controller.state_dot = self.robot_state["state_dot"]
         self.controller.calculate_path()
 
         rate = 30
@@ -84,8 +88,8 @@ class TransitNode:
             msg = self.get_robot_state()
             self.receive_state(msg.odometry)
 
-
-            if self.step % rate == 0:
+            if self.step % rate == 0:  # Every second
+                self.publish_path()
                 #self.receive_grid(msg.grid)
                 pass
 
@@ -101,9 +105,9 @@ class TransitNode:
             self.target_vels.append(vel)
             self.target_ang_vels.append(angular_vel)
             self.vels.append(self.robot_state["state_dot"][0, 0])
-            self.ang_vels.append(self.robot_state["state_dot"][2, 1])
+            self.ang_vels.append(self.robot_state["state_dot"][2, 0])
             self.target_wheel_speeds.append([right_speed, left_speed])
-            self.wheel_speeds.append([msg.sensors.right_speed, msg.sensors.left_speed])
+            self.wheel_speeds.append([msg.sensors.starboardDriveEncoder, msg.sensors.portDriveEncoder])
 
             '''
             goal_right = right_speed
@@ -125,10 +129,14 @@ class TransitNode:
             self.motor_pub.publish(motorID=0, value=left_speed)
             self.motor_pub.publish(motorID=1, value=right_speed)
 
+            self.publish_control_data()
+
             self.draw()
             self.step += 1
             last_time = time
             r.sleep()
+
+        print("Path Complete")
 
     def receive_state(self, msg):
         pose = msg.pose.pose
@@ -145,7 +153,6 @@ class TransitNode:
         grid = Grid(ARENA_WIDTH, ARENA_HEIGHT, occupancies=msg)  # Create a grid and add the obstacles to it
         self.controller.update_grid(grid)
         self.controller.calculate_path()
-        self.publish_path()
 
     def subscribe(self):
         rospy.Subscriber("transit_command", goToGoal, self.go_to_goal)
@@ -156,10 +163,23 @@ class TransitNode:
     def publish_path(self):
         path = self.controller.get_path()
         data = []
-        for point in path:
-            data.append(point[0, 0])
-            data.append(point[1, 0])
+        for point in path:  # Make data 1D
+            data.append(point[0])
+            data.append(point[1])
         self.path_pub.publish(path=data)
+
+    def publish_control_data(self):
+        data = transitControlData()
+        data.t_vel = self.target_vels[-1]
+        data.t_angular_vel = self.target_ang_vels[-1]
+        data.vel = self.vels[-1]
+        data.angular_vel = self.ang_vels[-1]
+        data.t_right_speed = self.target_wheel_speeds[-1][0]
+        data.t_left_speed = self.target_wheel_speeds[-1][1]
+        data.right_speed = self.wheel_speeds[-1][0]
+        data.left_speed = self.wheel_speeds[-1][1]
+
+        self.control_data_pub.publish(data)
 
     def shutdown(self):
         self.motor_pub.publish(motorID=0, value=0)
@@ -178,9 +198,10 @@ class TransitNode:
             path_aprox, closest_point, reference = self.controller.draw_path_info()
             path = self.controller.get_path()
 
-            ax.plot([0, ARENA_WIDTH, ARENA_WIDTH, 0], [0, 0, ARENA_HEIGHT, ARENA_HEIGHT], color='black')  # draw field
+            ax.plot([0, ARENA_WIDTH, ARENA_WIDTH, 0, 0],
+                     [0, 0, ARENA_HEIGHT, ARENA_HEIGHT, 0], color='black', linewidth=0.5)  # draw field
             ax.scatter(points[:, 0], points[:, 1])
-            ax.plot(path[:, 0], path[:, 1])
+            ax.plot(path[:, 0], path[:, 1], linewidth=0.75)
             ax.scatter(reference[0, 0], reference[1, 0])
             ax.scatter(closest_point[0], closest_point[1])
             # ax.plot(path_aprox[:, 0], path_aprox[:, 1])
@@ -201,13 +222,14 @@ class TransitNode:
             ax.legend()
 
             fig.savefig(self.viz_dir + 'fig_' + str(int(self.step / self.viz_step)))
+            plt.close(fig)
 
 
 if __name__ == "__main__":
     try:
-        visualize = (sys.argv[1] != "false")  # defaults to true
+        visualize = (sys.argv[1] == "true")  # defaults to False
     except IndexError:
-        visualize = True
+        visualize = False
 
     try:
         transit_node = TransitNode(visualize=visualize)
