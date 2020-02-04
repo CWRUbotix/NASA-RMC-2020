@@ -52,10 +52,10 @@ class Simulator:
 
             self.robot.update(right_torque, left_torque, dt)
 
-            print("x:{:.2f}, y:{:.2f}, ang:{:.1f}, tr:{:.1f}, tl:{:.1f}".format(self.robot.state[0, 0],
-                                                                               self.robot.state[1, 0],
-                                                                               self.robot.state[2, 0],
-                                                                                self.target_right_speed, self.target_left_speed))
+            # print("x:{:.2f}, y:{:.2f}, ang:{:.1f}, tr:{:.1f}, tl:{:.1f}".format(self.robot.state[0, 0],
+            #                                                                    self.robot.state[1, 0],
+            #                                                                    self.robot.state[2, 0],
+            #                                                                     self.target_right_speed, self.target_left_speed))
 
             self.publishOdometry()
             self.publishSensorValues()
