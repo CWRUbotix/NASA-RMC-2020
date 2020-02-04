@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import time
+import math
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,6 +12,8 @@ class UltraWideBandNode:
         self.id = id
         self.x = None
         self.y = None
+        self.robot_x = None
+        self.robot_y = None
         self.relative_x = relative_x
         self.relative_y = relative_y
         self.type = type
@@ -37,7 +40,7 @@ class UltraWideBandNode:
         else:
             self.measurements[anchor_id] = np.nan  # set to invalid value to be ignored
 
-    def plot_position(self, ax, moving_average=False):
+    def plot_position(self, theta, ax, moving_average=False):
         if moving_average:
             if len(self.x_plot) >= 3 and len(self.y_plot) >= 3:
                 avg_x = self.moving_average(self.x_plot)
@@ -45,10 +48,11 @@ class UltraWideBandNode:
                 ax.scatter(avg_x, avg_y, label=str(self.id))
         else:
             ax.scatter(self.x_plot, self.y_plot, label=str(self.id))
+            if self.robot_x is not None and self.robot_y is not None:
+                ax.plot([self.x_plot[-1], self.robot_x], [self.y_plot[-1], self.robot_y], marker='o')
 
     def get_position(self):
         if len(list(self.measurements.keys())) >= 3:
-            start_time = time.time()
             P = Project(mode='2D', solver='LSE_GC')
 
             for i, sensor in self.sensors.iterrows():
@@ -59,7 +63,6 @@ class UltraWideBandNode:
 
             for sensor in self.measurements.keys():
                 t.add_measure(sensor, self.measurements[sensor])
-
             P.solve()
             # Then the target location is:
             position = t.loc
@@ -71,7 +74,8 @@ class UltraWideBandNode:
                 self.y_plot.append(position.y)
             #print('Triangulation took %.4f seconds' % (time.time() - start_time))
         else:
-            print('Not enough points to triangulate node...')
+            pass
+            #print('Not enough points to triangulate node...')
 
     @staticmethod
     def moving_average(a, n=3):

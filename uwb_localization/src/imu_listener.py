@@ -40,7 +40,7 @@ class IMU:
         self.angular_velocity_plot = np.zeros(3)
         self.acceleration_plot = np.zeros(3)
 
-        self.angular_velocity_offset = [-4, 6, 8]
+        self.angular_velocity_offset = [-4.5, 5.87, 8.37]
         self.acceleration_offset = [0, 0]
 
 
@@ -96,6 +96,7 @@ class IMU:
             self.orientation_marker = np.zeros(3)
             self.angular_velocity_marker = np.zeros(3)
             self.acceleration_marker = np.zeros(3)
+            print('X: %.4f' % np.var(self.angular_velocity_plot[..., 0]), 'Y: %.4f' % np.var(self.angular_velocity_plot[..., 1]), 'Z: %.4f' % np.var(self.angular_velocity_plot[..., 2]))
 
             if self.orientation_plot.shape[0] % 5 == 0 and self.save_plots:
                 fig = plt.figure(figsize=(15, 5))
@@ -162,7 +163,7 @@ class IMU:
         #print('Port:', self.port_encoder, 'Starboard:', self.starboard_encoder)
         point_msg = Point(0, 0, 0)
         orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat()
-        pose_cov = np.ones(36) * 0
+        pose_cov = np.ones(36) * 0.0
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
         pose_with_cov = PoseWithCovariance()
         pose_with_cov.pose = Pose(point_msg, quat_msg)
@@ -172,11 +173,10 @@ class IMU:
         y_dot = 0 #(((self.port_encoder * math.pi / 30 * 0.2286) + (self.starboard_encoder * math.pi / 30 * 0.2286)) / 2) * math.sin(self.orientation[-1])
         theta_dot = ((self.starboard_encoder * math.pi / 30 * 0.2286) - (self.port_encoder * math.pi / 30 * 0.2286)) / 0.63
 
-        print(x_dot, y_dot, theta_dot)
         linear_twist = Vector3(x_dot, y_dot, 0)
         angular_twist = Vector3(0, 0, theta_dot)
 
-        twist_cov = np.diag([0.01, 0.01, 0, 0, 0, 0.02]).flatten()
+        twist_cov = np.diag([0.05, 0.05, 0, 0, 0, 0.05]).flatten()
         twist_with_cov = TwistWithCovariance()
         twist_with_cov.twist = Twist(linear_twist, angular_twist)
         twist_with_cov.covariance = pose_cov

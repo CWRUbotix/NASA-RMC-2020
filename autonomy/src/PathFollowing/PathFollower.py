@@ -10,7 +10,7 @@ class PathFollower:
         self.local_path = None
 
         if path is None:
-            self.goal_pos = goal
+            self.goal_pos = Position(goal[0], goal[1])
         else:
             self.goal_pos = Position(self.global_path[-1, 0], self.global_path[-1, 1])  # Used if path is manually set
 
