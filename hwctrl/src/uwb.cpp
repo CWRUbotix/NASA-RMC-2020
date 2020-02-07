@@ -10,14 +10,24 @@ AnchorData* UwbNode::get_anchor_by_id(uint32_t id){
 	return node;
 }
 
-void UwbNode::add_can_data(uint8_t* can_data){
+void UwbNode::add_can_data(uint8_t* can_data, uint8_t can_dlc){
 
-  uint32_t anchor_id = can_data[0]; // which anchor is this about?
-  int data_type = can_data[1];      // what kind of anchor data is this?
-  uint8_t* frame_data = can_data + UWB_CAN_HDDR_SIZE;
-
+  uint8_t anchor_id = 0;
+  uint8_t data_type = 0;
   float f_data = 0.0;
-  memcpy(&f_data, frame_data, 4); // floats are size 4
+  uint8_t * frame_data;
+  if(can_dlc == 8){
+    // this is legacy data
+    data_type = UWB_LEGACY;
+    // uint8_t frame_type = can_data[0];
+    anchor_id  = can_data[1];
+    memcpy(&f_data, can_data+2, 4);
+  }else{
+    // new frame format
+    anchor_id = can_data[0]; // which anchor is this about?
+    data_type = can_data[1];      // what kind of anchor data is this?
+    frame_data = can_data + UWB_CAN_HDDR_SIZE;
+  }
 
   AnchorData* anchor = this->get_anchor_by_id(anchor_id);
   if(anchor == NULL){
@@ -53,6 +63,10 @@ void UwbNode::add_can_data(uint8_t* can_data){
       break;
     case UWB_RANGING_DONE:
       anchor->data_ready = true;
+    case UWB_LEGACY:
+      anchor->distance = f_data;
+      anchor->data_ready = true;
+      break;
     default:
       break;
   }

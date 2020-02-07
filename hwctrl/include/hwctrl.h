@@ -124,7 +124,7 @@ DeviceType get_device_type(std::string type_str);
 // class to manage the interfaces to motors, be it canbus, uart, etc.
 class HwMotorIf{
 private:
-	uint8_t vesc_rx_buf[1024];
+	uint8_t vesc_rx_buf[1024]; // deprecated do not use
 	std::vector<HwMotor>::iterator motor_it;
 	ros::NodeHandle nh;
 	ros::Publisher can_tx_pub; 		// publisher to publish CAN frames to send out

@@ -22,6 +22,9 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n){
 }
 
 // ===== SUBSCRIBER CALLBACKS =====
+/**
+ * any CAN data of interest is from VESC's
+ */
 void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 	uint32_t rx_id = (uint32_t)frame->can_id;
 
@@ -30,10 +33,9 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 		uint8_t cmd = (uint8_t)(rx_id >> 8);
 		int8_t id 	= (int8_t)(rx_id & 0xFF);
 		ROS_INFO("VESC %d sent msg type %d", id, cmd);
+		HwMotor* vesc = this->get_vesc_from_can_id(id);
 		switch(cmd){
 			case CAN_PACKET_STATUS:{
-
-				HwMotor* vesc = this->get_vesc_from_can_id();
 				if(vesc == NULL){
 					break;
 				}
@@ -51,12 +53,17 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 						// this is not intended for us (our canID is 0)
 					break;
 				}
-				memcpy(this->vesc_rx_buf + frame->data[0], frame->data + 1, frame->can_dlc - 1);
+				// copy the CAN data into the corresponding vesc rx buffer
+				memcpy(vesc->vesc_data.vesc_rx_buf + frame->data[0], frame->data + 1, frame->can_dlc - 1);
 				break;
 			}
 			case CAN_PACKET_PROCESS_RX_BUFFER:{
 				if(id != 0x00){
 					// not intended for us
+					break;
+				}
+				if(vesc == NULL){
+					// we know of no VESC with the given CAN ID
 					break;
 				}
 				int ind = 0;
@@ -69,7 +76,7 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 				crc 		= (frame->data[ind++] << 8);
 				crc 		|= frame->data[ind++];
 
-				uint16_t chk_crc = crc16(this->vesc_rx_buf, packet_len);
+				uint16_t chk_crc = crc16(vesc->vesc_data.vesc_rx_buf, packet_len);
 				// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
 
 				if(crc != chk_crc){
@@ -78,21 +85,15 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 					break;
 				}
 
-				HwMotor* vesc = this->get_vesc_from_can_id();
-				if(vesc == NULL){
-					break;
-				}
-				VescData* vesc_data = &(vesc->vesc_data);
-
 				ind = 0;
-				int comm_cmd = this->vesc_rx_buf[ind++];
+				int comm_cmd = vesc->vesc_data.vesc_rx_buf[ind++];
 				switch(comm_cmd){
 					case COMM_GET_VALUES:{
-						vesc_data->timestamp 	= ros::Time::now();
-						vesc_data->motor_type 	= "vesc";
-						vesc_data->can_id 		= vesc_id;
+						vesc->vesc_data.timestamp 	= ros::Time::now();
+						vesc->vesc_data.motor_type 	= "vesc";
+						vesc->vesc_data.can_id 		  = vesc_id;
 
-						fill_data_from_buffer(this->vesc_rx_buf, vesc_data);
+						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
 
 						break;}
 					}
@@ -114,6 +115,10 @@ void HwMotorIf::limit_sw_callback(const boost::shared_ptr<hwctrl::LimitSwState>&
 	// figure out which motor this corresponds to and stop it!
 }
 
+/**
+ * @param can_id the can id of the VESC we're looking for
+ * @return a pointer to the VESC with this CAN ID (null if not found)
+ */
 HwMotor* HwMotorIf::get_vesc_from_can_id(int can_id){
 	HwMotor* motor_arr = this->motors.data();
 	int size = this->motors.size();
@@ -517,10 +522,10 @@ void SensorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame)
 		// UWB frame or quad encoder frame
 		UwbNode* uwb_node = this->get_uwb_by_can_id(can_id);
 		if(uwb_node != NULL){
-			uwb_node->add_can_data(frame->data);
+			uwb_node->add_can_data(frame->data, frame->can_dlc);
 		}else{
 			// no UWB node matching this CAN ID, so must be our quadrature encoder
-			this->quad_encoder.add_can_data(frame->data);
+			this->quad_encoder.add_can_data(frame->data, frame->can_dlc);
 		}
 	}
 }

@@ -19,7 +19,8 @@ typedef enum {
   UWB_RX_POWER,
   UWB_FP_POWER,
   UWB_FP_SNR,
-  UWB_RANGING_DONE
+  UWB_RANGING_DONE,
+  UWB_LEGACY
 } uwb_can_data_t;
 
 class AnchorData{

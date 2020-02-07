@@ -1,5 +1,8 @@
 #include <canbus.h>
 
+/**
+ * intended to be an argument when instantiating a std::thread
+ */
 void canbus_thread(CanbusIf* canbus_if){
 	while(ros::ok()){
 		int frames_sent = canbus_if->read_can_frames();
@@ -29,6 +32,11 @@ CanbusIf::CanbusIf(ros::NodeHandle n){
 	this->can_tx_sub 	= this->nh.subscribe("can_frames_tx", 128, &CanbusIf::can_tx_cb, this);
 }
 
+/**
+ * all operating system level setup for CAN bus
+ * puts the io handle for the CAN socket in this->sock
+ * will set this->sock_ready if setup was successful
+ */
 int CanbusIf::init(){
 	struct sockaddr_can addr;
 	struct can_frame frame;
@@ -68,6 +76,11 @@ int CanbusIf::init(){
 	return 0; // success
 }
 
+/**
+ * needs to be called periodically to read in frames received on CAN bus
+ * it simply publishes each new frame to the can_rx_pub (topic "can_frames_rx")
+ * @return number of CAN frames read and published
+ */
 int CanbusIf::read_can_frames(){
 	if(!this->sock_ready){
 		return -1;
@@ -80,22 +93,9 @@ int CanbusIf::read_can_frames(){
 		boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
 		frame_msg->can_id = rx_frame.can_id;
 		frame_msg->can_dlc = rx_frame.can_dlc;
-		int i = 0;
-		frame_msg->data[i] = rx_frame[i];
-		i++;
-		frame_msg->data[i] = rx_frame[i];
-		i++;
-		frame_msg->data[i] = rx_frame[i];
-		i++;
-		frame_msg->data[i] = rx_frame[i];
-		i++;
-		frame_msg->data[i] = rx_frame[i];
-		i++;
-		frame_msg->data[i] = rx_frame[i];
-		i++;
-		frame_msg->data[i] = rx_frame[i];
-		i++;
-		frame_msg->data[i] = rx_frame[i];
+		for(int i = 0; i < rx_frame.can_dlc; i++){
+			frame_msg->data[i] = rx_frame[i];
+		}
 
 		can_rx_pub.publish(frame_msg); 	// publish message immediately
 		retval++;
@@ -107,23 +107,9 @@ void CanbusIf::can_tx_cb(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 	struct can_frame f;
 	f.can_id = frame->can_id;
 	f.can_dlc = frame->can_dlc;
-	i = 0;
-	f.data[i] = frame->data[i];
-	i++;
-	f.data[i] = frame->data[i];
-	i++;
-	f.data[i] = frame->data[i];
-	i++;
-	f.data[i] = frame->data[i];
-	i++;
-	f.data[i] = frame->data[i];
-	i++;
-	f.data[i] = frame->data[i];
-	i++;
-	f.data[i] = frame->data[i];
-	i++;
-	f.data[i] = frame->data[i];
-
+	for(int i = 0; i < frame->can_dlc; i++){
+		f.data[i] = frame->data[i];
+	}
 	// WRITE CAN FRAME TO SOCKET IMMEDIATELY
 	if(this->sock_ready){
 		int n_bytes = write(this->sock, &f, sizeof(f));
