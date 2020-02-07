@@ -16,4 +16,4 @@ int8 setpoint 			= 13
 int8 id
 time timestamp
 int8 data_type
-float value
+float32 value

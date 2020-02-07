@@ -14,7 +14,8 @@ void canbus_thread(CanbusIf* canbus_if){
  * Constructor for the CanbusIf object
  * initializes the can socket, creates publisher and subscriber for CanFrame messages
  */
-CanbusIf::CanbusIf(ros::NodeHandle n){
+CanbusIf::CanbusIf(ros::NodeHandle n)
+: loop_rate(100) {
 	this->nh = n;
 
 	int canbus_init = this->init(); // do setup things

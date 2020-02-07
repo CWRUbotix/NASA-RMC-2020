@@ -38,7 +38,7 @@ const string node_str 				= "node";
 const string node_config_fname 		= "conf/node_config.csv";
 const string can_config_fname 		= "conf/hw_config.csv";
 const std::string device_if_hddr 	= "interface";
-const std::string device_type_hddr 	= "device_type";
+// const std::string device_type_hddr 	= "device_type"; // defined in hwctrl.h
 const std::string can_id_hddr 		= "device_id";
 const std::string device_name_hddr 	= "name";
 
@@ -62,7 +62,7 @@ public:
 	int init(); 					// do all the setup of the canbus
 	int sock; 						// our can interface socket
 	bool sock_ready = false; 		// flag that says if the socket is opened, etc.
-	ros::Rate loop_rate(100); 		// 10ms sleep in each loop
+	ros::Rate loop_rate; 		// 10ms sleep in each loop
 	int read_can_frames(); 			// publish received frames with can_rx_pub
 	void can_tx_cb(const boost::shared_ptr<hwctrl::CanFrame>& frame);
 };

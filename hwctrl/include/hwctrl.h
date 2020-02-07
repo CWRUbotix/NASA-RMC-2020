@@ -8,13 +8,13 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
-#include <message_forward.h>
+#include <ros/message_forward.h>
 #include <hwctrl/UwbData.h>
 #include <hwctrl/VescData.h>
-#include <hwctrl/SetVescCmd.h>
 #include <hwctrl/VescData.h>
 #include <hwctrl/SetMotor.h>
 #include <hwctrl/CanFrame.h>
+#include <hwctrl/SensorData.h>
 #include <hwctrl/LimitSwState.h>
 #include <string>
 #include <cstdio>
@@ -133,7 +133,7 @@ private:
 	ros::Subscriber sensor_data_sub;// to get sensor data
 	ros::Subscriber limit_sw_sub; 	// listen for limit switch interrupts
 	ros::ServiceServer set_motor_srv; // to provide the set_motor service
-	ros::Rate loop_rate(1000); 		// 1ms delay in each loop
+	ros::Rate loop_rate; 		// 1ms delay in each loop
 public:
 	HwMotorIf(ros::NodeHandle);
 	std::vector<HwMotor> motors;
@@ -161,13 +161,13 @@ private:
 	ros::Publisher limit_sw_pub; 	// send out limit switch states
 	ros::Publisher uwb_data_pub; 	// publish uwb data
 	ros::Subscriber can_rx_sub; 	// get data from canbus
-	ros::Rate loop_rate(100); 		// 10ms sleep in every loop
+	ros::Rate loop_rate; 		// 10ms sleep in every loop
 	int spi_handle; 							// for the spi interface
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
-	ros::Duration uwb_update_period(0.1); // how long to wait before we request data from next UWB node
+	ros::Duration uwb_update_period; // how long to wait before we request data from next UWB node
 	ros::Timer uwb_update_timer;  // when to call the uwb_update_callback
 	int uwb_ind = 0;
-	QuadEncoder quad_encoder; 		// object for our quadrature encoder
+//	QuadEncoder quad_encoder; 		// object for our quadrature encoder
 	void get_sensors_from_csv();
 public:
 	UwbNode* get_uwb_by_can_id(int can_id);
@@ -178,5 +178,6 @@ public:
 };
 
 void maintain_motors_thread(HwMotorIf* motor_if);
+void sensors_thread(SensorIf* sensor_if);
 
 #endif

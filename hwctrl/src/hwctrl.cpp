@@ -3,7 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 // MOTOR INTERFACE STUFF
 ////////////////////////////////////////////////////////////////////////////////
-HwMotorIf::HwMotorIf(ros::NodeHandle n){
+HwMotorIf::HwMotorIf(ros::NodeHandle n)
+ : loop_rate(1000) {
 	this->nh 				= n; 	// store a copy of the node handle passed by value
 
 	this->get_motors_from_csv(config_file_path);
@@ -477,7 +478,8 @@ void sensor_thread(SensorIf* sensor_if){
  * SensorIf constructor
  * creates publishers, subscribers, timers, opens interfaces, initializes GPIO, etc
  */
-SensorIf::SensorIf(ros::NodeHandle n){
+SensorIf::SensorIf(ros::NodeHandle n)
+: loop_rate(100), uwb_update_period(0.1) {
 	this->nh = n;
 
 	this->can_rx_sub = this->nh.subscribe("can_frames_rx", 128, &HwMotorIf::can_rx_callback, this);

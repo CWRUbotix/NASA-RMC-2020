@@ -35,7 +35,7 @@ class AnchorData{
   float fp_snr;
   bool data_ready;
   std::string to_string();
-}
+};
 
 class UwbNode{
   uint32_t id;
@@ -43,8 +43,8 @@ private:
   std::vector<AnchorData> anchors;
 public:
   UwbNode(uint32_t id) : id(id) { }
-  uint32_t get_id() : {return id;}
-  uint32_t get_num_anchors() : {return anchors.size();}
+  uint32_t get_id() {return id;}
+  uint32_t get_num_anchors() {return anchors.size();}
   AnchorData* get_anchor_by_id(uint32_t id);
   void add_can_data(uint8_t* can_data); // assimilate a CAN frame's worth of data
   int get_msgs_from_anchors(hwctrl::UwbData* uwb_msgs, int max_size);
