@@ -33,6 +33,7 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 		// we can assume this is a VESC message
 		uint8_t cmd = (uint8_t)(rx_id >> 8);
 		int8_t id 	= (int8_t)(rx_id & 0xFF);
+		uint8_t* frame_data = frame->data.data(); // get the back-buffer of the vector
 		ROS_INFO("VESC %d sent msg type %d", id, cmd);
 		HwMotor* vesc = this->get_vesc_from_can_id(id);
 		switch(cmd){
@@ -46,7 +47,7 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 				vesc_data->timestamp = ros::Time::now();
 
 				// store data with the correct vesc object
-				fill_msg_from_status_packet(frame->data, vesc_data);
+				fill_data_from_status_packet(frame_data, vesc_data);
 				break;
 			}
 			case CAN_PACKET_FILL_RX_BUFFER:{
@@ -55,7 +56,7 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 					break;
 				}
 				// copy the CAN data into the corresponding vesc rx buffer
-				memcpy(vesc->vesc_data.vesc_rx_buf + frame->data[0], frame->data + 1, frame->can_dlc - 1);
+				memcpy(vesc->vesc_data.vesc_rx_buf + frame_data[0], frame_data + 1, frame->can_dlc - 1);
 				break;
 			}
 			case CAN_PACKET_PROCESS_RX_BUFFER:{
@@ -70,12 +71,12 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 				int ind = 0;
 				uint16_t packet_len;
 				uint16_t crc;
-				int vesc_id = frame->data[ind++]; // which vesc sent the data
-				int n_cmds 	= frame->data[ind++]; // how many commands
-				packet_len 	= (frame->data[ind++] << 8);
-				packet_len 	|= frame->data[ind++];
-				crc 		= (frame->data[ind++] << 8);
-				crc 		|= frame->data[ind++];
+				int vesc_id = frame_data[ind++]; // which vesc sent the data
+				int n_cmds 	= frame_data[ind++]; // how many commands
+				packet_len 	= (frame_data[ind++] << 8);
+				packet_len 	|= frame_data[ind++];
+				crc 		= (frame_data[ind++] << 8);
+				crc 		|= frame_data[ind++];
 
 				uint16_t chk_crc = crc16(vesc->vesc_data.vesc_rx_buf, packet_len);
 				// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
