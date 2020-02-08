@@ -104,7 +104,7 @@ class LocalizationNode:
         #        avg_y += node.y - z * math.sin(theta - phi)
         #        total += 1
 
-        #print('Total:', total)
+        print('Total:', total)
         if total > 0:
             self.robot_x.append(avg_x / total)
             self.robot_y.append(avg_y / total)
