@@ -139,6 +139,7 @@ HwMotor* HwMotorIf::get_vesc_from_can_id(int can_id){
 
 
 void maintain_motors_thread(HwMotorIf* motor_if){
+	ROS_INFO("Starting maintain_motors_thread");
 	while(ros::ok()){
 		motor_if->maintain_next_motor();
 		motor_if->loop_rate.sleep();
@@ -149,11 +150,11 @@ void HwMotorIf::maintain_next_motor(){
 	HwMotor* motors = this->motors.data();
 	HwMotor* motor = &(motors[this->motor_ind]);
 	// HwMotor* motor = &(this->motors.at(this->motor_ind));
-	// ROS_INFO("Maintaining motor %s", motor->name.c_str());
+	ROS_INFO("Maintaining motor %s", motor->name.c_str());
 	switch(motor->motor_type){
 		case(DEVICE_NONE):break;
 		case(DEVICE_VESC):{
-			// ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
+			ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
 			if(motor->online){
 				// figure out next velocity setpoint based on acceleration & last sent RPM
 				float delta 	=  motor->setpoint - motor->last_setpoint;
@@ -456,8 +457,10 @@ void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
  * thread to do sensor things
  */
 void sensors_thread(SensorIf* sensor_if){
+	ROS_INFO("Starting sensors_thread");
 	while(ros::ok()){
 		// check which UWB nodes have anchor data ready. read and publish them
+		ROS_INFO("Checking for UWB data...");
 		for(auto node = sensor_if->uwb_nodes.begin(); node != sensor_if->uwb_nodes.end(); ++node){
 			int n_msgs = 4;
 			hwctrl::UwbData uwb_msgs[n_msgs] = {};
@@ -466,6 +469,7 @@ void sensors_thread(SensorIf* sensor_if){
 				sensor_if->uwb_data_pub.publish(uwb_msgs[i]);
 			}
 		}
+		ROS_INFO("Done with UWB checking...");
 
 		// poll limit switches
 

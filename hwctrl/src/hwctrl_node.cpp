@@ -5,7 +5,7 @@ int main(int argc, char** argv){
 	ros::init(argc, argv, "hwctrl");
 	ros::NodeHandle n;
 	ros::Rate loop_rate(1); // 5ms loop rate
-	ros::AsyncSpinner spinner(3); // create multithreaded spinner
+	ros::AsyncSpinner spinner(0); // create multithreaded spinner
 
 	// CREATE THE CanbusIf OBJECT
 	CanbusIf canbus_if(n);

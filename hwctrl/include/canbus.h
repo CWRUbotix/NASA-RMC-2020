@@ -2,6 +2,7 @@
 #define CANBUS_H_
 
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <hwctrl/CanFrame.h>
 #include <string>
 #include <cstdio>
@@ -59,6 +60,7 @@ private:
 	ros::Subscriber can_tx_sub;
 public:
 	CanbusIf(ros::NodeHandle);
+	ros::CallbackQueue cb_queue;
 	int init(); 					// do all the setup of the canbus
 	int sock; 						// our can interface socket
 	bool sock_ready = false; 		// flag that says if the socket is opened, etc.

@@ -4,10 +4,12 @@
  * intended to be an argument when instantiating a std::thread
  */
 void canbus_thread(CanbusIf* canbus_if){
+	ROS_INFO("Starting canbus_thread");
 	while(ros::ok()){
 		int frames_sent = canbus_if->read_can_frames();
 		canbus_if->loop_rate.sleep(); //
 	}
+	ROS_INFO("Exiting canbus_thread.");
 }
 
 /**
@@ -83,6 +85,7 @@ int CanbusIf::init(){
  * @return number of CAN frames read and published
  */
 int CanbusIf::read_can_frames(){
+	ROS_INFO("Reading CAN frames");
 	if(!this->sock_ready){
 		return -1;
 	}
@@ -97,7 +100,7 @@ int CanbusIf::read_can_frames(){
 		for(int i = 0; i < rx_frame.can_dlc; i++){
 			frame_msg->data[i] = rx_frame.data[i];
 		}
-
+		ROS_INFO("Publishing to can_frames_rx");
 		can_rx_pub.publish(frame_msg); 	// publish message immediately
 		retval++;
 	}
@@ -105,6 +108,7 @@ int CanbusIf::read_can_frames(){
 }
 
 void CanbusIf::can_tx_cb(const boost::shared_ptr<hwctrl::CanFrame>& frame){
+	ROS_INFO("Writing can frame to CAN bus");
 	struct can_frame f;
 	f.can_id = frame->can_id;
 	f.can_dlc = frame->can_dlc;

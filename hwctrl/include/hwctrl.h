@@ -136,6 +136,7 @@ private:
 	ros::ServiceServer set_motor_srv; // to provide the set_motor service
 public:
 	HwMotorIf(ros::NodeHandle);
+	ros::CallbackQueue cb_queue;
 	ros::Rate loop_rate; 		// 1ms delay in each loop
 	std::vector<HwMotor> motors;
 	int motor_ind = 0;
@@ -166,6 +167,7 @@ private:
 public:
 	SensorIf(ros::NodeHandle);
 	UwbNode* get_uwb_by_can_id(int can_id);
+	ros::CallbackQueue cb_queue;
 	ros::Publisher sensor_data_pub; // send data to rest of ROS system
 	ros::Publisher can_tx_pub;		// send data to canbus
 	ros::Publisher limit_sw_pub; 	// send out limit switch states
