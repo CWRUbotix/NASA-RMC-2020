@@ -27,6 +27,8 @@ class Visualizer:
         self.ang_vels = []
         self.target_wheel_speeds = [[0, 0]]
         self.wheel_speeds = [[0, 0]]
+        self.global_grid = [[0, 0.5], [1, 0]]
+        self.grid_extent = (0, 1, 0, 1)
 
         print("Opening visualizer")
         rospy.init_node("visualizer_node", anonymous=False)
@@ -37,7 +39,8 @@ class Visualizer:
     def subscribe(self):
         rospy.Subscriber("odometry/filtered_map", Odometry, self.receiveOdometry)
         rospy.Subscriber("transitPath", transitPath, self.receivePath)
-        rospy.Subscriber("transitControlData", transitControlData, self.recieveControlData)
+        rospy.Subscriber("transitControlData", transitControlData, self.receiveControlData)
+        rospy.Subscriber("global_occupancy_grid", transitControlData, self.receiveControlData)
 
     def receiveOdometry(self, msg):
         pose = msg.pose.pose
@@ -48,7 +51,7 @@ class Visualizer:
     def receivePath(self, msg):
         self.path = np.array(list(msg.path)).reshape((-1, 2))
 
-    def recieveControlData(self, msg):
+    def receiveControlData(self, msg):
         length = 200
         self.target_vels.append(msg.t_vel)
         self.target_ang_vels.append(msg.t_angular_vel)
@@ -64,10 +67,18 @@ class Visualizer:
         self.target_wheel_speeds = self.target_wheel_speeds[-length:]
         self.wheel_speeds = self.wheel_speeds[-length:]
 
+    def recieveOccupancyGrid(self, msg):
+        width = msg.info.width
+        height = msg.info.height
+        scale = msg.info.resolution
+        self.grid_extent = (0, scale * width, 0, scale*height)
+        self.global_grid = np.reshape(msg.data, (height, width))
+
+
     def createPlots(self):
         fig = plt.figure(figsize=(12, 4))
 
-        ax1 = plt.subplot(121)
+        ax1 = plt.subplot2grid((1, 3), (0, 0))
         ax1.axis('equal')
         ax1.set_xlim([-2, 6])
         ax1.set_ylim([-1, 8])
@@ -76,10 +87,11 @@ class Visualizer:
 
         line_path, = ax1.plot([], [], linewidth=0.75, color='blue')
         line_robot, = ax1.plot([], [], linewidth=0.75, color='blue')
+        img = ax1.imshow(self.global_grid, cmap='Reds', extent=self.grid_extent)
 
         ax1.set_title("Arena")
 
-        ax2 = plt.subplot(222)
+        ax2 = plt.subplot2grid((2, 3), (0, 1), colspan=2)
         ax2.set_xlim([0, 200])
         ax2.set_ylim([-3, 3])
         line_t_vels, = ax2.plot(self.target_vels, label='target vels')
@@ -89,7 +101,7 @@ class Visualizer:
         ax2.set_title('Vels')
         ax2.legend()
 
-        ax3 = plt.subplot(224)
+        ax3 = plt.subplot2grid((2, 3), (1, 1), colspan=2)
         ax3.set_xlim([0, 200])
         ax3.set_ylim([-30, 30])
         line_t_wheel_r, line_t_wheel_l = ax3.plot(self.target_wheel_speeds, label='target wheels')
@@ -107,6 +119,9 @@ class Visualizer:
                 points = np.vstack((points, points[0]))  # Make line connect from last point to first
                 line_robot.set_xdata(points[:, 0])
                 line_robot.set_ydata(points[:, 1])
+
+            img.set_data(self.global_grid)
+            img.set_extent(self.grid_extent)
 
             length = len(self.target_vels)
             x_values = np.arange(length)
@@ -130,7 +145,7 @@ class Visualizer:
             line_wheel_l.set_xdata(x_values)
 
             return line_path, line_robot, line_t_vels, line_vels, line_t_ang_vels, line_ang_vels\
-                    , line_t_wheel_r, line_t_wheel_l, line_wheel_r, line_wheel_l
+                    , line_t_wheel_r, line_t_wheel_l, line_wheel_r, line_wheel_l, img
 
         ani = animation.FuncAnimation(fig, animate, blit=True, interval=50)
         plt.show()

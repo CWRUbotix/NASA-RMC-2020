@@ -51,7 +51,7 @@ def send_robot_state(req):
     sensor_msg = sensor_value(portDriveEncoder=s0, starboardDriveEncoder=s1, bcAttitudePortPot=s2, bcAttitudeStarboardPot=s3,
                               depLoadCell=s4, excLoadCell=s5, depLowerLimit=s6, depUpperLimit=s7, excForeLimit=s8, excAftLimit=s9,
                               bcLowerLimit=s10, bcUpperLimit=s11)
-    return RobotStateResponse(odometry=odometry, grid=occupancy_grid, sensors=sensor_msg)
+    return RobotStateResponse(odometry=odometry, grid=occupancy_grid, sensors=sensor_msg, stamp=rospy.Time.now())
 
 def on_shut_down():
     global service

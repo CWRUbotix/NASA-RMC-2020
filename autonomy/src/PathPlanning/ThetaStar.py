@@ -23,10 +23,10 @@ def a_star(start, end, grid):
 
     startVertex = grid.getVertex(start_coord[0], start_coord[1])
     endVertex = grid.getVertex(end_coord[0], end_coord[1])
-
-    endVertex.x = end.getX()
+    endVertex.x = end.getX()  # Ensure end of path is where the goal is not necessarily on the grid
     endVertex.y = end.getY()
 
+    startVertex.parent = None  # Fix bug where reusing grid caused infinite loop of getting parents
     startVertex.setDistance(0)
     updateHeuristic(endVertex, grid)
 
@@ -40,8 +40,9 @@ def a_star(start, end, grid):
     heap.heappush(openList, startVertex)  # Add start vertex to start list
     while len(openList) != 0:
         currentVertex = heap.heappop(openList)  # Get the node with the smallest f cost (heap does this for us)
-
         if currentVertex == endVertex:
+
+
             return reconstructPath(currentVertex)  # If we made it return the path we took
 
         closedList.append(currentVertex)  # Add the looked at vertex to the closed list

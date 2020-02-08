@@ -70,7 +70,7 @@ class TransitNode:
 
     def go_to_goal(self, msg):
         goal = Position(msg.x, msg.y)
-        rospy.loginfo("Going to ({}, {})".format(msg.x, msg.y))
+        rospy.loginfo("Received ({}, {})".format(goal.x, goal.y))
 
         msg = self.get_robot_state()
         self.receive_state(msg.odometry)
@@ -81,6 +81,8 @@ class TransitNode:
         self.controller.state_dot = self.robot_state["state_dot"]
         self.controller.calculate_path()
 
+        rospy.loginfo("Going to ({}, {})".format(goal.x, goal.y))
+
         rate = 30
         r = rospy.Rate(rate)  # 'rate' Hz
         last_time = rospy.get_rostime().nsecs
@@ -89,6 +91,9 @@ class TransitNode:
             self.receive_state(msg.odometry)
 
             if self.step % rate == 0:  # Every second
+                rospy.loginfo("Currently at: {:.2f}".format(self.controller.current_index))
+
+                self.controller.calculate_path()
                 self.publish_path()
                 #self.receive_grid(msg.grid)
                 pass
@@ -152,7 +157,6 @@ class TransitNode:
     def receive_grid(self, msg):
         grid = Grid(ARENA_WIDTH, ARENA_HEIGHT, occupancies=msg)  # Create a grid and add the obstacles to it
         self.controller.update_grid(grid)
-        self.controller.calculate_path()
 
     def subscribe(self):
         rospy.Subscriber("transit_command", goToGoal, self.go_to_goal)

@@ -33,6 +33,9 @@ class Position:
 
         return (x ** 2 + y ** 2) ** .5
 
+    def __str__(self):
+        return 'x: ' + '%.3f' % self.getX() + ' y :' + '%.3f' % self.getY()
+
 
 class Vertex(Position):
     def __init__(self, x, y, row, col, prob_blocked=0):
@@ -58,9 +61,6 @@ class Vertex(Position):
 
     def __eq__(self, other):
         return self.getX() == other.getX() and self.getY() == other.getY()
-
-    def __str__(self):
-        return 'x: ' + '%.4f' % self.getX() + ' y :' + '%.4f' % self.getY()
 
     def angleToFace(self, p):
         angle = math.atan2(p.getY() - self.getY(), p.getX() - self.getX())
