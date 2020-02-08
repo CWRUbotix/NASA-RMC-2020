@@ -54,7 +54,8 @@ add_message_files(
     FILES
     transitPath.msg
     goToGoal.msg
-    sensor_value.msg    
+    sensor_value.msg
+    transitControlData.msg
 )
 
 add_action_files(

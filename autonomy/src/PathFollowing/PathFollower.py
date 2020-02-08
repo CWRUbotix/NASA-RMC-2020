@@ -1,7 +1,7 @@
 import numpy as np
 import PathFollowing.config as config
 from PathPlanning.ThetaStar import create_path
-from PathPlanning.PathPlanningUtils import Position
+from PathPlanning.PathPlanningUtils import Position, constrain_angle
 
 
 class PathFollower:
@@ -10,7 +10,7 @@ class PathFollower:
         self.local_path = None
 
         if path is None:
-            self.goal_pos = Position(goal[0], goal[1])
+            self.goal_pos = goal
         else:
             self.goal_pos = Position(self.global_path[-1, 0], self.global_path[-1, 1])  # Used if path is manually set
 
@@ -43,14 +43,22 @@ class PathFollower:
         self.state = state
         self.state_dot = state_dot
 
-        if Position(self.state[0, 0], self.state[1, 0]).distanceTo(self.goal_pos) < 0.1:
+    def check_if_done(self):
+        # Take dot product of vector going from last point to robot and from last point to second to last point
+        # When this dot product is less than 0 the robot has "passed" the last point
+        dx_r = self.state[0, 0] - self.global_path[-1, 0]
+        dy_r = self.state[1, 0] - self.global_path[-1, 1]
+        dx = self.global_path[-2, 0] - self.global_path[-1, 0]
+        dy = self.global_path[-2, 1] - self.global_path[-1, 1]
+
+        if dx * dx_r + dy * dy_r < 0:
             self.done = True
 
     def calculate_path(self):
         # Only update path if robot is more than a 0.5m from the target
         dist = Position(self.state[0, 0], self.state[1, 0]).distanceTo(self.goal_pos)
         if not dist < 0.5 or self.global_path is None:
-            self.global_path = create_path(Position(self.state[0], self.state[1]), self.goal_pos, self.grid)
+            self.global_path = create_path(Position(self.state[0, 0], self.state[1, 0]), self.goal_pos, self.grid)
             self.global_path = np.array(self.global_path)
 
     def set_path(self, path):
@@ -87,15 +95,21 @@ class PathFollower:
         S = s * config.G_s
         S_dot = s_dot * config.G_s_dot
 
-        offset = abs(self.get_angular_offset())
-        self.alpha = config.slowdown_controller.crisp_output(offset)
+        offset = self.get_angular_offset()
+        self.alpha = config.slowdown_controller.crisp_output(abs(offset))
 
         target_vel = 0
         target_angular_vel = 0
 
+        self.check_if_done()  # Check if done, if we are, set vels to 0
+
         if not self.done:
-            target_vel = config.target_velocity * self.alpha
-            target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
+            if abs(offset) < np.pi / 3:
+                target_vel = config.target_velocity * self.alpha
+                target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
+            else:
+                target_vel = 0
+                target_angular_vel = -np.sign(offset)  # + or - 1 rad/s to turn around if facing wrong way
 
         self.target_angular_vel = target_angular_vel  # Store value
 
@@ -109,7 +123,7 @@ class PathFollower:
         rotation_matrix_reverse = np.array([[np.cos(theta), np.sin(theta)],
                                   [-np.sin(theta), np.cos(theta)]])
 
-        x0 = self.reference_point_x # reference point coordinates in local frame
+        x0 = self.reference_point_x  # reference point coordinates in local frame
         y0 = 0
 
         self.local_path = np.dot(rotation_matrix_reverse, (self.global_path-position.T).T).T  # convert path to local coordinates
@@ -126,7 +140,7 @@ class PathFollower:
 
         # get cross track error and the derivative of the cross track error
         error = ((x - x0)**2 + (y - y0)**2)**0.5 * np.sign(y)
-        error_dot = x_dot * np.sin(phi) - self.reference_point_x* theta_dot * np.cos(phi)
+        error_dot = x_dot * np.sin(phi) - self.reference_point_x * theta_dot * np.cos(phi)
 
         # Find projection of closest point onto line segment to determine how far along the line segment the robot is
         index = min(int(self.current_index), len(self.local_path)-2)
@@ -142,7 +156,7 @@ class PathFollower:
         segment = self.global_path[self.index + 1] - self.global_path[self.index]
         angle = np.arctan2(segment[1], segment[0])
 
-        return self.state[2, 0] - angle
+        return constrain_angle(self.state[2, 0] - angle)
 
     def _calculate_path_and_closest_point(self, index, is_linear, x0, y0):
         a, b, c, m, x, y, r = 0, 0, 0, 0, 0, 0, 0  # coefficients of path, slope of tangent at closet point, x and y at point
