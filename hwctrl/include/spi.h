@@ -21,6 +21,6 @@ int spi_init(char* fname);
 int spi_set_speed(int f, uint32_t speed);
 
 /* set the SPI mode */
-int spi_set_mode(int f, int mode);
+int spi_set_mode(int f, uint8_t mode);
 
 #endif

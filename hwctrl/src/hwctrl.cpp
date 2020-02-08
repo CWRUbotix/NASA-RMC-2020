@@ -7,7 +7,7 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n)
  : loop_rate(1000) {
 	this->nh 				= n; 	// store a copy of the node handle passed by value
 
-	this->get_motors_from_csv(config_file_fname);
+	this->get_motors_from_csv(); //config_file_fname
 
 	// PUBLISHERS
 	this->can_tx_pub 		= this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
@@ -343,6 +343,7 @@ std::string HwMotor::to_string(){
 	return std::string(this->scratch_buf);
 }
 
+/*
 // OBSOLTETE
 void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 	uint32_t rx_id = (uint32_t)frame->can_id;
@@ -351,13 +352,21 @@ void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 		// we can assume this is a VESC message
 		uint8_t cmd = (uint8_t)(rx_id >> 8);
 		int8_t id 	= (int8_t)(rx_id & 0xFF);
+		uint8_t* frame_data = frame->data.data(); // get the back-buffer of the vector
+		ROS_INFO("VESC %d sent msg type %d", id, cmd);
+		HwMotor* vesc = this->get_vesc_from_can_id(id);
 		switch(cmd){
 			case CAN_PACKET_STATUS:{
+				if(vesc == NULL){
+					break;
+				}
+				VescData* vesc_data = &(vesc->vesc_data);
 
-				boost::shared_ptr<hwctrl::VescData> vesc_msg(new hwctrl::VescData);
+				// store a ROS timestamp
+				vesc_data->timestamp = ros::Time::now();
 
-				fill_msg_from_status_packet(frame->data, vesc_msg);
-				vesc_data_pub.publish(vesc_msg);
+				// store data with the correct vesc object
+				fill_data_from_status_packet(frame_data, vesc_data);
 				break;
 			}
 			case CAN_PACKET_FILL_RX_BUFFER:{
@@ -365,7 +374,8 @@ void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 						// this is not intended for us (our canID is 0)
 					break;
 				}
-				memcpy(vesc_rx_buf + frame->data[0], frame->data + 1, frame->can_dlc - 1);
+				// copy the CAN data into the corresponding vesc rx buffer
+				memcpy(vesc->vesc_data.vesc_rx_buf + frame_data[0], frame_data + 1, frame->can_dlc - 1);
 				break;
 			}
 			case CAN_PACKET_PROCESS_RX_BUFFER:{
@@ -373,17 +383,21 @@ void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 					// not intended for us
 					break;
 				}
+				if(vesc == NULL){
+					// we know of no VESC with the given CAN ID
+					break;
+				}
 				int ind = 0;
 				uint16_t packet_len;
 				uint16_t crc;
-				int vesc_id = frame->data[ind++]; // which vesc sent the data
-				int n_cmds 	= frame->data[ind++]; // how many commands
-				packet_len 	= (frame->data[ind++] << 8);
-				packet_len 	|= frame->data[ind++];
-				crc 		= (frame->data[ind++] << 8);
-				crc 		|= frame->data[ind++];
+				int vesc_id = frame_data[ind++]; // which vesc sent the data
+				int n_cmds 	= frame_data[ind++]; // how many commands
+				packet_len 	= (frame_data[ind++] << 8);
+				packet_len 	|= frame_data[ind++];
+				crc 		= (frame_data[ind++] << 8);
+				crc 		|= frame_data[ind++];
 
-				uint16_t chk_crc = crc16(vesc_rx_buf, packet_len);
+				uint16_t chk_crc = crc16(vesc->vesc_data.vesc_rx_buf, packet_len);
 				// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
 
 				if(crc != chk_crc){
@@ -392,19 +406,16 @@ void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 					break;
 				}
 
-				boost::shared_ptr<hwctrl::VescData> vesc_msg(new hwctrl::VescData);
-
 				ind = 0;
-				int comm_cmd = vesc_rx_buf[ind++];
+				int comm_cmd = vesc->vesc_data.vesc_rx_buf[ind++];
 				switch(comm_cmd){
 					case COMM_GET_VALUES:{
-						vesc_msg->timestamp 	= ros::Time::now();
-						vesc_msg->motor_type 	= "VESC";
-						vesc_msg->can_id 		= vesc_id;
+						vesc->vesc_data.timestamp 	= ros::Time::now();
+						vesc->vesc_data.motor_type 	= "vesc";
+						vesc->vesc_data.can_id 		  = vesc_id;
 
-						fill_msg_from_buffer(vesc_rx_buf, vesc_msg);
+						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
 
-						vesc_data_pub.publish(vesc_msg); // publish motor data
 						break;}
 					}
 
@@ -436,7 +447,7 @@ void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 			// quad encoder msg
 		}
 	}
-}
+} */
 
 ////////////////////////////////////////////////////////////////////////////////
 // SENSOR STUFF
@@ -444,15 +455,15 @@ void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 /**
  * thread to do sensor things
  */
-void sensor_thread(SensorIf* sensor_if){
+void sensors_thread(SensorIf* sensor_if){
 	while(ros::ok()){
 		// check which UWB nodes have anchor data ready. read and publish them
-		for(auto node = this->uwb_nodes.begin(); node != this->uwb_nodes.end(); ++node){
+		for(auto node = sensor_if->uwb_nodes.begin(); node != sensor_if->uwb_nodes.end(); ++node){
 			int n_msgs = 4;
 			hwctrl::UwbData uwb_msgs[n_msgs] = {};
 			n_msgs = node->get_msgs_from_anchors(uwb_msgs, n_msgs);
 			for(int i = 0; i < n_msgs; i++){
-				this->uwb_data_pub.publish(uwb_msgs[i]);
+				sensor_if->uwb_data_pub.publish(uwb_msgs[i]);
 			}
 		}
 
@@ -463,7 +474,7 @@ void sensor_thread(SensorIf* sensor_if){
 		// read SPI bus sensors
 
 		// publish those
-		this->loop_rate.sleep();
+		sensor_if->loop_rate.sleep();
 	}
 
 }
@@ -476,7 +487,7 @@ SensorIf::SensorIf(ros::NodeHandle n)
 : loop_rate(100), uwb_update_period(0.1) {
 	this->nh = n;
 
-	this->can_rx_sub = this->nh.subscribe("can_frames_rx", 128, &HwMotorIf::can_rx_callback, this);
+	this->can_rx_sub = this->nh.subscribe("can_frames_rx", 128, &SensorIf::can_rx_callback, this);
 
 	this->can_tx_pub = this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
 	this->sensor_data_pub = this->nh.advertise<hwctrl::SensorData>("sensor_data", 128);
@@ -497,7 +508,7 @@ SensorIf::SensorIf(ros::NodeHandle n)
 		ROS_INFO("GPIO setup succeeded!");
 	}
 	// create the timer that will request data from the next UWB node
-	this->uwb_update_timer = this->nh.createTimer(this->uwb_update_period, this->uwb_update_callback);
+	this->uwb_update_timer = this->nh.createTimer(this->uwb_update_period, &SensorIf::uwb_update_callback, this);
 }
 
 /**
@@ -512,16 +523,16 @@ int SensorIf::setup_gpio(){
  */
 void SensorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
 	uint32_t rx_id = (uint32_t)frame->can_id;
-
-	if((uint32_t can_id = rx_id & ~0xFF) == 0){
+	uint32_t can_id = 0;
+	if((can_id = (rx_id & ~0xFF)) == 0){
 		// was NOT a VESC frame
 		// UWB frame or quad encoder frame
 		UwbNode* uwb_node = this->get_uwb_by_can_id(can_id);
 		if(uwb_node != NULL){
-			uwb_node->add_can_data(frame->data, frame->can_dlc);
+			uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
 		}else{
 			// no UWB node matching this CAN ID, so must be our quadrature encoder
-			this->quad_encoder.add_can_data(frame->data, frame->can_dlc);
+			//this->quad_encoder.add_can_data(frame->data.data(), frame->can_dlc);
 		}
 	}
 }
@@ -548,7 +559,7 @@ void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
 		UwbNode* uwb_node = &(nodes[this->uwb_ind]);
 
 		boost::shared_ptr<hwctrl::CanFrame> can_msg(new hwctrl::CanFrame()); // empty can frame msg built as a shared pointer
-		can_msg->can_id  = uwb_node->id | CAN_RTR_FLAG | CAN_SFF_FLAG; // can ID + remote request & std ID flags
+		can_msg->can_id  = uwb_node->id | CAN_RTR_FLAG | CAN_SFF_MASK; // can ID + remote request & std ID flags
 		can_msg->can_dlc = UWB_CAN_HDDR_SIZE + 4; // this won't really be used but whatever
 		this->can_tx_pub.publish(can_msg);
 
@@ -602,26 +613,10 @@ void SensorIf::get_sensors_from_csv(){
 		}else{
 			if((*line)[category_ind].compare(category_sensor) == 0){
 				// make a motor struct and populate with data
-				HwMotor motor;
-				motor.id 			= std::stoi((*line)[id_ind]);
-				motor.name 			= (*line)[name_ind];
-				motor.device_id 	= std::stoi((*line)[device_id_ind]);
-				motor.motor_type 	= get_device_type((*line)[device_type_ind]);
-				motor.if_type 		= get_if_type((*line)[interface_ind]);
-				motor.rpm_coef 		= std::stof((*line)[aux_2_ind]); // this will be our gear reduction
-				motor.max_rpm 		= std::stof((*line)[aux_3_ind]); // our max rpm
-				motor.max_accel		= std::stof((*line)[aux_4_ind]); // our max acceleration
-
-				if(motor.motor_type == DEVICE_VESC){
-					motor.ctrl_type = CTRL_RPM;
-				}else{
-					motor.ctrl_type = CTRL_POSITION;
-				}
-				this->motors.push_back(motor);
+				
 			}
 
 		}
 		line_num++;
 	}
-	this->motor_it = this->motors.begin();
 }

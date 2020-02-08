@@ -146,6 +146,7 @@ add_executable(hwctrl
   src/crc.cpp
   src/uwb.cpp
   src/vesc.cpp
+  src/spi.cpp
 )
 
 ## Rename C++ executable without prefix

@@ -87,7 +87,7 @@ int CanbusIf::read_can_frames(){
 		return -1;
 	}
 	int retval = 0;
-	int n_bytes = 0;
+	int nbytes = 0;
 	struct can_frame rx_frame;
 	// BRING RECEIVED FRAMES INTO USER SPACE
 	while((nbytes = read(this->sock, &rx_frame, sizeof(struct can_frame))) > 0){
@@ -95,7 +95,7 @@ int CanbusIf::read_can_frames(){
 		frame_msg->can_id = rx_frame.can_id;
 		frame_msg->can_dlc = rx_frame.can_dlc;
 		for(int i = 0; i < rx_frame.can_dlc; i++){
-			frame_msg->data[i] = rx_frame[i];
+			frame_msg->data[i] = rx_frame.data[i];
 		}
 
 		can_rx_pub.publish(frame_msg); 	// publish message immediately

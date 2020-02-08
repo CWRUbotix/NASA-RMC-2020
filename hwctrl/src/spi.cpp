@@ -3,7 +3,7 @@
 int spi_init(char* fname){
 	int file;
  
-    if ((file = open(filename,O_RDWR)) < 0){
+    if ((file = open(fname,O_RDWR)) < 0){
         ROS_INFO("Failed to open SPI bus.");
     	
         return -1;

@@ -146,9 +146,9 @@ void fill_data_from_buffer(uint8_t* rx_buf, VescData* data){
 
 void fill_data_from_status_packet(uint8_t* rx_buf, VescData* data){
 	int ind = 0;
-	data->rpm 			= buffer_get_float32(frame_buf, 1.0, &ind);
-	data->current_in 	= buffer_get_float16(frame_buf, 10.0, &ind);
-	data->duty_now 		= buffer_get_float16(frame_buf, 1000.0, &ind);
+	data->rpm 			= buffer_get_float32(rx_buf, 1.0, &ind);
+	data->current_in 	= buffer_get_float16(rx_buf, 10.0, &ind);
+	data->duty_now 		= buffer_get_float16(rx_buf, 1000.0, &ind);
 }
 
 // bool VescCan::set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response){

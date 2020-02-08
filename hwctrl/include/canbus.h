@@ -45,12 +45,12 @@ const std::string device_name_hddr 	= "name";
 static ros::Publisher can_tx_pub; 		// so some thread can publish can frames to be transmitted
 static ros::Publisher can_rx_pub; 		// so the canbus_if object can publish frames it receives
 
-int nNodes = 0;
-int nAnchors = 0;
-bool node_done 	= false;
-bool uwb_range_next = true;
-int anchor_frames = 0;
-int uwb_timeout = 0;
+// int nNodes = 0;
+// int nAnchors = 0;
+// bool node_done 	= false;
+// bool uwb_range_next = true;
+// int anchor_frames = 0;
+// int uwb_timeout = 0;
 
 class CanbusIf{
 private:

@@ -11,11 +11,11 @@
 #include <ros/message_forward.h>
 #include <hwctrl/UwbData.h>
 #include <hwctrl/VescData.h>
-#include <hwctrl/VescData.h>
 #include <hwctrl/SetMotor.h>
 #include <hwctrl/CanFrame.h>
 #include <hwctrl/SensorData.h>
 #include <hwctrl/LimitSwState.h>
+#include <hwctrl/MotorData.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -27,6 +27,7 @@
 #include <canbus.h>
 #include <uwb.h>
 #include <parse_csv.h>
+#include <spi.h>
 
 #define DEFAULT_MAX_ACCEL 	30.0
 #define DEFAULT_MAX_RPM 	50.0
@@ -133,9 +134,9 @@ private:
 	ros::Subscriber sensor_data_sub;// to get sensor data
 	ros::Subscriber limit_sw_sub; 	// listen for limit switch interrupts
 	ros::ServiceServer set_motor_srv; // to provide the set_motor service
-	ros::Rate loop_rate; 		// 1ms delay in each loop
 public:
 	HwMotorIf(ros::NodeHandle);
+	ros::Rate loop_rate; 		// 1ms delay in each loop
 	std::vector<HwMotor> motors;
 	int motor_ind = 0;
 	bool set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response);
@@ -156,22 +157,22 @@ public:
 class SensorIf{
 private:
 	ros::NodeHandle nh;
-	ros::Publisher sensor_data_pub; // send data to rest of ROS system
-	ros::Publisher can_tx_pub;		// send data to canbus
-	ros::Publisher limit_sw_pub; 	// send out limit switch states
-	ros::Publisher uwb_data_pub; 	// publish uwb data
 	ros::Subscriber can_rx_sub; 	// get data from canbus
-	ros::Rate loop_rate; 		// 10ms sleep in every loop
 	int spi_handle; 							// for the spi interface
-	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
-	ros::Duration uwb_update_period; // how long to wait before we request data from next UWB node
 	ros::Timer uwb_update_timer;  // when to call the uwb_update_callback
 	int uwb_ind = 0;
 //	QuadEncoder quad_encoder; 		// object for our quadrature encoder
 	void get_sensors_from_csv();
 public:
-	UwbNode* get_uwb_by_can_id(int can_id);
 	SensorIf(ros::NodeHandle);
+	UwbNode* get_uwb_by_can_id(int can_id);
+	ros::Publisher sensor_data_pub; // send data to rest of ROS system
+	ros::Publisher can_tx_pub;		// send data to canbus
+	ros::Publisher limit_sw_pub; 	// send out limit switch states
+	ros::Publisher uwb_data_pub; 	// publish uwb data
+	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
+	ros::Duration uwb_update_period; // how long to wait before we request data from next UWB node
+	ros::Rate loop_rate; 		// 10ms sleep in every loop
 	void can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame); 			// do things when
 	int setup_gpio();
 	void uwb_update_callback(const ros::TimerEvent&);

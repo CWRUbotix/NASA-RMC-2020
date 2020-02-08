@@ -3,11 +3,11 @@
 AnchorData* UwbNode::get_anchor_by_id(uint32_t id){
   auto i = this->anchors.begin();
 	AnchorData* anchor = NULL;
-	while(i != this->uwb_nodes.end() && i->id != id){
+	while(i != this->anchors.end() && i->id != id){
 		++i; // increment to next UWB Node
 		anchor = &(*i);
 	}
-	return node;
+	return anchor;
 }
 
 void UwbNode::add_can_data(uint8_t* can_data, uint8_t can_dlc){
