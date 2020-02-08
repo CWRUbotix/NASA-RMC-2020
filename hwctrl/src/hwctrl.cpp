@@ -7,7 +7,7 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n)
  : loop_rate(1000) {
 	this->nh 				= n; 	// store a copy of the node handle passed by value
 
-	this->get_motors_from_csv(config_file_path);
+	this->get_motors_from_csv(config_file_fname);
 
 	// PUBLISHERS
 	this->can_tx_pub 		= this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
@@ -141,7 +141,7 @@ HwMotor* HwMotorIf::get_vesc_from_can_id(int can_id){
 void maintain_motors_thread(HwMotorIf* motor_if){
 	while(ros::ok()){
 		motor_if->maintain_next_motor();
-		this->loop_rate.sleep();
+		motor_if->loop_rate.sleep();
 	}
 }
 
@@ -175,20 +175,13 @@ void HwMotorIf::maintain_next_motor(){
 			}
 
 			float eRPM = motor->rpm_coef * motor->last_setpoint;
-			canbus::SetVescCmd cmd;
-			cmd.request.can_id 	= motor->device_id; // device_id should be the can_id
-			cmd.request.e_rpm 	= eRPM;
-			if(this->vesc_client.call(cmd)){
+			const boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
+
+			if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
 				// presumed success
-				// ROS_INFO("VESC Service call successful");
-				if(cmd.response.status == 0){
-					motor->update_t = cmd.response.timestamp;
-					motor->online = true;
-				}else{
-					ROS_INFO("Motor offline");
-				}
+				this->can_tx_pub.publish(frame_msg);
 			}else{
-				ROS_INFO("Set VESC service call failed");
+				ROS_INFO("I didn't think this could happen ...");
 				motor->online = false;
 			}
 			break;}

@@ -90,7 +90,7 @@ int CanbusIf::read_can_frames(){
 	int n_bytes = 0;
 	struct can_frame rx_frame;
 	// BRING RECEIVED FRAMES INTO USER SPACE
-	while((nbytes = read(canbus_if->sock, &rx_frame, sizeof(struct can_frame))) > 0){
+	while((nbytes = read(this->sock, &rx_frame, sizeof(struct can_frame))) > 0){
 		boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
 		frame_msg->can_id = rx_frame.can_id;
 		frame_msg->can_dlc = rx_frame.can_dlc;

@@ -3,11 +3,10 @@
 
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
-#include <canbus/SetVescCmd.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
-#include <canbus/UwbData.h>
-#include <canbus/VescData.h>
+#include <hwctrl/CanFrame.h>
+#include <hwctrl/VescData.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -52,12 +51,13 @@ typedef struct VescData {
 	int8_t fault_code;
 }VescData;
 
-class VescCan{
-	int can_sock, self_can_id;
-public:
-	VescCan(int s, int id);
-	bool set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response);
-};
+
+// class VescCan{
+// 	int can_sock, self_can_id;
+// public:
+// 	VescCan(int s, int id);
+// 	bool set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response);
+// };
 
 /**
  * takes a vesc communication buffer and fills a vector with valid can frames ready to be sent
@@ -90,6 +90,7 @@ int set_rpm(int sock, int target_id, int self_id, float rpm);
  */
 int set_rpm_can(int sock, int target_id, int self_id, float rpm);
 
+
 /**
  * Sends COMM_GET_VALUES command to VESC with target_id
  */
@@ -103,5 +104,13 @@ void fill_data_from_buffer(uint8_t* rx_buf, VescData* data);
 
 // void fill_msg_from_status_packet(uint8_t* frame_buf, boost::shared_ptr<hwctrl::VescData>& motor_msg);
 void fill_data_from_status_packet(uint8_t* rx_buf, VescData* data);
+
+////////////////////////////////////////////////////////////////////////////////
+// NEW HWCTRL CODE 
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * Makes a CanFrame message the will set the RPM of VESC with target ID using CAN_PACKET_SET_RPM packet type
+ */
+int set_rpm_frame(int target_id, float rpm, const boost::shared_ptr<hwctrl::CanFrame>& frame);
 
 #endif

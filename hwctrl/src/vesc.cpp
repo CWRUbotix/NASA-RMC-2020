@@ -149,23 +149,24 @@ void fill_data_from_status_packet(uint8_t* rx_buf, VescData* data){
 	data->rpm 			= buffer_get_float32(frame_buf, 1.0, &ind);
 	data->current_in 	= buffer_get_float16(frame_buf, 10.0, &ind);
 	data->duty_now 		= buffer_get_float16(frame_buf, 1000.0, &ind);
+}
 
-bool VescCan::set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response){
-	// ROS_INFO("Setting VESC %d to %f eRPM",request.can_id, request.e_rpm);
-	int retval = set_rpm_can(this->can_sock, request.can_id, this->self_can_id, request.e_rpm);
-	if(retval == 0){
-		response.status = 0;
-		response.timestamp = ros::Time::now();
-		return true;
-	}else{
-		response.status = 2;
-		return false;
-	}
-}
-VescCan::VescCan(int s, int id){
-	can_sock = s;
-	self_can_id = id;
-}
+// bool VescCan::set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response){
+// 	// ROS_INFO("Setting VESC %d to %f eRPM",request.can_id, request.e_rpm);
+// 	int retval = set_rpm_can(this->can_sock, request.can_id, this->self_can_id, request.e_rpm);
+// 	if(retval == 0){
+// 		response.status = 0;
+// 		response.timestamp = ros::Time::now();
+// 		return true;
+// 	}else{
+// 		response.status = 2;
+// 		return false;
+// 	}
+// }
+// VescCan::VescCan(int s, int id){
+// 	can_sock = s;
+// 	self_can_id = id;
+// }
 
 
 
@@ -195,3 +196,25 @@ VescCan::VescCan(int s, int id){
 // 	motor_msg->current_in 	= buffer_get_float16(frame_buf, 10.0, &ind);
 // 	motor_msg->duty_now 	= buffer_get_float16(frame_buf, 1000.0, &ind);
 // }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// NEW HWCTRL CODE 
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Makes a CanFrame message the will set the RPM of VESC with target ID using CAN_PACKET_SET_RPM packet type
+ */
+int set_rpm_frame(int target_id, float rpm, const boost::shared_ptr<hwctrl::CanFrame>& frame){
+	int n_rpm = (int)rpm;
+	frame->can_id = (CAN_PACKET_SET_RPM << 8) | target_id | CAN_EFF_FLAG;
+
+	// memcpy(frame.data, &n_rpm, sizeof(n_rpm));
+	frame->data[0] = (uint8_t)(n_rpm >> 24);
+	frame->data[1] = (uint8_t)(n_rpm >> 16);
+	frame->data[2] = (uint8_t)(n_rpm >> 8);
+	frame->data[3] = (uint8_t)(n_rpm & 0xFF);
+	frame->can_dlc = sizeof(n_rpm);
+
+	return 0;
+}
