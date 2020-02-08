@@ -1,0 +1,11 @@
+ground_plane_height: 0.13  # height of the realsense from the ground
+
+# location of the realsense relative to the center of robot
+realsense_frame_x: -0.41  # m
+realsense_frame_y: -0.13  # m
+realsense_yaw: -90  # degrees
+
+# robot measurements
+wheel_radius: 0.23  # m
+robot_length: 1.3 # m
+robot_width: 0.63 # m
