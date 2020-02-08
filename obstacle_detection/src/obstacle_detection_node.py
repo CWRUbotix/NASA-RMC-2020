@@ -14,6 +14,7 @@ import pyrealsense2 as rs
 import matplotlib.pyplot as plt
 from scipy import signal
 from scipy.spatial.transform import Rotation as R
+from scipy.ndimage import gaussian_filter
 
 from std_msgs.msg import Header
 from nav_msgs.msg import MapMetaData, OccupancyGrid
@@ -49,12 +50,12 @@ colorizer = rs.colorizer()
 class ObstacleDetectionNode:
 
     def __init__(self):
-        self.h, self.w = 512, 424
+        self.h, self.w = 640, 480
         self.ground_plane_height = 0
         self.resolution = 0.15
         self.grid_size = 30
         self.tolerance = 0.05
-        self.kernel_size = 5
+        self.kernel_size = 1
         self.save_imgs = True
         self.save_data = True
         self.robot_x = []
@@ -63,23 +64,12 @@ class ObstacleDetectionNode:
         self.localization_topic = 'odometry/filtered_map'
         self.viz_dir = 'obstacle_viz/'
         self.data_dir = 'saved_frames/'
-        # camera information based on the Kinect v2 hardware
-        self.CameraParams = {
-            "cx": 254.878,
-            "cy": 205.395,
-            "fx": 365.456,
-            "fy": 365.456,
-            "k1": 0.0905474,
-            "k2": -0.26819,
-            "k3": 0.0950862,
-            "p1": 0.0,
-            "p2": 0.0,
-        }
-        # Kinect's physical orientation in the real world.
+
+        # RealSense physical orientation in the real world.
         self.CameraPosition = {
-            "x": 0,  # actual position in meters of kinect sensor relative to the viewport's center.
-            "y": 0,  # actual position in meters of kinect sensor relative to the viewport's center.
-            "z": 0,  # height in meters of actual kinect sensor from the floor.
+            "x": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "y": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "z": 0,  # height in meters of actual RealSense sensor from the floor.
             "roll": 0,
             # angle in degrees of sensor's roll (used for INU input - trig function for this is commented out by default).
             "azimuth": 0,  # sensor's yaw angle in degrees.
@@ -118,7 +108,7 @@ class ObstacleDetectionNode:
         except Exception as e:
             print(e)
 
-    def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500):
+    def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500, pcnt=0.1):
         proj = xyz_arr[..., [0, 2]]
         proj_img = np.zeros((4500, 4500))
         indices = np.int32(proj * 1000)
@@ -129,9 +119,8 @@ class ObstacleDetectionNode:
             proj_img[indices[..., 0], indices[..., 1]] = 255
             new_size = 4500 // resize_factor
             proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
-            proj_img = cv2.dilate(proj_img, np.ones((3, 3)), iterations=2)
-            proj_img = cv2.blur(proj_img, (5, 5))
             proj_img = cv2.rotate(proj_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            _, proj_img = cv2.threshold(proj_img, int(255 * pcnt), 255, cv2.THRESH_TOZERO)
         except ValueError:
             pass
         return np.uint8(proj_img)
@@ -173,14 +162,15 @@ class ObstacleDetectionNode:
 
 
         rocks = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] >= self.ground_plane_height + self.tolerance])
-        holes = self.project_point_cloud_onto_plane(xyz_arr)
+        #rocks = self.project_point_cloud_onto_plane(xyz_arr)
+        holes = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] < self.ground_plane_height - self.tolerance])
 
         rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size))
         hole_grid = self.gridify(holes, (self.grid_size, self.grid_size))
         obs_grid = np.maximum(rock_grid, hole_grid)
-        kernel = np.ones((self.kernel_size, self.kernel_size))
 
-        occupancy_grid = signal.convolve2d(obs_grid, kernel, boundary='symm', mode='same')
+        #occupancy_grid = signal.convolve2d(obs_grid, kernel, boundary='symm', mode='same')
+        occupancy_grid = gaussian_filter(obs_grid, sigma=self.kernel_size)
         occupancy_grid /= np.max(occupancy_grid)  # ensure values are 0-1
 
         header = Header()
@@ -225,8 +215,7 @@ class ObstacleDetectionNode:
             ax = plt.subplot(242)
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.imshow(rocks)
-            #ax.imshow(out)
+            ax.imshow(np.maximum(rocks, holes))
             ax.set_title('Projection')
 
             ax = plt.subplot(243)
