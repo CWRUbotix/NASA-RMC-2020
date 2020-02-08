@@ -7,6 +7,8 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n)
  : loop_rate(1000) {
 	this->nh 				= n; 	// store a copy of the node handle passed by value
 
+  this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
+
 	this->get_motors_from_csv(); //config_file_fname
 
 	// PUBLISHERS
@@ -491,6 +493,8 @@ SensorIf::SensorIf(ros::NodeHandle n)
 : loop_rate(100), uwb_update_period(0.1) {
 	this->nh = n;
 
+  this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
+  
 	this->can_rx_sub = this->nh.subscribe("can_frames_rx", 128, &SensorIf::can_rx_callback, this);
 
 	this->can_tx_pub = this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
@@ -617,7 +621,7 @@ void SensorIf::get_sensors_from_csv(){
 		}else{
 			if((*line)[category_ind].compare(category_sensor) == 0){
 				// make a motor struct and populate with data
-				
+
 			}
 
 		}

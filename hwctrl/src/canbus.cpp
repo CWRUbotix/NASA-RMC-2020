@@ -20,6 +20,8 @@ CanbusIf::CanbusIf(ros::NodeHandle n)
 : loop_rate(100) {
 	this->nh = n;
 
+	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
+
 	int canbus_init = this->init(); // do setup things
 
 	if(canbus_init != 0){
