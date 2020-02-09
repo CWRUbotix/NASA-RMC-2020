@@ -25,8 +25,16 @@ from realsense_utils import *
 # Configure depth and color streams
 pipeline = rs.pipeline()
 config = rs.config()
-config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.depth,
+                     rospy.get_param('realsense_img_h'),
+                     rospy.get_param('realsense_img_w'),
+                     rs.format.z16,
+                     rospy.get_param('realsense_fps'))
+config.enable_stream(rs.stream.color,
+                     rospy.get_param('realsense_img_h'),
+                     rospy.get_param('realsense_img_w'),
+                     rs.format.bgr8,
+                     rospy.get_param('realsense_fps'))
 
 # Start streaming
 pipeline.start(config)
@@ -36,7 +44,6 @@ profile = pipeline.get_active_profile()
 depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
 depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
-print('Depth scale:', depth_scale)
 depth_intrinsics = depth_profile.get_intrinsics()
 w, h = depth_intrinsics.width, depth_intrinsics.height
 
@@ -50,18 +57,18 @@ colorizer = rs.colorizer()
 class ObstacleDetectionNode:
 
     def __init__(self):
-        self.h, self.w = 640, 480
-        self.ground_plane_height = 0
-        self.resolution = 0.15
-        self.grid_size = 30
-        self.tolerance = 0.05
-        self.kernel_size = 1
+        self.h, self.w = rospy.get_param('realsense_img_h'), rospy.get_param('realsense_img_w')
+        self.ground_plane_height = rospy.get_param('realsense_z')
+        self.resolution = rospy.get_param('grid_resolution')
+        self.grid_size = rospy.get_param('grid_size')
+        self.tolerance = rospy.get_param('ground_tolerance')
+        self.kernel_sigma = 1
         self.save_imgs = True
         self.save_data = True
         self.robot_x = []
         self.robot_y = []
         self.robot_pitch = []
-        self.localization_topic = 'odometry/filtered_map'
+        self.localization_topic = rospy.get_param('localization')
         self.viz_dir = 'obstacle_viz/'
         self.data_dir = 'saved_frames/'
 
@@ -109,7 +116,8 @@ class ObstacleDetectionNode:
             print(e)
 
     def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500, pcnt=0.1):
-        proj = xyz_arr[..., [0, 2]]
+        # TODO: project points onto ground plane based on Realsense IMU?
+        proj = xyz_arr[..., [0, 2]]  # take only the X and Z components of point cloud
         proj_img = np.zeros((4500, 4500))
         indices = np.int32(proj * 1000)
         try:
@@ -162,15 +170,13 @@ class ObstacleDetectionNode:
 
 
         rocks = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] >= self.ground_plane_height + self.tolerance])
-        #rocks = self.project_point_cloud_onto_plane(xyz_arr)
         holes = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] < self.ground_plane_height - self.tolerance])
 
         rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size))
         hole_grid = self.gridify(holes, (self.grid_size, self.grid_size))
         obs_grid = np.maximum(rock_grid, hole_grid)
 
-        #occupancy_grid = signal.convolve2d(obs_grid, kernel, boundary='symm', mode='same')
-        occupancy_grid = gaussian_filter(obs_grid, sigma=self.kernel_size)
+        occupancy_grid = gaussian_filter(obs_grid, sigma=self.kernel_sigma)
         occupancy_grid /= np.max(occupancy_grid)  # ensure values are 0-1
 
         header = Header()
