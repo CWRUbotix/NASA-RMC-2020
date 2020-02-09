@@ -21,7 +21,8 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n)
 	this->limit_sw_sub 		= this->nh.subscribe("limit_switch_states", 128, &HwMotorIf::limit_sw_callback, this);
 
 	// SET MOTOR SERVICE
-	this->set_motor_srv 	= this->nh.advertiseService("set_motor", &HwMotorIf::set_motor_callback, this);
+	//this->set_motor_srv 	= this->nh.advertiseService("set_motor", &HwMotorIf::set_motor_callback, this);
+	this->set_motor_sub 	= this->nh.subscribe("motor_setpoints", 128, &HwMotorIf::set_motor_cb_alt, this);
 }
 
 // ===== SUBSCRIBER CALLBACKS =====
@@ -36,7 +37,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 		uint8_t cmd = (uint8_t)(rx_id >> 8);
 		int8_t id 	= (int8_t)(rx_id & 0xFF);
 		uint8_t* frame_data = frame->data.data(); // get the back-buffer of the vector
-		ROS_INFO("VESC %d sent msg type %d", id, cmd);
+		// ROS_INFO("VESC %d sent msg type %d", id, cmd);
 		HwMotor* vesc = this->get_vesc_from_can_id(id);
 		vesc->online = true;
 		switch(cmd){
@@ -108,7 +109,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 				// indicates the end of the cmd buffer
 		}
 	}else{
-		ROS_INFO("Not a vesc message");
+		// ROS_INFO("Not a vesc message");
 	}
 }
 
@@ -155,7 +156,7 @@ void HwMotorIf::maintain_next_motor(){
 	HwMotor* motors = this->motors.data();
 	HwMotor* motor = &(motors[this->motor_ind]);
 	// HwMotor* motor = &(this->motors.at(this->motor_ind));
-	// ROS_INFO("Maintaining motor %s", motor->name.c_str());
+	ROS_INFO("Maintaining motor %s", motor->name.c_str());
 	switch(motor->motor_type){
 		case(DEVICE_NONE):break;
 		case(DEVICE_VESC):{
@@ -177,7 +178,7 @@ void HwMotorIf::maintain_next_motor(){
 				}
 				motor->last_setpoint = motor->last_setpoint + delta; // the new setpoint based on delta
 			}else{
-				ROS_INFO("Motor %d offline",motor->id);
+				//ROS_INFO("Motor %d offline",motor->id);
 			}
 
 			float eRPM = motor->rpm_coef * motor->last_setpoint;
@@ -185,7 +186,7 @@ void HwMotorIf::maintain_next_motor(){
 
 			if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
 				// presumed success
-				ROS_INFO("ID, eRPM: %d, %f",motor->device_id, eRPM);
+				// ROS_INFO("ID, eRPM: %d, %f",motor->device_id, eRPM);
 				this->can_tx_pub.publish(frame_msg);
 				motor->update_t = ros::Time::now();
 			}else{
@@ -204,6 +205,18 @@ void HwMotorIf::maintain_next_motor(){
 	}
 }
 
+void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
+	int id = msg.id;
+	ROS_INFO("Setting motor %d to %f at %f", id, msg.setpoint, msg.acceleration);
+	HwMotor* motors = this->motors.data(); // pointer to our motor struct
+
+	motors[id].setpoint = msg.setpoint;
+	if(fabs(msg.acceleration) > motors[id].max_accel || fabs(msg.acceleration) == 0.0){
+		motors[id].accel_setpoint = motors[id].max_accel;
+	}else {
+		motors[id].accel_setpoint = msg.acceleration;
+	}
+}
 
 bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response){
 	if(request.id >= this->motors.size()){
@@ -469,14 +482,15 @@ void sensors_thread(SensorIf* sensor_if){
 	spinner.start();
 	while(ros::ok()){
 		// check which UWB nodes have anchor data ready. read and publish them
-		for(auto node = sensor_if->uwb_nodes.begin(); node != sensor_if->uwb_nodes.end(); ++node){
+		/*for(auto node = sensor_if->uwb_nodes.begin(); node != sensor_if->uwb_nodes.end(); ++node){	
 			int n_msgs = 4;
 			hwctrl::UwbData uwb_msgs[n_msgs] = {};
 			n_msgs = node->get_msgs_from_anchors(uwb_msgs, n_msgs);
+			ROS_INFO("We have %d UWB messages to publish", n_msgs);
 			for(int i = 0; i < n_msgs; i++){
 				sensor_if->uwb_data_pub.publish(uwb_msgs[i]);
 			}
-		}
+		}*/
 
 		// poll limit switches
 
@@ -506,6 +520,8 @@ SensorIf::SensorIf(ros::NodeHandle n)
 	this->sensor_data_pub = this->nh.advertise<hwctrl::SensorData>("sensor_data", 128);
 	this->limit_sw_pub = this->nh.advertise<hwctrl::LimitSwState>("limit_sw_states", 128);
 	this->uwb_data_pub = this->nh.advertise<hwctrl::UwbData>("localization_data", 1024);
+	
+	this->get_sensors_from_csv();
 
 	this->spi_handle = spi_init("/dev/spidev0.0");
 	if(this->spi_handle < 0){
@@ -540,9 +556,17 @@ void SensorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 	if((can_id = (rx_id & ~0xFF)) == 0){
 		// was NOT a VESC frame
 		// UWB frame or quad encoder frame
-		UwbNode* uwb_node = this->get_uwb_by_can_id(can_id);
+		UwbNode* uwb_node = this->get_uwb_by_can_id(rx_id);
 		if(uwb_node != NULL){
-			uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
+			ROS_INFO("UWB frame (node id %d)", rx_id);
+			// uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
+			hwctrl::UwbData msg;
+			msg.anchor_id = frame->data[1];
+			float temp = 0.0;
+			memcpy(&temp, frame->data.data() + 2, 4);
+			msg.distance = temp;
+			msg.node_id = rx_id;
+			this->uwb_data_pub.publish(msg);
 		}else{
 			// no UWB node matching this CAN ID, so must be our quadrature encoder
 			//this->quad_encoder.add_can_data(frame->data.data(), frame->can_dlc);
@@ -555,8 +579,8 @@ void SensorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
  */
 UwbNode* SensorIf::get_uwb_by_can_id(int can_id){
 	auto i = this->uwb_nodes.begin();
-	UwbNode* node = NULL;
-	while(i != this->uwb_nodes.end() && i->get_id() != can_id){
+	UwbNode* node = &(*i);
+	while(i != this->uwb_nodes.end() && i->id != can_id){
 		++i; // increment to next UWB Node
 		node = &(*i);
 	}
@@ -568,15 +592,17 @@ UwbNode* SensorIf::get_uwb_by_can_id(int can_id){
  * when called, will send a remote request to the next UWB node to get ranging data
  */
 void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
+	// ROS_INFO("===== UWB UPDATE CALLBACK =====");
 	if(this->uwb_nodes.size() <= 0){
+		ROS_INFO("No UWB nodes");
 		return;
 	}
-	UwbNode* nodes = this->uwb_nodes.data();
-	UwbNode* uwb_node = &(nodes[this->uwb_ind]);
-
+	//UwbNode* nodes = this->uwb_nodes.data();
+	//UwbNode* uwb_node = &(nodes[this->uwb_ind]);
+	UwbNode node = this->uwb_nodes.at(this->uwb_ind);
 	boost::shared_ptr<hwctrl::CanFrame> can_msg(new hwctrl::CanFrame()); // empty can frame msg built as a shared pointer
-	can_msg->can_id  = uwb_node->id | CAN_RTR_FLAG | CAN_SFF_MASK; // can ID + remote request & std ID flags
-	can_msg->can_dlc = UWB_CAN_HDDR_SIZE + 4; // this won't really be used but whatever
+	can_msg->can_id  = node.id | CAN_RTR_FLAG; // can ID + remote request & std ID flags
+	can_msg->can_dlc = 8; // I think it needs to be 8 for the legacy fw? UWB_CAN_HDDR_SIZE + 4; // this won't really be used but whatever
 	this->can_tx_pub.publish(can_msg);
 
 	this->uwb_ind++;
@@ -628,9 +654,12 @@ void SensorIf::get_sensors_from_csv(){
 			}
 		}else{
 			if((*line)[category_ind].compare(category_sensor) == 0){
+				ROS_INFO("A sensor!");
+				DeviceType dev_type = get_device_type((*line)[device_type_ind]);
 				if( (*line)[device_type_ind].compare("uwb") == 0){
 					// this line is for an UWB node
 					uint32_t id = (uint32_t)std::stoi((*line)[device_id_ind]);
+					ROS_INFO("An UWB node, id: %d!", id);
 					UwbNode uwb_node(id);
 					this->uwb_nodes.push_back(uwb_node);
 				}

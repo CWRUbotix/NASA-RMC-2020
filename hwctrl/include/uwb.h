@@ -1,6 +1,7 @@
 #ifndef _UWB_H_
 #define _UWB_H_
 
+#include <ros/ros.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -46,7 +47,7 @@ public:
   UwbNode(uint32_t id) : id(id) { }
   uint32_t get_id() {return id;}
   uint32_t get_num_anchors() {return anchors.size();}
-  AnchorData* get_anchor_by_id(uint32_t id);
+  std::vector<AnchorData>::iterator get_anchor_by_id(uint32_t id);
   void add_can_data(uint8_t* can_data, uint8_t can_dlc); // assimilate a CAN frame's worth of data
   int get_msgs_from_anchors(hwctrl::UwbData* uwb_msgs, int max_size);
 };

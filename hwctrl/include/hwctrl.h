@@ -16,6 +16,7 @@
 #include <hwctrl/SensorData.h>
 #include <hwctrl/LimitSwState.h>
 #include <hwctrl/MotorData.h>
+#include <hwctrl/SetMotorMsg.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -134,6 +135,7 @@ private:
 	ros::Subscriber sensor_data_sub;// to get sensor data
 	ros::Subscriber limit_sw_sub; 	// listen for limit switch interrupts
 	ros::ServiceServer set_motor_srv; // to provide the set_motor service
+	ros::Subscriber set_motor_sub; // set motors
 public:
 	HwMotorIf(ros::NodeHandle);
 	ros::CallbackQueue cb_queue;
@@ -141,6 +143,7 @@ public:
 	std::vector<HwMotor> motors;
 	int motor_ind = 0;
 	bool set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response);
+	void set_motor_cb_alt(hwctrl::SetMotorMsg msg);
 	void add_motor(HwMotor mtr);
 	void get_motors_from_csv();
 	std::string list_motors();
