@@ -38,6 +38,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 		uint8_t* frame_data = frame->data.data(); // get the back-buffer of the vector
 		ROS_INFO("VESC %d sent msg type %d", id, cmd);
 		HwMotor* vesc = this->get_vesc_from_can_id(id);
+		vesc->online = true;
 		switch(cmd){
 			case CAN_PACKET_STATUS:{
 				if(vesc == NULL){
@@ -154,11 +155,11 @@ void HwMotorIf::maintain_next_motor(){
 	HwMotor* motors = this->motors.data();
 	HwMotor* motor = &(motors[this->motor_ind]);
 	// HwMotor* motor = &(this->motors.at(this->motor_ind));
-	ROS_INFO("Maintaining motor %s", motor->name.c_str());
+	// ROS_INFO("Maintaining motor %s", motor->name.c_str());
 	switch(motor->motor_type){
 		case(DEVICE_NONE):break;
 		case(DEVICE_VESC):{
-			ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
+			// ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
 			if(motor->online){
 				// figure out next velocity setpoint based on acceleration & last sent RPM
 				float delta 	=  motor->setpoint - motor->last_setpoint;
@@ -184,7 +185,9 @@ void HwMotorIf::maintain_next_motor(){
 
 			if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
 				// presumed success
+				ROS_INFO("ID, eRPM: %d, %f",motor->device_id, eRPM);
 				this->can_tx_pub.publish(frame_msg);
+				motor->update_t = ros::Time::now();
 			}else{
 				ROS_INFO("I didn't think this could happen ...");
 				motor->online = false;
@@ -466,7 +469,6 @@ void sensors_thread(SensorIf* sensor_if){
 	spinner.start();
 	while(ros::ok()){
 		// check which UWB nodes have anchor data ready. read and publish them
-		ROS_INFO("Checking for UWB data...");
 		for(auto node = sensor_if->uwb_nodes.begin(); node != sensor_if->uwb_nodes.end(); ++node){
 			int n_msgs = 4;
 			hwctrl::UwbData uwb_msgs[n_msgs] = {};
@@ -475,7 +477,6 @@ void sensors_thread(SensorIf* sensor_if){
 				sensor_if->uwb_data_pub.publish(uwb_msgs[i]);
 			}
 		}
-		ROS_INFO("Done with UWB checking...");
 
 		// poll limit switches
 
