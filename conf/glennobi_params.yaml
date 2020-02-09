@@ -24,6 +24,9 @@ arena_y: 5.4 # (m) length of the arena from starting area to mining area
 grid_resolution: 0.15 # (m / cell) resolution of occupancy grid
 grid_size: 30 # (cells) width and height of occupancy grid
 
+# transit params
+motor_command_accel: 15  # (RPM  / s) rate to change the motor speed upon sending a new command
+
 # message topics
 localization: 'odometry/filtered_map'  # filtered global localization data as an Odometry msg
 obstacle_detection: 'global_occupancy_grid'

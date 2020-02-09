@@ -32,11 +32,10 @@ wheel_radius = 0.2286
 
 class TransitNode:
     def __init__(self, visualize=False):
-        self.motor_pub = rospy.Publisher("motorCommand", motorCommand, queue_size=100)
+        self.motor_acceleration = rospy.get_param('motor_command_accel')
         self.motor_srv = rospy.ServiceProxy("set_motor", SetMotor)
         self.path_pub = rospy.Publisher("transitPath", transitPath, queue_size=4)
         self.control_data_pub = rospy.Publisher("transitControlData", transitControlData, queue_size=4)
-
         self.controller = PathFollower(reference_point_x, goal=(0, 0))
         self.robot_state = dict(state=np.array([[0, 0, 0]]).T, state_dot=np.array([[0, 0, 0]]).T)
         self.controller.update_grid(Grid(ARENA_WIDTH, ARENA_HEIGHT))
@@ -133,20 +132,9 @@ class TransitNode:
                 right_speed += 0.025 * right_diff
                 true_rpm = effective_rpm(left=left_speed, right=right_speed)
             '''
-            left_req = SetMotorRequest()
-            right_req = SetMotorRequest()
-            left_req.id = 0
-            right_req.id = 1
-            left_req.acceleration = 25
-            right_req.acceleration = 25
-            left_req.setpoint = left_speed
-            right_req.setpoint = right_speed
 
-            self.motor_srv(left_req)
-            self.motor_srv(right_req)
-
-            #self.motor_pub.publish(motorID=0, value=left_speed)
-            #self.motor_pub.publish(motorID=1, value=right_speed)
+            self.motor_srv(0, self.motor_acceleration, left_speed)
+            self.motor_srv(1, self.motor_acceleration, right_speed)
 
             self.publish_control_data()
 
@@ -200,8 +188,8 @@ class TransitNode:
         self.control_data_pub.publish(data)
 
     def shutdown(self):
-        self.motor_pub.publish(motorID=0, value=0)
-        self.motor_pub.publish(motorID=0, value=0)
+        self.motor_srv(0, self.motor_acceleration, 0)
+        self.motor_srv(1, self.motor_acceleration, 0)
 
     def draw(self):
         if self.visualize and self.step % self.viz_step == 0:
