@@ -21,13 +21,13 @@ matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 
 
 # Constants
-ARENA_WIDTH = 3.78
-ARENA_HEIGHT = 7.38
-ROBOT_WIDTH = 0.63
-ROBOT_LENGTH = 1.3
+ARENA_WIDTH = rospy.get_param('arena_x')
+ARENA_HEIGHT = rospy.get_param('arena_y')
+ROBOT_WIDTH = rospy.get_param('robot_width')
+ROBOT_LENGTH = rospy.get_param('robot_length')
 effective_robot_width = 0.7
 reference_point_x = 0.5
-wheel_radius = 0.2286
+wheel_radius = rospy.get_param('wheel_radius')
 
 
 class TransitNode:
