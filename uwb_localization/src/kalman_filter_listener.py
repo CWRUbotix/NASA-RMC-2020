@@ -17,7 +17,7 @@ from scipy.spatial.transform import Rotation as R
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, AccelWithCovarianceStamped
 from nav_msgs.msg import Odometry
 
 
@@ -25,6 +25,7 @@ from nav_msgs.msg import Odometry
 class KalmanFilterNode:
     def __init__(self):
         self.topic = 'odometry/filtered_map'
+        self.accel_topic = 'accel/filtered'
         print('Booting up node...')
         rospy.init_node('kalman_filter_listener', anonymous=True)
         self.robot_x = []
@@ -114,6 +115,13 @@ class KalmanFilterNode:
         pose = msg.pose.pose
         covariance = msg.pose.covariance
         covariance = np.reshape(covariance, (6, 6))
+
+        # print(["{:0.1f}".format(i) for i in msg.pose.covariance])
+        # print(["{:0.1f}".format(i) for i in msg.twist.covariance])
+        #print(msg.pose.covariance)
+        #print(msg.twist.covariance)
+
+
         self.robot_x.append(pose.position.x)
         self.robot_y.append(pose.position.y)
         quat = pose.orientation
@@ -142,10 +150,16 @@ class KalmanFilterNode:
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
         self.node_yaw.append(euler[2])
 
+    def accel_callback(self, msg):
+        linear = msg.accel.accel.linear
+        angular = msg.accel.accel.angular
+        #print(["{:0.3f}".format(i) for i in msg.accel.covariance])
+
 
 if __name__ == '__main__':
     kalman_filter_node = KalmanFilterNode()
     rospy.Subscriber(kalman_filter_node.topic, Odometry, kalman_filter_node.position_callback, queue_size=1)
+    rospy.Subscriber(kalman_filter_node.accel_topic, AccelWithCovarianceStamped, kalman_filter_node.accel_callback, queue_size=1)
     rospy.Subscriber('uwb_nodes', PoseWithCovarianceStamped, kalman_filter_node.unfiltered_callback, queue_size=1)
 
     rospy.spin()

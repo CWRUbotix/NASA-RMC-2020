@@ -30,14 +30,14 @@ class GlobalOccupancyGrid:
         self.robot_y = []
         self.robot_pitch = []
         self.local_grid = None
-        self.arena_length = 5.4
-        self.arena_width = 3.6
-        self.resolution = 0.15
+        self.arena_length = rospy.get_param('arena_y')
+        self.arena_width = rospy.get_param('arena_x')
+        self.resolution = rospy.get_param('grid_resolution')
         self.global_grid_shape = (int(self.arena_length / self.resolution), int(self.arena_width / self.resolution))
         self.global_grid = np.zeros(self.global_grid_shape)
         self.global_counts = np.zeros_like(self.global_grid)  # keeps track of number of measurements for each cell
         self.global_totals = np.zeros_like(self.global_grid)  # keeps track of sum of measurements for each cell
-        self.localization_topic = 'odometry/filtered_map'
+        self.localization_topic = rospy.get_param('localization')
         self.local_grid_topic = 'local_occupancy_grid'
         self.viz_dir = 'global_map/'
         self.data_dir = 'occupancy_grid_data/'
@@ -120,14 +120,12 @@ class GlobalOccupancyGrid:
             print(self.global_totals.shape, local_origin, rotated_grid.shape)
 
             self.paste(self.global_totals, rotated_grid, local_origin)
-
-            #self.global_totals[global_left:global_right, global_bottom:global_top] += rotated_grid
             counts = np.ones_like(rotated_grid)
             counts[rotated_grid == -1] = 0
             self.paste(self.global_counts, counts, local_origin)
             #self.global_counts[local_origin[1]: local_origin[1] + rotated_grid.shape[1], local_origin[0] + local_origin[0] + rotated_grid.shape[0]] += counts
             self.global_grid = np.divide(self.global_totals, self.global_counts, out=np.zeros_like(self.global_totals), where=self.global_counts!=0)
-            #np.nan_to_num(self.global_grid, copy=False)
+            self.global_grid = np.nan_to_num(self.global_grid, copy=False)
             self.global_grid /= np.max(self.global_grid)  # ensure values are 0-1
 
             header = Header()
@@ -148,7 +146,7 @@ class GlobalOccupancyGrid:
             grid_msg.data = list(np.int8(self.global_grid.flatten() * 100))
 
             try:
-                pub = rospy.Publisher('global_occupancy_grid', OccupancyGrid, queue_size=1)
+                pub = rospy.Publisher(rospy.get_param('obstacle_detection'), OccupancyGrid, queue_size=1)
                 pub.publish(grid_msg)
             except rospy.ROSInterruptException as e:
                 print(e.getMessage())
