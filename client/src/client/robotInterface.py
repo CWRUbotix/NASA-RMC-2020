@@ -6,7 +6,9 @@ import rospy
 from hci.msg import sensorValue
 from hci.msg import motorCommand
 from hci.msg import driveCommand
+import hwctrl.srv
 
+set_motor = rospy.ServiceProxy("set_motor", hwctrl.srv.SetMotor)
 
 node_name = 'robotInterface'
 motorCommandTopic = 'motorCommand'
@@ -53,20 +55,34 @@ sensorValueMap = {
 }
 
 
-def sendMotorCommand(motorID, value):
-	global motorCommandPub
-	if motorCommandPub == None:
-		motorCommandPub = rospy.Publisher(motorCommandTopic, motorCommand, queue_size=10)
-		print("why are you like this")
-	motorCommandPub.publish(motorID, value)
+def sendMotorCommand(motorID, value, accel=35):
+	req = hwctrl.srv.SetMotorRequest()
+	req.id = motorID
+	req.setpoint = value
+	req.acceleration = accel
+	resp = set_motor(req)
 	return True
 
-def sendDriveCommand(direction, value):
-	global driveCommandPub
-	if driveCommandPub == None:
-		driveCommandPub = rospy.Publisher(driveCommandTopic, driveCommand, queue_size=10)
-		print("why are you like this2")
-	driveCommandPub.publish(direction, value)
+
+def sendDriveCommand(direction, value, accel=35):
+	left_req = hwctrl.srv.SetMotorRequest()
+	right_req = hwctrl.srv.SetMotorRequest()
+	left_req.id = 0
+	right_req.id = 1
+	left_req.acceleration = accel
+	right_req.acceleration = accel
+	if direction == 0:  # forward
+		left_req.setpoint = value
+		right_req.setpoint = value
+	elif direction == 1:  # backward
+		left_req.setpoint = -value
+		right_req.setpoint = -value
+	elif direction == 2:  # right
+		left_req.setpoint = value
+		right_req.setpoint = -value
+	elif direction == 3:  # left
+		left_req.setpoint = -value
+		right_req.setpoint = value
 	return True
 
 def sensorValueCallback(data):
