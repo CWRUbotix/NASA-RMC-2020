@@ -1,16 +1,153 @@
 #include <hwctrl.h>
 
-void HwMotorIf::maintain_motors(){
-	while(ros::ok()){
-		this->maintain_next_motor();
-		ros::Duration(MOTOR_LOOP_PERIOD/this->motors.size()).sleep();
+////////////////////////////////////////////////////////////////////////////////
+// MOTOR INTERFACE STUFF
+////////////////////////////////////////////////////////////////////////////////
+HwMotorIf::HwMotorIf(ros::NodeHandle n)
+ : loop_rate(1000) {
+	this->nh 				= n; 	// store a copy of the node handle passed by value
+
+	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
+	
+	this->get_motors_from_csv(); //config_file_fname
+
+	// PUBLISHERS
+	this->can_tx_pub 		= this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
+	this->motor_data_pub 	= this->nh.advertise<hwctrl::MotorData>("motor_data", 128);
+
+	// SUBSCRIBERS
+	this->can_rx_sub 		= this->nh.subscribe("can_frames_rx", 128, &HwMotorIf::can_rx_callback, this);
+	this->sensor_data_sub 	= this->nh.subscribe("sensor_data", 128, &HwMotorIf::sensor_data_callback, this);
+	this->limit_sw_sub 		= this->nh.subscribe("limit_switch_states", 128, &HwMotorIf::limit_sw_callback, this);
+
+	// SET MOTOR SERVICE
+	this->set_motor_srv 	= this->nh.advertiseService("set_motor", &HwMotorIf::set_motor_callback, this);
+}
+
+// ===== SUBSCRIBER CALLBACKS =====
+/**
+ * any CAN data of interest is from VESC's
+ */
+void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
+	uint32_t rx_id = (uint32_t)frame->can_id;
+
+	if((rx_id & ~0xFF) != 0){
+		// we can assume this is a VESC message
+		uint8_t cmd = (uint8_t)(rx_id >> 8);
+		int8_t id 	= (int8_t)(rx_id & 0xFF);
+		uint8_t* frame_data = frame->data.data(); // get the back-buffer of the vector
+		ROS_INFO("VESC %d sent msg type %d", id, cmd);
+		HwMotor* vesc = this->get_vesc_from_can_id(id);
+		vesc->online = true;
+		switch(cmd){
+			case CAN_PACKET_STATUS:{
+				if(vesc == NULL){
+					break;
+				}
+				VescData* vesc_data = &(vesc->vesc_data);
+
+				// store a ROS timestamp
+				vesc_data->timestamp = ros::Time::now();
+
+				// store data with the correct vesc object
+				fill_data_from_status_packet(frame_data, vesc_data);
+				break;
+			}
+			case CAN_PACKET_FILL_RX_BUFFER:{
+				if(id != 0x00){
+						// this is not intended for us (our canID is 0)
+					break;
+				}
+				// copy the CAN data into the corresponding vesc rx buffer
+				memcpy(vesc->vesc_data.vesc_rx_buf + frame_data[0], frame_data + 1, frame->can_dlc - 1);
+				break;
+			}
+			case CAN_PACKET_PROCESS_RX_BUFFER:{
+				if(id != 0x00){
+					// not intended for us
+					break;
+				}
+				if(vesc == NULL){
+					// we know of no VESC with the given CAN ID
+					break;
+				}
+				int ind = 0;
+				uint16_t packet_len;
+				uint16_t crc;
+				int vesc_id = frame_data[ind++]; // which vesc sent the data
+				int n_cmds 	= frame_data[ind++]; // how many commands
+				packet_len 	= (frame_data[ind++] << 8);
+				packet_len 	|= frame_data[ind++];
+				crc 		= (frame_data[ind++] << 8);
+				crc 		|= frame_data[ind++];
+
+				uint16_t chk_crc = crc16(vesc->vesc_data.vesc_rx_buf, packet_len);
+				// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
+
+				if(crc != chk_crc){
+					ROS_INFO("Error: Checksum doesn't match");
+					// error in transmission
+					break;
+				}
+
+				ind = 0;
+				int comm_cmd = vesc->vesc_data.vesc_rx_buf[ind++];
+				switch(comm_cmd){
+					case COMM_GET_VALUES:{
+						vesc->vesc_data.timestamp 	= ros::Time::now();
+						vesc->vesc_data.motor_type 	= "vesc";
+						vesc->vesc_data.can_id 		  = vesc_id;
+
+						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
+
+						break;}
+					}
+
+				break;
+			}
+				// indicates the end of the cmd buffer
+		}
+	}else{
+		ROS_INFO("Not a vesc message");
 	}
 }
 
+void HwMotorIf::sensor_data_callback(hwctrl::SensorData data){
+	// determine if this sensor is useful to us;
+}
+
+void HwMotorIf::limit_sw_callback(boost::shared_ptr<hwctrl::LimitSwState> state){
+	// figure out which motor this corresponds to and stop it!
+}
+
+/**
+ * @param can_id the can id of the VESC we're looking for
+ * @return a pointer to the VESC with this CAN ID (null if not found)
+ */
+HwMotor* HwMotorIf::get_vesc_from_can_id(int can_id){
+	HwMotor* motor_arr = this->motors.data();
+	int size = this->motors.size();
+	int i = 0;
+	bool found = false;
+	while(!found && i < size){
+		found = (motor_arr[i].motor_type == DEVICE_VESC) && (motor_arr[i].device_id == can_id);
+		i++;
+	}
+	if(found){
+		return &(motor_arr[i-1]);
+	}else{
+		return NULL;
+	}
+}
+
+
 void maintain_motors_thread(HwMotorIf* motor_if){
+	ROS_INFO("Starting maintain_motors_thread");
+	ros::AsyncSpinner spinner(1, &(motor_if->cb_queue));
+	spinner.start();	
 	while(ros::ok()){
 		motor_if->maintain_next_motor();
-		ros::Duration(MOTOR_LOOP_PERIOD/motor_if->get_num_motors()).sleep();
+		motor_if->loop_rate.sleep();
 	}
 }
 
@@ -22,7 +159,7 @@ void HwMotorIf::maintain_next_motor(){
 	switch(motor->motor_type){
 		case(DEVICE_NONE):break;
 		case(DEVICE_VESC):{
-			ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
+			// ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
 			if(motor->online){
 				// figure out next velocity setpoint based on acceleration & last sent RPM
 				float delta 	=  motor->setpoint - motor->last_setpoint;
@@ -42,22 +179,17 @@ void HwMotorIf::maintain_next_motor(){
 			}else{
 				ROS_INFO("Motor %d offline",motor->id);
 			}
-			
-			float eRPM = motor->rpm_coef * motor->last_setpoint;	
-			canbus::SetVescCmd cmd;
-			cmd.request.can_id 	= motor->device_id; // device_id should be the can_id
-			cmd.request.e_rpm 	= eRPM;
-			if(this->vesc_client.call(cmd)){
+
+			float eRPM = motor->rpm_coef * motor->last_setpoint;
+			boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
+
+			if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
 				// presumed success
-				ROS_INFO("VESC Service call successful");
-				if(cmd.response.status == 0){
-					motor->update_t = cmd.response.timestamp;
-					motor->online = true;
-				}else{
-					ROS_INFO("Motor online");
-				}
+				ROS_INFO("ID, eRPM: %d, %f",motor->device_id, eRPM);
+				this->can_tx_pub.publish(frame_msg);
+				motor->update_t = ros::Time::now();
 			}else{
-				ROS_INFO("No dice");
+				ROS_INFO("I didn't think this could happen ...");
 				motor->online = false;
 			}
 			break;}
@@ -80,7 +212,7 @@ bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::S
 	int id = request.id;
 	ROS_INFO("Setting motor %d to %f at %f", id, request.setpoint, request.acceleration);
 	HwMotor* motors = this->motors.data(); // pointer to our motor struct
-	
+
 	motors[id].setpoint = request.setpoint;
 	if(fabs(request.acceleration) > motors[id].max_accel || fabs(request.acceleration) == 0.0){
 		motors[id].accel_setpoint = motors[id].max_accel;
@@ -89,7 +221,7 @@ bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::S
 	}
 	response.actual_accel = motors[id].accel_setpoint;
 	response.status = 0; // need to change later to be meaningful
-	
+
 	return true;
 }
 
@@ -97,8 +229,18 @@ void HwMotorIf::add_motor(HwMotor mtr){
 	this->motors.push_back(mtr);
 }
 
-void HwMotorIf::get_motors_from_csv(std::string fname){
-	std::vector<std::vector<std::string>> csv = read_csv(fname);
+void HwMotorIf::get_motors_from_csv(){
+	std::string ros_package_path(std::getenv("ROS_PACKAGE_PATH"));
+	std::istringstream path_stream(ros_package_path);
+
+	std::string src_dir_path;
+	std::getline(path_stream, src_dir_path, ':'); // get the first path
+	if(*(src_dir_path.end()) != '/'){
+		src_dir_path.push_back('/');
+	}
+	std::string config_file_path = src_dir_path.append(config_file_fname);
+
+	std::vector<std::vector<std::string>> csv = read_csv(config_file_path);
 	int line_num = 0;
 	int id_ind, name_ind, category_ind, device_type_ind, interface_ind, device_id_ind, aux_1_ind, aux_2_ind, aux_3_ind, aux_4_ind;
 	for(auto line = csv.begin(); line != csv.end(); ++line){
@@ -159,16 +301,31 @@ int HwMotorIf::get_num_motors(){
 	return this->motors.size();
 }
 
+std::string HwMotorIf::list_motors(){
+	std::string retval;
+	for(auto mtr = this->motors.begin(); mtr != this->motors.end(); ++mtr){
+		retval.append((*mtr).to_string());
+	}
+	return retval;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// HELPER FUNCTIONS
+////////////////////////////////////////////////////////////////////////////////
 InterfaceType get_if_type(std::string type_str){
 	if(type_str.compare("can") == 0){
 		return IF_CANBUS;
 	}else if(type_str.compare("uart") == 0){
 		return IF_UART;
+	}else if(type_str.compare("spi") == 0){
+		return IF_SPI;
+	}else if(type_str.compare("gpio") == 0){
+		return IF_GPIO;
 	}else{
 		return IF_NONE;
 	}
 }
-
 
 DeviceType get_device_type(std::string type_str){
 	if      (type_str.compare("vesc") 		== 0){
@@ -179,52 +336,308 @@ DeviceType get_device_type(std::string type_str){
 		return DEVICE_UWB;
 	}else if(type_str.compare("quad_enc") 	== 0){
 		return DEVICE_QUAD_ENC;
+	}else if(type_str.compare("limit") 	== 0){
+		return DEVICE_LIMIT_SW;
 	}else{
 		return DEVICE_NONE;
 	}
 }
 
 std::string HwMotor::to_string(){
-	sprintf(this->scratch_buf, 
-		"\n==========\nMotor\t: %s\n\rID\t: %d\n", 
+	sprintf(this->scratch_buf,
+		"\n==========\nMotor\t: %s\n\rID\t: %d\n",
 		this->name.c_str(), this->id
 		);
 	return std::string(this->scratch_buf);
 }
 
-std::string HwMotorIf::list_motors(){
-	std::string retval;
-	for(auto mtr = this->motors.begin(); mtr != this->motors.end(); ++mtr){
-		retval.append((*mtr).to_string());
-	}
-	return retval;
-}
+/*
+// OBSOLTETE
+void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
+	uint32_t rx_id = (uint32_t)frame->can_id;
 
-// LIMIT SWITCH MONITORING THREAD
-void limit_switch_thread(ros::Publisher pub){
+	if((rx_id & ~0xFF) != 0){
+		// we can assume this is a VESC message
+		uint8_t cmd = (uint8_t)(rx_id >> 8);
+		int8_t id 	= (int8_t)(rx_id & 0xFF);
+		uint8_t* frame_data = frame->data.data(); // get the back-buffer of the vector
+		ROS_INFO("VESC %d sent msg type %d", id, cmd);
+		HwMotor* vesc = this->get_vesc_from_can_id(id);
+		switch(cmd){
+			case CAN_PACKET_STATUS:{
+				if(vesc == NULL){
+					break;
+				}
+				VescData* vesc_data = &(vesc->vesc_data);
+
+				// store a ROS timestamp
+				vesc_data->timestamp = ros::Time::now();
+
+				// store data with the correct vesc object
+				fill_data_from_status_packet(frame_data, vesc_data);
+				break;
+			}
+			case CAN_PACKET_FILL_RX_BUFFER:{
+				if(id != 0x00){
+						// this is not intended for us (our canID is 0)
+					break;
+				}
+				// copy the CAN data into the corresponding vesc rx buffer
+				memcpy(vesc->vesc_data.vesc_rx_buf + frame_data[0], frame_data + 1, frame->can_dlc - 1);
+				break;
+			}
+			case CAN_PACKET_PROCESS_RX_BUFFER:{
+				if(id != 0x00){
+					// not intended for us
+					break;
+				}
+				if(vesc == NULL){
+					// we know of no VESC with the given CAN ID
+					break;
+				}
+				int ind = 0;
+				uint16_t packet_len;
+				uint16_t crc;
+				int vesc_id = frame_data[ind++]; // which vesc sent the data
+				int n_cmds 	= frame_data[ind++]; // how many commands
+				packet_len 	= (frame_data[ind++] << 8);
+				packet_len 	|= frame_data[ind++];
+				crc 		= (frame_data[ind++] << 8);
+				crc 		|= frame_data[ind++];
+
+				uint16_t chk_crc = crc16(vesc->vesc_data.vesc_rx_buf, packet_len);
+				// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
+
+				if(crc != chk_crc){
+					ROS_INFO("Error: Checksum doesn't match");
+					// error in transmission
+					break;
+				}
+
+				ind = 0;
+				int comm_cmd = vesc->vesc_data.vesc_rx_buf[ind++];
+				switch(comm_cmd){
+					case COMM_GET_VALUES:{
+						vesc->vesc_data.timestamp 	= ros::Time::now();
+						vesc->vesc_data.motor_type 	= "vesc";
+						vesc->vesc_data.can_id 		  = vesc_id;
+
+						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
+
+						break;}
+					}
+
+				break;
+			}
+				// indicates the end of the cmd buffer
+		}
+	}else{
+		// we can assume this is either UWB message or Quad Encoder message
+		rx_id = rx_id & CAN_SFF_MASK;
+		uint8_t type = frame->data[0];
+		if(type == 0 || type == 0xFF){
+			// yes this is an UWB msg
+			hwctrl::UwbData uwb_msg;
+			anchor_frames++;
+			float distance;
+			int16_t confidence;
+			memcpy(&distance, frame->data+2, 4);
+			memcpy(&confidence, frame->data+6, 2);
+			// ROS_INFO("Distance from node %d to anchor %d: %.3f m", rx_id, dist_data.anchor_id, dist_data.distance);
+			uwb_msg.timestamp 	= ros::Time::now();
+			uwb_msg.node_id 	= rx_id;
+			uwb_msg.anchor_id 	= frame->data[1];
+			uwb_msg.distance 	= distance;
+			uwb_msg.confidence = confidence;
+
+			uwb_pub.publish(uwb_msg);
+		}else{
+			// quad encoder msg
+		}
+	}
+} */
+
+////////////////////////////////////////////////////////////////////////////////
+// SENSOR STUFF
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * thread to do sensor things
+ */
+void sensors_thread(SensorIf* sensor_if){
+	ROS_INFO("Starting sensors_thread");
+	ros::AsyncSpinner spinner(1, &(sensor_if->cb_queue));
+	spinner.start();
 	while(ros::ok()){
-		ROS_INFO("Checking limit switches");
-		ros::Duration(2).sleep();
-		// ros::spinOnce();
+		// check which UWB nodes have anchor data ready. read and publish them
+		for(auto node = sensor_if->uwb_nodes.begin(); node != sensor_if->uwb_nodes.end(); ++node){
+			int n_msgs = 4;
+			hwctrl::UwbData uwb_msgs[n_msgs] = {};
+			n_msgs = node->get_msgs_from_anchors(uwb_msgs, n_msgs);
+			for(int i = 0; i < n_msgs; i++){
+				sensor_if->uwb_data_pub.publish(uwb_msgs[i]);
+			}
+		}
+
+		// poll limit switches
+
+		// publish any limit switches that have occurred
+
+		// read SPI bus sensors
+
+		// publish those
+		sensor_if->loop_rate.sleep();
+	}
+
+}
+
+/**
+ * SensorIf constructor
+ * creates publishers, subscribers, timers, opens interfaces, initializes GPIO, etc
+ */
+SensorIf::SensorIf(ros::NodeHandle n)
+: loop_rate(100), uwb_update_period(0.1) {
+	this->nh = n;
+
+	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
+  
+	this->can_rx_sub = this->nh.subscribe("can_frames_rx", 128, &SensorIf::can_rx_callback, this);
+
+	this->can_tx_pub = this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
+	this->sensor_data_pub = this->nh.advertise<hwctrl::SensorData>("sensor_data", 128);
+	this->limit_sw_pub = this->nh.advertise<hwctrl::LimitSwState>("limit_sw_states", 128);
+	this->uwb_data_pub = this->nh.advertise<hwctrl::UwbData>("localization_data", 1024);
+
+	this->spi_handle = spi_init("/dev/spidev0.0");
+	if(this->spi_handle < 0){
+		ROS_INFO("SPI init failed :(");
+	}else{
+		ROS_INFO("SPI init presumed successful");
+	}
+
+	int gpio_state = this->setup_gpio();
+	if(gpio_state != 0){
+		ROS_INFO("GPIO setup failed :(");
+	}else{
+		ROS_INFO("GPIO setup succeeded!");
+	}
+	// create the timer that will request data from the next UWB node
+	this->uwb_update_timer = this->nh.createTimer(this->uwb_update_period, &SensorIf::uwb_update_callback, this);
+}
+
+/**
+ * necessary setup of GPIO's
+ */
+int SensorIf::setup_gpio(){
+	return 0;
+}
+
+/**
+ * do things with new CAN messages, really for UWB and quadrature encoder data
+ */
+void SensorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
+	uint32_t rx_id = (uint32_t)frame->can_id;
+	uint32_t can_id = 0;
+	if((can_id = (rx_id & ~0xFF)) == 0){
+		// was NOT a VESC frame
+		// UWB frame or quad encoder frame
+		UwbNode* uwb_node = this->get_uwb_by_can_id(can_id);
+		if(uwb_node != NULL){
+			uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
+		}else{
+			// no UWB node matching this CAN ID, so must be our quadrature encoder
+			//this->quad_encoder.add_can_data(frame->data.data(), frame->can_dlc);
+		}
 	}
 }
 
-// callback for the VescData topic subscriber
-void HwMotorIf::vesc_data_callback(const canbus::VescData& msg){
-	FILE * pFile;
-	pFile = fopen(vesc_log_path.c_str(), "a");
-	// ID, TIME(s), VOLTAGE, CURRENT
-	ros::Time raw_time 	= msg.timestamp;
-	int id 				= msg.can_id;
-	float time_s 		= 1.0*raw_time.sec + 1.0*raw_time.nsec/10e9;
-	float volts 		= msg.v_in;
-	float current 		= msg.current_in;
-	fprintf(pFile, "%d,%f.3,%f.3,%f.3", id, time_s, volts, current);
+/**
+ * returns a pointer to the UWB node object that has the given CAN ID
+ */
+UwbNode* SensorIf::get_uwb_by_can_id(int can_id){
+	auto i = this->uwb_nodes.begin();
+	UwbNode* node = NULL;
+	while(i != this->uwb_nodes.end() && i->get_id() != can_id){
+		++i; // increment to next UWB Node
+		node = &(*i);
+	}
+	return node;
+}
 
-	// hwctrl::MotorData motor_data;
-	// HwMotor * motor;
-	
-	// motor_data.id = 0;
-	// motor_data.timestamp = msg.timestamp;
-	// motor_data.setpoint 	= 0.0;
+/**
+ * will be called by a timer
+ * when called, will send a remote request to the next UWB node to get ranging data
+ */
+void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
+	if(this->uwb_nodes.size() <= 0){
+		return;
+	}
+	UwbNode* nodes = this->uwb_nodes.data();
+	UwbNode* uwb_node = &(nodes[this->uwb_ind]);
+
+	boost::shared_ptr<hwctrl::CanFrame> can_msg(new hwctrl::CanFrame()); // empty can frame msg built as a shared pointer
+	can_msg->can_id  = uwb_node->id | CAN_RTR_FLAG | CAN_SFF_MASK; // can ID + remote request & std ID flags
+	can_msg->can_dlc = UWB_CAN_HDDR_SIZE + 4; // this won't really be used but whatever
+	this->can_tx_pub.publish(can_msg);
+
+	this->uwb_ind++;
+	if(this->uwb_ind >= this->uwb_nodes.size()){
+		this->uwb_ind = 0;
+	}
+}
+
+void SensorIf::get_sensors_from_csv(){
+	std::string ros_package_path(std::getenv("ROS_PACKAGE_PATH"));
+	std::istringstream path_stream(ros_package_path);
+
+	std::string src_dir_path;
+	std::getline(path_stream, src_dir_path, ':'); // get the first path
+	if(*(src_dir_path.end()) != '/'){
+		src_dir_path.push_back('/');
+	}
+	std::string config_file_path = src_dir_path.append(config_file_fname);
+
+	std::vector<std::vector<std::string>> csv = read_csv(config_file_path);
+	int line_num = 0;
+	int id_ind, name_ind, category_ind, device_type_ind, interface_ind, device_id_ind, aux_1_ind, aux_2_ind, aux_3_ind, aux_4_ind;
+	for(auto line = csv.begin(); line != csv.end(); ++line){
+		if(line_num == 0){
+			for(int i = 0; i < (*line).size(); i++){
+				if((*line)[i].compare(id_hddr)==0){
+					id_ind = i;
+				}else if((*line)[i].compare(name_hddr)==0){
+					name_ind = i;
+				}else if((*line)[i].compare(category_hddr)==0){
+					category_ind = i;
+				}else if((*line)[i].compare(device_type_hddr)==0){
+					device_type_ind = i;
+				}else if((*line)[i].compare(interface_hddr)==0){
+					interface_ind = i;
+				}else if((*line)[i].compare(device_id_hddr)==0){
+					device_id_ind = i;
+				}else if((*line)[i].compare(aux_1_hddr)==0){
+					aux_1_ind = i;
+				}else if((*line)[i].compare(aux_2_hddr)==0){
+					aux_2_ind = i;
+				}else if((*line)[i].compare(aux_3_hddr)==0){
+					aux_3_ind = i;
+				}else if((*line)[i].compare(aux_4_hddr)==0){
+					aux_4_ind = i;
+				}else{
+					// do nothing
+				}
+			}
+		}else{
+			if((*line)[category_ind].compare(category_sensor) == 0){
+				if( (*line)[device_type_ind].compare("uwb") == 0){
+					// this line is for an UWB node
+					uint32_t id = (uint32_t)std::stoi((*line)[device_id_ind]);
+					UwbNode uwb_node(id);
+					this->uwb_nodes.push_back(uwb_node);
+				}
+
+			}
+
+		}
+		line_num++;
+	}
 }

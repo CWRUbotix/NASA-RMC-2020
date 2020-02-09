@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   rospy
-  canbus
   message_generation
 )
 
@@ -22,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
+catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -51,7 +50,12 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  CanFrame.msg
+  LimitSwState.msg
+  MotorData.msg
   SensorData.msg
+  UwbData.msg
+  VescData.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -133,7 +137,17 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(hwctrl src/hwctrl_node.cpp src/hwctrl.cpp src/parse_csv.cpp)
+add_executable(hwctrl 
+  src/hwctrl_node.cpp
+  src/hwctrl.cpp 
+  src/parse_csv.cpp
+  src/buffer.cpp
+  src/canbus.cpp
+  src/crc.cpp
+  src/uwb.cpp
+  src/vesc.cpp
+  src/spi.cpp
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

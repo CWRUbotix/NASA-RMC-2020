@@ -75,8 +75,11 @@ int send_short_buf(int sock, int target_id, int self_id, int command, uint8_t* d
 	frame.data[ind++] = self_id;
 	frame.data[ind++] = 0x00;
 	frame.data[ind++] = command;
-	memcpy(frame.data+ind, data, 4);
-	ind += 4;
+	frame.data[ind++] = data[0];
+	frame.data[ind++] = data[1];
+	frame.data[ind++] = data[2];
+	frame.data[ind++] = data[3];
+
 	frame.can_dlc = ind;
 	int nbytes = write(sock, &frame, sizeof(struct can_frame));
 	if(nbytes > 0){
@@ -86,6 +89,25 @@ int send_short_buf(int sock, int target_id, int self_id, int command, uint8_t* d
 	}
 }
 
+int set_rpm_can(int sock, int target_id, int self_id, float rpm){
+	int n_rpm = (int)rpm;
+	struct can_frame frame;
+	frame.can_id = (CAN_PACKET_SET_RPM << 8) | target_id | CAN_EFF_FLAG;
+	
+	// memcpy(frame.data, &n_rpm, sizeof(n_rpm));
+	frame.data[0] = (uint8_t)(n_rpm >> 24);
+	frame.data[1] = (uint8_t)(n_rpm >> 16);
+	frame.data[2] = (uint8_t)(n_rpm >> 8);
+	frame.data[3] = (uint8_t)(n_rpm & 0xFF);
+	frame.can_dlc = sizeof(n_rpm);
+	int nbytes = write(sock, &frame, sizeof(struct can_frame));
+
+	if(nbytes > 0){
+		return 0;
+	}else{
+		return 1;
+	}
+}
 
 int set_rpm(int sock, int target_id, int self_id, float rpm){
 	uint8_t data[4] = {};
@@ -130,8 +152,8 @@ void fill_msg_from_status_packet(uint8_t* frame_buf, canbus::VescData &motor_msg
 }
 
 bool VescCan::set_vesc_callback(canbus::SetVescCmd::Request& request, canbus::SetVescCmd::Response& response){
-	ROS_INFO("Setting VESC %d to %f eRPM",request.can_id, request.e_rpm);
-	int retval = set_rpm(this->can_sock, request.can_id, this->self_can_id, request.e_rpm);
+	// ROS_INFO("Setting VESC %d to %f eRPM",request.can_id, request.e_rpm);
+	int retval = set_rpm_can(this->can_sock, request.can_id, this->self_can_id, request.e_rpm);
 	if(retval == 0){
 		response.status = 0;
 		response.timestamp = ros::Time::now();

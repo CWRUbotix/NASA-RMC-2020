@@ -120,9 +120,9 @@ class Visualizer:
                 line_robot.set_xdata(points[:, 0])
                 line_robot.set_ydata(points[:, 1])
 
-            # img.set_data(self.global_grid)
-            # img.set_extent(self.grid_extent)
-            ax1.imshow(self.global_grid, cmap='Reds', extent=self.grid_extent)
+            img.set_data(self.global_grid)
+            img.set_extent(self.grid_extent)
+            img.autoscale()
 
             length = len(self.target_vels)
             x_values = np.arange(length)

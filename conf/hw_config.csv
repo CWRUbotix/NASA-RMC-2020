@@ -5,9 +5,10 @@ id,name,category,device_type,interface,device_id,aux_1,aux_2,aux_3,aux_4,units,n
 3,EXC BELT DRIVE,motor,vesc,can,8,0,245,140,50,rpm,aux_2=gear_reduction*pole_pairs | aux_3=max_rpm | aux_4=max_acceleration
 4,EXC PORT ACTUATOR,motor,sabertooth,uart,128,0,0,60,0,degrees,aux_1=which_motor | aux_2=min_pos | aux_3=max_pos
 5,EXC STARBOARD ACTUATOR,motor,sabertooth,uart,128,1,0,60,0,degrees,aux_1=which_motor | aux_2=min_pos | aux_3=max_pos
-6,EXC TRANSLATION DRIVE,motor,sabertooth,uart,129,0,-45,780,0,millimeters,aux_1=which_motor (on controller) | aux_2=min_pos | aux3=max_pos
+6,EXC TRANSLATION DRIVE,motor,vesc,can,9,0,100,-45,780,millimeters,aux_2=gear_reduction*pole_pairs | aux_3=min_position | aux_4=max_position
 7,DEP AUX MOTOR,motor,sabertooth,uart,129,1,0,0,0,unknown,aux_1=which_motor | rest are unused
 8,UWB NODE 1,sensor,uwb,can,1,0,0,0,0,meters,aux values not yet used
 9,UWB NODE 2,sensor,uwb,can,2,0,0,0,0,meters,aux values not yet used
 10,UWB NODE 3,sensor,uwb,can,3,0,0,0,0,meters,aux values not yet used
 11,UWB NODE 4,sensor,uwb,can,4,0,0,0,0,meters,aux values not yet used
+12,EXC QUADRATURE ENCODER,sensor,quad_enc,can,10,0,0,0,0,none,aux values not yet used
