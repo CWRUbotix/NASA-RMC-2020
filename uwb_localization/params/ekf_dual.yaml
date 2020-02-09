@@ -8,6 +8,7 @@ ekf_se_odom:
   transform_timeout: 0.0
   print_diagnostics: true
   debug: false
+  dynamic_process_noise_covariance: true
 
   map_frame: map
   odom_frame: odom
@@ -18,8 +19,8 @@ ekf_se_odom:
   imu0_config: [false, false, false,
                 false, false, true,
                 false, false, false,
-                true, true,  true,
-                true, true,  true]
+                false, false,  true,
+                true, true,  false]
   imu0_nodelay: false
   imu0_differential: false
   imu0_relative: false
@@ -79,7 +80,8 @@ ekf_se_map:
   transform_timeout: 0.0
   print_diagnostics: true
   publish_acceleration: true
-  debug: false
+  debug: true
+  dynamic_process_noise_covariance: true
 
   map_frame: map
   odom_frame: odom
@@ -90,7 +92,7 @@ ekf_se_map:
   imu0_config: [false, false, false,
                 false,  false, false,
                 false, false, false,
-                true,  true,  true,
+                false, false,  true,
                 true,  true,  true]
   imu0_nodelay: false
   imu0_differential: false

@@ -2,7 +2,7 @@
 
 import rospy
 from autonomy.msg import transitPath, transitControlData
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry, OccupancyGrid
 from scipy.spatial.transform import Rotation as R
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 import numpy as np
@@ -40,7 +40,7 @@ class Visualizer:
         rospy.Subscriber("odometry/filtered_map", Odometry, self.receiveOdometry)
         rospy.Subscriber("transitPath", transitPath, self.receivePath)
         rospy.Subscriber("transitControlData", transitControlData, self.receiveControlData)
-        rospy.Subscriber("global_occupancy_grid", transitControlData, self.receiveControlData)
+        rospy.Subscriber("global_occupancy_grid", OccupancyGrid, self.recieveOccupancyGrid)
 
     def receiveOdometry(self, msg):
         pose = msg.pose.pose
@@ -120,8 +120,9 @@ class Visualizer:
                 line_robot.set_xdata(points[:, 0])
                 line_robot.set_ydata(points[:, 1])
 
-            img.set_data(self.global_grid)
-            img.set_extent(self.grid_extent)
+            # img.set_data(self.global_grid)
+            # img.set_extent(self.grid_extent)
+            ax1.imshow(self.global_grid, cmap='Reds', extent=self.grid_extent)
 
             length = len(self.target_vels)
             x_values = np.arange(length)

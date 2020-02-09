@@ -128,16 +128,16 @@ class IMU:
     def compose_imu_msg(self):
         header = Header()
         orientation_quat = R.from_euler('xyz', self.orientation).as_quat()
-        orientation_cov = np.ones(9) * 1e-9
+        orientation_cov = np.ravel(np.eye(3) * 1e-9)
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
         angular_vel_msg = Vector3(self.angular_velocity[0] + self.angular_velocity_offset[0],
                                   self.angular_velocity[1] + self.angular_velocity_offset[1],
                                   self.angular_velocity[2] + self.angular_velocity_offset[2])
-        angular_vel_cov = np.ones(9) * 1e-9
+        angular_vel_cov = np.ravel(np.eye(3) * 1e-9)
         accel_msg = Vector3(self.acceleration[0] + self.acceleration_offset[0],
                             self.acceleration[1] + self.acceleration_offset[1],
-                            self.acceleration[2])
-        accel_cov = np.ones(9) * 1e-9
+                            -self.acceleration[2])
+        accel_cov = np.ravel(np.eye(3) * 1e-9)
         header.stamp = rospy.Time.now()
         header.frame_id = 'base_link'
         imu_msg = Imu()
@@ -163,7 +163,7 @@ class IMU:
         #print('Port:', self.port_encoder, 'Starboard:', self.starboard_encoder)
         point_msg = Point(0, 0, 0)
         orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat()
-        pose_cov = np.ones(36) * 0.0
+        pose_cov = np.ravel(np.eye(6) * 0.0)
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
         pose_with_cov = PoseWithCovariance()
         pose_with_cov.pose = Pose(point_msg, quat_msg)
