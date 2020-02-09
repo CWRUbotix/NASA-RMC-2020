@@ -4,48 +4,36 @@ int main(int argc, char** argv){
 	ROS_INFO("Hardware Controller Node");
 	ros::init(argc, argv, "hwctrl");
 	ros::NodeHandle n;
-	ros::Rate loop_rate(1); // 5ms loop rate
-	ros::AsyncSpinner spinner(1); // create multithreaded spinner
 
-	ros::Publisher limit_switch_pub = n.advertise<std_msgs::Int32>("limit_switch", 16);
+	// CREATE THE CanbusIf OBJECT
+	CanbusIf canbus_if(n);
 
-	// client which sends commands to drive the VESC's
-	ros::ServiceClient set_vesc_client = n.serviceClient<canbus::SetVescCmd>("SetVesc");
+	// CREATE THE SensorIf OBJECT
+	SensorIf sensor_if(n);
 
-	// make the HwMotorIf object
-	HwMotorIf motor_if;
-	motor_if.vesc_client = set_vesc_client;
-
-	// DO FILE STUFF
-	std::string ros_package_path(std::getenv("ROS_PACKAGE_PATH"));
-	std::istringstream path_stream(ros_package_path);
-
-	std::string src_dir_path;
-	std::getline(path_stream, src_dir_path, ':'); // get the first path
-	if(*(src_dir_path.end()) != '/'){
-		src_dir_path.push_back('/');
-	}
-	std::string config_file_path = src_dir_path.append(config_file_fname);
-	vesc_log_path = src_dir_path.append(vesc_log_fname);
-
-	// VESC DATA SUBSCRIBER
-	// ros::Subscriber vesc_data_sub = n.subscribe("VescData", 1, &HwMotorIf::vesc_data_callback, &motor_if);
-
-	// make motor structs
-	motor_if.get_motors_from_csv(config_file_path);
-
-	// server which provides the set_motor service
-	ros::ServiceServer set_motor_srv = n.advertiseService("SetMotor", &HwMotorIf::set_motor_callback, &motor_if);
+	// CREATE THE HwMotorIf OBJECT
+	HwMotorIf motor_if(n);
 
 	ROS_INFO("ROS init success");
 
 	ROS_INFO(motor_if.list_motors().c_str());
 
-	// MAIN LOOP
-	std::thread limit_sw_th_obj(limit_switch_thread, limit_switch_pub);
-	std::thread motors_thread(maintain_motors_thread, &motor_if);
+	// create spinners for each thread
+	// ros::AsyncSpinner canbus_spinner(1, &(canbus_if.cb_queue));
+	// ros::AsyncSpinner sensor_spinner(1, &(sensor_if.cb_queue));
+	// ros::AsyncSpinner motor_spinner(1, &(motor_if.cb_queue));
 
-	spinner.start();
+	// start the ROS spinners
+	// canbus_spinner.start();
+	// sensor_spinner.start();
+	// motor_spinner.start();
+
+	// start threads, each thread creates it's own spinner
+	std::thread sensor_thread_obj(sensors_thread, &sensor_if);
+	std::thread motors_thread_obj(maintain_motors_thread, &motor_if);
+	std::thread canbus_thread_obj(canbus_thread, &canbus_if);
+
+//	ros::spin(); // spin to handle this global callback queue
 
 	ros::waitForShutdown();
 	return 0;

@@ -59,6 +59,11 @@ int send_packet(int sock, int target_id, int self_id, uint8_t* packet, int len);
 int set_rpm(int sock, int target_id, int self_id, float rpm);
 
 /**
+ * Sets the RPM of VESC with target_id using CAN_PACKET_SET_RPM packet type
+ */
+int set_rpm_can(int sock, int target_id, int self_id, float rpm);
+
+/**
  * Sends COMM_GET_VALUES command to VESC with target_id
  */
 int get_values(int sock, int target_id, int self_id);
