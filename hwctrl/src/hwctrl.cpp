@@ -7,8 +7,8 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n)
  : loop_rate(1000) {
 	this->nh 				= n; 	// store a copy of the node handle passed by value
 
-  this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
-
+	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
+	
 	this->get_motors_from_csv(); //config_file_fname
 
 	// PUBLISHERS
@@ -28,7 +28,7 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n)
 /**
  * any CAN data of interest is from VESC's
  */
-void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
+void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 	uint32_t rx_id = (uint32_t)frame->can_id;
 
 	if((rx_id & ~0xFF) != 0){
@@ -111,11 +111,11 @@ void HwMotorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame
 	}
 }
 
-void HwMotorIf::sensor_data_callback(const hwctrl::SensorData& data){
+void HwMotorIf::sensor_data_callback(hwctrl::SensorData data){
 	// determine if this sensor is useful to us;
 }
 
-void HwMotorIf::limit_sw_callback(const boost::shared_ptr<hwctrl::LimitSwState>& state){
+void HwMotorIf::limit_sw_callback(boost::shared_ptr<hwctrl::LimitSwState> state){
 	// figure out which motor this corresponds to and stop it!
 }
 
@@ -142,6 +142,8 @@ HwMotor* HwMotorIf::get_vesc_from_can_id(int can_id){
 
 void maintain_motors_thread(HwMotorIf* motor_if){
 	ROS_INFO("Starting maintain_motors_thread");
+	ros::AsyncSpinner spinner(1, &(motor_if->cb_queue));
+	spinner.start();	
 	while(ros::ok()){
 		motor_if->maintain_next_motor();
 		motor_if->loop_rate.sleep();
@@ -178,7 +180,7 @@ void HwMotorIf::maintain_next_motor(){
 			}
 
 			float eRPM = motor->rpm_coef * motor->last_setpoint;
-			const boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
+			boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
 
 			if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
 				// presumed success
@@ -460,6 +462,8 @@ void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
  */
 void sensors_thread(SensorIf* sensor_if){
 	ROS_INFO("Starting sensors_thread");
+	ros::AsyncSpinner spinner(1, &(sensor_if->cb_queue));
+	spinner.start();
 	while(ros::ok()){
 		// check which UWB nodes have anchor data ready. read and publish them
 		ROS_INFO("Checking for UWB data...");
@@ -493,7 +497,7 @@ SensorIf::SensorIf(ros::NodeHandle n)
 : loop_rate(100), uwb_update_period(0.1) {
 	this->nh = n;
 
-  this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
+	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
   
 	this->can_rx_sub = this->nh.subscribe("can_frames_rx", 128, &SensorIf::can_rx_callback, this);
 
@@ -529,7 +533,7 @@ int SensorIf::setup_gpio(){
 /**
  * do things with new CAN messages, really for UWB and quadrature encoder data
  */
-void SensorIf::can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
+void SensorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 	uint32_t rx_id = (uint32_t)frame->can_id;
 	uint32_t can_id = 0;
 	if((can_id = (rx_id & ~0xFF)) == 0){
@@ -563,18 +567,21 @@ UwbNode* SensorIf::get_uwb_by_can_id(int can_id){
  * when called, will send a remote request to the next UWB node to get ranging data
  */
 void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
-		UwbNode* nodes = this->uwb_nodes.data();
-		UwbNode* uwb_node = &(nodes[this->uwb_ind]);
+	if(this->uwb_nodes.size() <= 0){
+		return;
+	}
+	UwbNode* nodes = this->uwb_nodes.data();
+	UwbNode* uwb_node = &(nodes[this->uwb_ind]);
 
-		boost::shared_ptr<hwctrl::CanFrame> can_msg(new hwctrl::CanFrame()); // empty can frame msg built as a shared pointer
-		can_msg->can_id  = uwb_node->id | CAN_RTR_FLAG | CAN_SFF_MASK; // can ID + remote request & std ID flags
-		can_msg->can_dlc = UWB_CAN_HDDR_SIZE + 4; // this won't really be used but whatever
-		this->can_tx_pub.publish(can_msg);
+	boost::shared_ptr<hwctrl::CanFrame> can_msg(new hwctrl::CanFrame()); // empty can frame msg built as a shared pointer
+	can_msg->can_id  = uwb_node->id | CAN_RTR_FLAG | CAN_SFF_MASK; // can ID + remote request & std ID flags
+	can_msg->can_dlc = UWB_CAN_HDDR_SIZE + 4; // this won't really be used but whatever
+	this->can_tx_pub.publish(can_msg);
 
-		this->uwb_ind++;
-		if(this->uwb_ind >= this->uwb_nodes.size()){
-			this->uwb_ind = 0;
-		}
+	this->uwb_ind++;
+	if(this->uwb_ind >= this->uwb_nodes.size()){
+		this->uwb_ind = 0;
+	}
 }
 
 void SensorIf::get_sensors_from_csv(){
@@ -620,7 +627,12 @@ void SensorIf::get_sensors_from_csv(){
 			}
 		}else{
 			if((*line)[category_ind].compare(category_sensor) == 0){
-				// make a motor struct and populate with data
+				if( (*line)[device_type_ind].compare("uwb") == 0){
+					// this line is for an UWB node
+					uint32_t id = (uint32_t)std::stoi((*line)[device_id_ind]);
+					UwbNode uwb_node(id);
+					this->uwb_nodes.push_back(uwb_node);
+				}
 
 			}
 

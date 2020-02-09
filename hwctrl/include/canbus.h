@@ -66,7 +66,7 @@ public:
 	bool sock_ready = false; 		// flag that says if the socket is opened, etc.
 	ros::Rate loop_rate; 		// 10ms sleep in each loop
 	int read_can_frames(); 			// publish received frames with can_rx_pub
-	void can_tx_cb(const boost::shared_ptr<hwctrl::CanFrame>& frame);
+	void can_tx_cb(boost::shared_ptr<hwctrl::CanFrame> frame);
 };
 
 void canbus_thread(CanbusIf* canbus_if);

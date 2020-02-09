@@ -5,6 +5,8 @@
  */
 void canbus_thread(CanbusIf* canbus_if){
 	ROS_INFO("Starting canbus_thread");
+	ros::AsyncSpinner spinner(1, &(canbus_if->cb_queue));
+	spinner.start();
 	while(ros::ok()){
 		int frames_sent = canbus_if->read_can_frames();
 		canbus_if->loop_rate.sleep(); //
@@ -18,7 +20,7 @@ void canbus_thread(CanbusIf* canbus_if){
  */
 CanbusIf::CanbusIf(ros::NodeHandle n)
 : loop_rate(100) {
-	this->nh = n;
+	//this->nh = n;
 
 	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
 
@@ -109,7 +111,7 @@ int CanbusIf::read_can_frames(){
 	return retval;
 }
 
-void CanbusIf::can_tx_cb(const boost::shared_ptr<hwctrl::CanFrame>& frame){
+void CanbusIf::can_tx_cb(boost::shared_ptr<hwctrl::CanFrame> frame){
 	ROS_INFO("Writing can frame to CAN bus");
 	struct can_frame f;
 	f.can_id = frame->can_id;

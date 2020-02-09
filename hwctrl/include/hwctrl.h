@@ -146,10 +146,10 @@ public:
 	std::string list_motors();
 	void maintain_next_motor();
 	int get_num_motors();
-	void vesc_data_callback(const boost::shared_ptr<hwctrl::VescData>& msg);
-	void can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame); 	// to process received can frames
-	void sensor_data_callback(const hwctrl::SensorData& data);
-	void limit_sw_callback(const boost::shared_ptr<hwctrl::LimitSwState>& state);
+	void vesc_data_callback(boost::shared_ptr<hwctrl::VescData> msg);
+	void can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame); 	// to process received can frames
+	void sensor_data_callback(hwctrl::SensorData data);
+	void limit_sw_callback(boost::shared_ptr<hwctrl::LimitSwState> state);
 	HwMotor* get_vesc_from_can_id(int can_id);
 };
 
@@ -175,7 +175,7 @@ public:
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
 	ros::Duration uwb_update_period; // how long to wait before we request data from next UWB node
 	ros::Rate loop_rate; 		// 10ms sleep in every loop
-	void can_rx_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame); 			// do things when
+	void can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame); 			// do things when
 	int setup_gpio();
 	void uwb_update_callback(const ros::TimerEvent&);
 };
