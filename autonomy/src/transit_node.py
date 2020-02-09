@@ -3,6 +3,7 @@ import rospy
 # from tf.transformations import euler_from_quaternion
 from scipy.spatial.transform import Rotation as R
 from hci.msg import motorCommand
+from hwctrl.srv import SetMotor, SetMotorRequest
 from autonomy.msg import goToGoal, transitPath, transitControlData
 from nav_msgs.msg import OccupancyGrid
 from autonomy.srv import RobotState
@@ -32,6 +33,7 @@ wheel_radius = 0.2286
 class TransitNode:
     def __init__(self, visualize=False):
         self.motor_pub = rospy.Publisher("motorCommand", motorCommand, queue_size=100)
+        self.motor_srv = rospy.ServiceProxy("set_motor", SetMotor)
         self.path_pub = rospy.Publisher("transitPath", transitPath, queue_size=4)
         self.control_data_pub = rospy.Publisher("transitControlData", transitControlData, queue_size=4)
 
@@ -131,8 +133,20 @@ class TransitNode:
                 right_speed += 0.025 * right_diff
                 true_rpm = effective_rpm(left=left_speed, right=right_speed)
             '''
-            self.motor_pub.publish(motorID=0, value=left_speed)
-            self.motor_pub.publish(motorID=1, value=right_speed)
+            left_req = SetMotorRequest()
+            right_req = SetMotorRequest()
+            left_req.id = 0
+            right_req.id = 1
+            left_req.acceleration = 25
+            right_req.acceleration = 25
+            left_req.setpoint = left_speed
+            right_req.setpoint = right_speed
+
+            self.motor_srv(left_req)
+            self.motor_srv(right_req)
+
+            #self.motor_pub.publish(motorID=0, value=left_speed)
+            #self.motor_pub.publish(motorID=1, value=right_speed)
 
             self.publish_control_data()
 

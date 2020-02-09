@@ -122,6 +122,7 @@ class Visualizer:
 
             img.set_data(self.global_grid)
             img.set_extent(self.grid_extent)
+            img.autoscale()
 
             length = len(self.target_vels)
             x_values = np.arange(length)
