@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 import rospy
 
 #from client.srv import motorCommand
@@ -7,11 +7,10 @@ from hci.msg import sensorValue
 from hci.msg import motorCommand
 from hci.msg import driveCommand
 import hwctrl.srv
-
-set_motor = rospy.ServiceProxy("set_motor", hwctrl.srv.SetMotor)
+from hwctrl.msg import SetMotorMsg
 
 node_name = 'robotInterface'
-motorCommandTopic = 'motorCommand'
+motorCommandTopic = 'motor_setpoints'
 driveCommandTopic = 'driveCommand'
 sensorValueTopic = 'sensorValue'
 
@@ -56,35 +55,45 @@ sensorValueMap = {
 
 
 def sendMotorCommand(motorID, value, accel=35):
-    req = hwctrl.srv.SetMotorRequest()
-    req.id = motorID
-    req.setpoint = value
-    req.acceleration = accel
-    resp = set_motor(req)
+    motor_msg = SetMotorMsg()
+    motor_msg.id = motorID
+    motor_msg.setpoint = value
+    motor_msg.acceleration = accel
+    try:
+        pub = rospy.Publisher(motorCommandTopic, SetMotorMsg, queue_size=1)
+        pub.publish(motor_msg)
+    except rospy.ROSInterruptException as e:
+        print(e.getMessage())
+        pass
     return True
 
 
 def sendDriveCommand(direction, value, accel=35):
-    left_req = hwctrl.srv.SetMotorRequest()
-    right_req = hwctrl.srv.SetMotorRequest()
-    left_req.id = 0
-    right_req.id = 1
-    left_req.acceleration = accel
-    right_req.acceleration = accel
+    left_msg = SetMotorMsg()
+    right_msg = SetMotorMsg()
+    left_msg.id = 0
+    right_msg.id = 1
+    left_msg.acceleration = accel
+    right_msg.acceleration = accel
     if direction == 0:  # forward
-        left_req.setpoint = value
-        right_req.setpoint = value
+        left_msg.setpoint = value
+        right_msg.setpoint = value
     elif direction == 1:  # backward
-        left_req.setpoint = -value
-        right_req.setpoint = -value
+        left_msg.setpoint = -value
+        right_msg.setpoint = -value
     elif direction == 2:  # right
-        left_req.setpoint = value
-        right_req.setpoint = -value
+        left_msg.setpoint = value
+        right_msg.setpoint = -value
     elif direction == 3:  # left
-        left_req.setpoint = -value
-        right_req.setpoint = value
-    left_resp = set_motor(left_req)
-    right_req = set_motor(right_req)
+        left_msg.setpoint = -value
+        right_msg.setpoint = value
+    try:
+        pub = rospy.Publisher(motorCommandTopic, SetMotorMsg, queue_size=2)
+        pub.publish(left_msg)
+        pub.publish(right_msg)
+    except rospy.ROSInterruptException as e:
+        print(e.getMessage())
+        pass
     return True
 
 def sensorValueCallback(data):

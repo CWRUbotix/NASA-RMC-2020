@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
-from canbus.msg import UwbData
+from hwctrl.msg import UwbData
 from triangulation import UltraWideBandNode
 
 from std_msgs.msg import Header
@@ -74,7 +74,7 @@ class LocalizationNode:
     def position_callback(self, msg):
         for node in self.nodes:
             if node.id == msg.node_id:
-                node.add_measurement(msg.anchor_id, msg.distance, msg.confidence)
+                node.add_measurement(msg.anchor_id, msg.distance, 0)
             node.get_position()
         avg_x = 0
         avg_y = 0

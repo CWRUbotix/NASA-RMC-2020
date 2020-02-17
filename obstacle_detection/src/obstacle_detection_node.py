@@ -80,7 +80,7 @@ class ObstacleDetectionNode:
             "roll": 0,
             # angle in degrees of sensor's roll (used for INU input - trig function for this is commented out by default).
             "azimuth": 0,  # sensor's yaw angle in degrees.
-            "elevation": -30,  # sensor's pitch angle in degrees.
+            "elevation": -10,  # sensor's pitch angle in degrees.
         }
 
         print('Booting up node...')
@@ -115,20 +115,51 @@ class ObstacleDetectionNode:
         except Exception as e:
             print(e)
 
-    def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500, pcnt=0.1):
+    def apply_camera_matrix_orientation(self, pt):
+        """
+        Transforms the entire 3D point cloud according to the position of the Kinect.  Basically an efficient vectorized version of ``apply_camera_orientation``
+        Args:
+            pt (:obj:`numpy.float32`) : 3D point cloud represented by an [N, 3] Numpy array
+            CameraPosition (:obj:`dict`) : the current position and orientation of the Kinect sensor.  Either hardcoded in the ``CameraPosition`` dictionary, or computed from the best-fit ground plane
+        Returns:
+            Updated point cloud represented as an [N, 3] numpy array in correct orientation to the Kinect
+        """
+        # Kinect Sensor Orientation Compensation
+        # bacically this is a vectorized version of applyCameraOrientation()
+        # uses same trig to rotate a vertex around a gimbal.
+        def rotatePoints(ax1, ax2, deg):
+            # math to rotate vertexes around a center point on a plane.
+            hyp = np.sqrt(pt[:, ax1] ** 2 + pt[:, ax2] ** 2) # Get the length of the hypotenuse of the real-world coordinate from center of rotation, this is the radius!
+            d_tan = np.arctan2(pt[:, ax2], pt[:, ax1]) # Calculate the vertexes current angle (returns radians that go from -180 to 180)
+
+            cur_angle = np.degrees(d_tan) % 360 # Convert radians to degrees and use modulo to adjust range from 0 to 360.
+            new_angle = np.radians((cur_angle + deg) % 360) # The new angle (in radians) of the vertexes after being rotated by the value of deg.
+
+            pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
+            pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
+
+        #rotatePoints(1, 2, CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
+        rotatePoints(0, 1, self.CameraPosition['elevation']) #rotate on the X&Z plane
+        #rotatePoints(0, 1, self.CameraPosition['azimuth']) #rotate on the X&Y
+
+        # Apply offsets for height and linear position of the sensor (from viewport's center)
+        #pt[:] += np.float_([CameraPosition['x'], CameraPosition['y'], CameraPosition['z']])
+        return pt
+
+    def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500, pcnt=0):
         # TODO: project points onto ground plane based on Realsense IMU?
         proj = xyz_arr[..., [0, 2]]  # take only the X and Z components of point cloud
         proj_img = np.zeros((4500, 4500))
         indices = np.int32(proj * 1000)
         try:
-            indices[..., 1] += 4500 // 2
+            #indices[..., 1] += 4500 // 2
             indices[..., 0] += 4500 // 2
             indices = np.clip(indices, 0, 4499)
             proj_img[indices[..., 0], indices[..., 1]] = 255
             new_size = 4500 // resize_factor
-            proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
             proj_img = cv2.rotate(proj_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            _, proj_img = cv2.threshold(proj_img, int(255 * pcnt), 255, cv2.THRESH_TOZERO)
+            proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
+            #_, proj_img = cv2.threshold(proj_img, int(255 * pcnt), 255, cv2.THRESH_TOZERO)
         except ValueError:
             pass
         return np.uint8(proj_img)
@@ -151,6 +182,7 @@ class ObstacleDetectionNode:
         # Pointcloud data to arrays
         v, t = points.get_vertices(), points.get_texture_coordinates()
         xyz_arr = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+        xyz_arr = self.apply_camera_matrix_orientation(xyz_arr)
         texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  #
 
         out.fill(0)
@@ -171,6 +203,9 @@ class ObstacleDetectionNode:
 
         rocks = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] >= self.ground_plane_height + self.tolerance])
         holes = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] < self.ground_plane_height - self.tolerance])
+        #rocks = self.project_point_cloud_onto_plane(xyz_arr)
+        #holes = self.project_point_cloud_onto_plane(xyz_arr)
+
 
         rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size))
         hole_grid = self.gridify(holes, (self.grid_size, self.grid_size))

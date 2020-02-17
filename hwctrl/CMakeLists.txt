@@ -56,6 +56,7 @@ add_message_files(
   SensorData.msg
   UwbData.msg
   VescData.msg
+  SetMotorMsg.msg
 )
 
 ## Generate services in the 'srv' folder
