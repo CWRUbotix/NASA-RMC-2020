@@ -5,20 +5,17 @@
 	<!-- "true" if this launch file is being run from on the robot -->
 	<arg name="launch_from_robot" value="$(eval '192.168.0.100' in optenv('ROS_IP'))"/>
 	
-	<machine name="robot" address="192.168.0.100" user="cwrubotix" password="cwrubotix" default="never"/>
+	<machine name="robot" address="192.168.0.100" user="cwrubotix" password="cwrubotix" default="never" env-loader="/home/cwrubotix/my_env_setup.sh"/>
 	
 	<group unless="$(arg no_robot)">
 		<group if="$(arg launch_from_robot)">
-			<node name="transit_node" pkg="autonomy" type="transit_node.py" launch-prefix="xterm -e"/>
-			<node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/>
+			<node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
 			<node name="robot_state_node" pkg="autonomy" type="robot_state.py" output="screen"/>
 		</group>
 		<group unless="$(arg launch_from_robot)">
-			<node machine="robot" name="transit_node" pkg="autonomy" type="transit_node.py" launch-prefix="xterm -e"/>
-			<node machine="robot" name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/>
+			<!-- launch-prefix="xterm -e" -->
+			<node machine="robot" name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
 			<node machine="robot" name="robot_state_node" pkg="autonomy" type="robot_state.py" output="screen"/>
-			<node name="visualizer_node" pkg="autonomy" type="visualizer.py"/>
-
 		</group>
 	</group>
 	<group if="$(arg no_robot)">
