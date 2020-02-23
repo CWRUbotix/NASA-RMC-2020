@@ -35,6 +35,8 @@ config.enable_stream(rs.stream.color,
                      rospy.get_param('realsense_img_w'),
                      rs.format.bgr8,
                      rospy.get_param('realsense_fps'))
+config.enable_stream(rs.stream.accel, rs.format.motion_xyz32f, 200)
+config.enable_stream(rs.stream.gyro, rs.format.motion_xyz32f, 200)
 
 # Start streaming
 pipeline.start(config)
@@ -63,6 +65,8 @@ class ObstacleDetectionNode:
         self.grid_size = rospy.get_param('grid_size')
         self.tolerance = rospy.get_param('ground_tolerance')
         self.kernel_sigma = 1
+        self.first_frame = True # initial IMU reference frame
+        self.alpha = 0.98
         self.save_imgs = True
         self.save_data = True
         self.robot_x = []
