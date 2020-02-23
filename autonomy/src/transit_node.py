@@ -70,6 +70,12 @@ class TransitNode:
         rospy.spin()
 
     def go_to_goal(self, msg):
+
+        if msg.stop:
+            self.motor_srv(0, self.motor_acceleration, 0)
+            self.motor_srv(1, self.motor_acceleration, 0)
+            return
+
         goal = Position(msg.x, msg.y)
         rospy.loginfo("Received ({}, {})".format(goal.x, goal.y))
 

@@ -96,6 +96,14 @@ class PathFollower:
         S_dot = s_dot * config.G_s_dot
 
         offset = self.get_angular_offset()
+
+        position = self.state[:2]
+        line = self.global_path[self.index + 1] - position
+        dist = np.sqrt(line[0]**2 + line[1]**2)
+
+        if dist * np.tan(abs(offset)) < 0.1: # If offset results in less than 10cm deviation
+            offset = 0
+
         self.alpha = config.slowdown_controller.crisp_output(abs(offset))
 
         target_vel = 0
