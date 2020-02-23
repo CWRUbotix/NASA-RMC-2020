@@ -7,7 +7,7 @@ import math
 import rospy
 import math
 import matplotlib
-matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
+#matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import numpy as np
 import pandas as pd
 import pyrealsense2 as rs
@@ -33,10 +33,31 @@ class RealSenseIMU:
 
     def __init__(self):
         self.first_frame = True # initial IMU reference frame
-        self.alpha = 0.98
+        self.alpha = 0.5
         self.motion_topic = 'realsense_angle'
-        self.viz_dir = 'realsense_angle/'
-        self.window = 5
+        self.visualize = True
+        self.window = 20
+
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+
+        self.x_line = self.ax.plot([0, 1], [0, 0], [0, 0], label='x')[0]
+        self.y_line = self.ax.plot([0, 0], [0, 1], [0, 0], label='y')[0]
+        self.z_line = self.ax.plot([0, 0], [0, 0], [0, 1], label='z')[0]
+
+        self.ax.set_xlim(-1.5, 1.5)
+        self.ax.set_ylim(-1.5, 1.5)
+        self.ax.set_zlim(-1.5, 1.5)
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.ax.set_zlabel('Z')
+        self.ax.legend(loc='best')
+        #self.ax.hold(True)
+
+        plt.show(False)
+        plt.draw()
+
+        self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
 
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
@@ -105,38 +126,45 @@ class RealSenseIMU:
                 combinedangleY = np.mean(ys)
                 combinedangleZ = np.mean(zs)
 
-                print("Angle -  X: " + str(round(combinedangleX,2)) + "   Y: " + str(round(combinedangleY,2)) + "   Z: " + str(round(combinedangleZ,2)))
-
-                fig = plt.figure()
-                ax = fig.add_subplot(111, projection='3d')
-
-                r = R.from_euler('zyx', [combinedangleX, combinedangleY, combinedangleZ])
-                x_new = r.apply(np.array([1, 0, 0]))
-                y_new = r.apply(np.array([0, 1, 0]))
-                z_new = r.apply(np.array([0, 0, 1]))
-
-                ax.plot([0, x_new[0]], [0, x_new[1]], [0, x_new[2]], label='x')
-                ax.plot([0, y_new[0]], [0, y_new[1]], [0, y_new[2]], label='y')
-                ax.plot([0, z_new[0]], [0, z_new[1]], [0, z_new[2]], label='z')
-
-                ax.set_xlim(-1.5, 1.5)
-                ax.set_ylim(-1.5, 1.5)
-                ax.set_zlim(-1.5, 1.5)
-                ax.set_xlabel('X')
-                ax.set_ylabel('Y')
-                ax.set_zlabel('Z')
-                ax.legend(loc='best')
-                #ax.plot([0, combinedangleX], [0, combinedangleY], [0, combinedangleZ])
-
-                fig.savefig(self.viz_dir + '%d.png' % len(os.listdir(self.viz_dir)))
-                plt.close()
-
                 try:
                     pub = rospy.Publisher('realsense_orientation', Vector3, queue_size=1)
                     pub.publish(Vector3(combinedangleX, combinedangleY, combinedangleZ))
                 except rospy.ROSInterruptException as e:
                     print(e.getMessage())
                     pass
+
+                xs = []
+                ys = []
+                zs = []
+
+                #print("Angle -  X: " + str(round(combinedangleX,2)) + "   Y: " + str(round(combinedangleY,2)) + "   Z: " + str(round(combinedangleZ,2)))
+                if self.visualize:
+                    r = R.from_euler('zyx', [combinedangleX, combinedangleY, combinedangleZ])
+                    x_new = r.apply(np.array([1, 0, 0]))
+                    y_new = r.apply(np.array([0, 1, 0]))
+                    z_new = r.apply(np.array([0, 0, 1]))
+
+                    # restore background
+                    self.fig.canvas.restore_region(self.background)
+
+                    # redraw just the points
+                    self.x_line.set_xdata([0, x_new[0]])
+                    self.x_line.set_ydata([0, x_new[1]])
+                    self.x_line.set_3d_properties([0, x_new[2]])
+                    #self.ax.draw_artist(self.x_line)
+                    self.y_line.set_xdata([0, y_new[0]])
+                    self.y_line.set_ydata([0, y_new[1]])
+                    self.y_line.set_3d_properties([0, y_new[2]])
+                    #self.ax.draw_artist(self.y_line)
+                    self.z_line.set_xdata([0, z_new[0]])
+                    self.z_line.set_ydata([0, z_new[1]])
+                    self.z_line.set_3d_properties([0, z_new[2]])
+                    #self.ax.draw_artist(self.z_line)
+
+                    # fill in the axes rectangle
+                    self.fig.canvas.blit(self.ax.bbox)
+                    plt.draw()
+                    plt.show(block=False)
 
 if __name__ == '__main__':
     try:
