@@ -90,7 +90,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 					// error in transmission
 					break;
 				}
-
+				
 				ind = 0;
 				int comm_cmd = vesc->vesc_data.vesc_rx_buf[ind++];
 				switch(comm_cmd){
@@ -100,7 +100,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 						vesc->vesc_data.can_id 		  = vesc_id;
 
 						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
-
+						
 						break;}
 					}
 
@@ -162,6 +162,15 @@ void HwMotorIf::maintain_next_motor(){
 		case(DEVICE_VESC):{
 			// ROS_INFO("Index: %d, Setpoint: %f", this->motor_ind, motor->setpoint);
 			if(motor->online){
+				// publish rpm data
+				hwctrl::MotorData msg;
+				msg.data_type = msg.rpm;
+				msg.id = motor->id;
+				msg.value = motor->vesc_data.rpm / motor->rpm_coef;
+				msg.timestamp = motor->vesc_data.timestamp;
+				// ROS_INFO("Publish to motor_data");
+				this->motor_data_pub.publish(msg);
+				
 				// figure out next velocity setpoint based on acceleration & last sent RPM
 				float delta 	=  motor->setpoint - motor->last_setpoint;
 				float dt 		= (float)(ros::Time::now().toSec() - motor->update_t.toSec());
@@ -178,7 +187,7 @@ void HwMotorIf::maintain_next_motor(){
 				}
 				motor->last_setpoint = motor->last_setpoint + delta; // the new setpoint based on delta
 			}else{
-				//ROS_INFO("Motor %d offline",motor->id);
+				// ROS_INFO("Motor %d offline",motor->id);
 			}
 
 			float eRPM = motor->rpm_coef * motor->last_setpoint;
@@ -193,6 +202,7 @@ void HwMotorIf::maintain_next_motor(){
 				ROS_INFO("I didn't think this could happen ...");
 				motor->online = false;
 			}
+			
 			break;}
 		case(DEVICE_SABERTOOTH):{
 
@@ -207,9 +217,11 @@ void HwMotorIf::maintain_next_motor(){
 
 void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
 	int id = msg.id;
+	if(id >= this->motors.size()){
+		return;
+	}
 	ROS_INFO("Setting motor %d to %f at %f", id, msg.setpoint, msg.acceleration);
 	HwMotor* motors = this->motors.data(); // pointer to our motor struct
-
 	motors[id].setpoint = msg.setpoint;
 	if(fabs(msg.acceleration) > motors[id].max_accel || fabs(msg.acceleration) == 0.0){
 		motors[id].accel_setpoint = motors[id].max_accel;
