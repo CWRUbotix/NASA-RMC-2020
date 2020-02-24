@@ -138,9 +138,9 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(hwctrl 
+add_executable(hwctrl
   src/hwctrl_node.cpp
-  src/hwctrl.cpp 
+  src/hwctrl.cpp
   src/parse_csv.cpp
   src/buffer.cpp
   src/canbus.cpp
@@ -148,6 +148,8 @@ add_executable(hwctrl
   src/uwb.cpp
   src/vesc.cpp
   src/spi.cpp
+  src/motors.cpp
+  src/sensors.cpp
 )
 
 ## Rename C++ executable without prefix
