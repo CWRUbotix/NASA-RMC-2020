@@ -24,7 +24,7 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 class GlobalOccupancyGrid:
 
     def __init__(self):
-        self.save_imgs = True
+        self.save_imgs = False
         self.save_data = True
         self.robot_x = []
         self.robot_y = []
@@ -75,8 +75,8 @@ class GlobalOccupancyGrid:
         self.robot_y.append(pose.position.y)
         quat = pose.orientation
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-        self.robot_pitch.append(euler[2])  # rotation about vertical z-axis
-        print('X: %.4f \tY: %.4f \tpitch: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
+        self.robot_pitch.append(euler[2] + math.pi)  # rotation about vertical z-axis
+        #print('X: %.4f \tY: %.4f \tpitch: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
 
     def has_localization_data(self):
         return len(self.robot_x) > 0 and len(self.robot_y) > 0 and len(self.robot_pitch) > 0
@@ -104,17 +104,20 @@ class GlobalOccupancyGrid:
                 np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), self.local_grid)
                 np.save('%s/%d.npy' % (self.data_dir + 'localization', len(os.listdir(self.data_dir + 'localization'))),
                         np.array([self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]]))
-            angle = self.robot_pitch[-1]
-            local_origin = np.array([0.41 + grid_size / 2 * msg.info.resolution, -0.13]).reshape(-1, 1)
+            angle = self.robot_pitch[-1] + math.pi/2 + math.pi/2  # angle between robot x and camera y axis
+            local_origin = np.array([grid_size / 2 * msg.info.resolution, 0]).reshape(-1, 1)  # coordinates to center of top down grid image
             local_origin = np.array([[np.cos(angle), -np.sin(angle)],
-                                     [np.sin(angle), np.cos(angle)]]).dot(local_origin)
-            local_origin = (int((local_origin[0, 0] + self.robot_x[-1]) / self.resolution), int((local_origin[1, 0] + self.robot_y[-1]) / self.resolution))
+                                     [np.sin(angle), np.cos(angle)]]).dot(local_origin)  # Rotate local origin from relative to robot frame
+
+            # translate center by camera location on robot
+            local_origin = (int((local_origin[0, 0] + self.robot_x[-1] - 0.41) / self.resolution), int((local_origin[1, 0] + self.robot_y[-1]) / self.resolution))
 
             # local_origin = (int(self.robot_x[-1] - (grid_size / 2) * self.resolution * np.cos(self.robot_pitch[-1])),
                             # int(self.robot_y[-1] - (grid_size / 2) * self.resolution * np.sin(self.robot_pitch[-1])))
 
-            rotated_grid = ndimage.rotate(self.local_grid, -self.robot_pitch[-1] * 180 / math.pi + 90, mode='constant', cval=-1, reshape=True)
+            rotated_grid = ndimage.rotate(self.local_grid, -self.robot_pitch[-1] * 180 / math.pi - 90, mode='constant', cval=-1, reshape=True)  # 90 is param of realsense
 
+            # Switch local origin from center of image to bottom left based on new width of rotate image
             local_origin = (local_origin[0] - int(rotated_grid.shape[0] / 2), local_origin[1] - int(rotated_grid.shape[1] / 2))
 
             print(self.global_totals.shape, local_origin, rotated_grid.shape)

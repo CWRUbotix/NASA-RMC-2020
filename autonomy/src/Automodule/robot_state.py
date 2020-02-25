@@ -4,6 +4,7 @@ import rospy
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import OccupancyGrid
 from hci.msg import sensorValue
+from hwctrl.msg import MotorData
 from autonomy.msg import sensor_value
 from autonomy.srv import RobotState, RobotStateResponse
 
@@ -37,11 +38,22 @@ def update_occupancy_grid(msg):
 
 def update_sensors(msg):
     global sensors, sensormap
-    if msg.sensorID in sensormap.keys():
+    if msg.sensorID in sensormap.keys() and msg.id != 0 and msg.id != 1:
         sensors[sensormap[msg.sensorID]] = msg.value
+
+def update_encoders(msg):
+    global sensors, sensormap
+    if msg.id in sensormap.keys():
+        if msg.id == 0 and msg.data_type == 0:  # port message and RPM value
+            sensors[sensormap[msg.id]] = msg.value
+        if msg.id == 1 and msg.data_type == 0:  # starboard message and RPM value
+            sensors[sensormap[msg.id]] = msg.value
+
+
 
 def subscribe():
     rospy.Subscriber("hci/sensorValue", sensorValue, update_sensors)
+    rospy.Subscriber("motor_data", MotorData, update_encoders)
     rospy.Subscriber("odometry/filtered_map", Odometry, update_odometry)
     #rospy.Subscriber("", OccupancyGrid, ) #todo
 
@@ -69,7 +81,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-

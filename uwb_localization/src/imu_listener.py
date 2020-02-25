@@ -17,6 +17,7 @@ from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, Po
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from hci.msg import sensorValue
+from hwctrl.msg import MotorData
 
 
 
@@ -55,11 +56,14 @@ class IMU:
         except Exception as e:
             print(e)
 
-    def sensor_callback(self, msg):
-        if msg.sensorID == 0:
+    def motor_callback(self, msg):
+        if msg.id == 0 and msg.data_type == 0:  # port message and RPM value
             self.port_encoder = msg.value
-        if msg.sensorID == 1:
+        if msg.id == 1 and msg.data_type == 0:  # starboard message and RPM value
             self.starboard_encoder = msg.value
+        self.compose_wheel_msg()
+
+    def sensor_callback(self, msg):
         if msg.sensorID == 30:
             self.orientation[0] = msg.value
             self.orientation_marker[0] = 1
@@ -90,7 +94,6 @@ class IMU:
 
         if self.orientation_marker.all() == 1 and self.angular_velocity_marker.all() == 1 and self.acceleration_marker.all() == 1:
             self.compose_imu_msg()
-            self.compose_wheel_msg()
 
             self.orientation_plot = np.vstack((self.orientation_plot, self.orientation))
             self.angular_velocity_plot = np.vstack((self.angular_velocity_plot, self.angular_velocity))
@@ -140,7 +143,7 @@ class IMU:
         accel_msg = Vector3(-self.acceleration[0],
                             -self.acceleration[1],
                             -self.acceleration[2])
-        accel_cov = np.ravel(np.eye(3) * 1e-9)
+        accel_cov = np.ravel(np.eye(3) * 1e-4)
         header.stamp = rospy.Time.now()
         header.frame_id = 'base_link'
         imu_msg = Imu()
@@ -202,4 +205,5 @@ class IMU:
 if __name__ == '__main__':
     imu_node = IMU()
     sub = rospy.Subscriber('sensorValue', sensorValue, imu_node.sensor_callback)
+    rospy.Subscriber('motor_data', MotorData, imu_node.motor_callback)
     rospy.spin()

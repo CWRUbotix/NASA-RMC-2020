@@ -4,9 +4,9 @@ imu_angular_vel_y_offset: 5.87  # (degrees / s)
 imu_angular_vel_z_offset: 8.37  # (degrees / s)
 
 # realsense params
-realsense_z: 0.6  # (m) height of the realsense from the ground
+realsense_z: 0.56  # (m) height of the realsense from the ground
 realsense_x: -0.41  # (m) x offset of realsense from center of robot
-realsense_y: -0.13  # (m) y offset of realsense from center of robot
+realsense_y: 0  # (m) y offset of realsense from center of robot
 realsense_yaw: -90  # (degrees) viewing angle of realsense
 realsense_img_h: 640  # (px) height of realsense depth image
 realsense_img_w: 480  # (px) width of realsense depth image
@@ -26,6 +26,7 @@ grid_size: 30 # (cells) width and height of occupancy grid
 
 # transit params
 motor_command_accel: 15  # (RPM  / s) rate to change the motor speed upon sending a new command
+autonomy_motor_command_accel: 15
 
 # message topics
 localization: 'odometry/filtered_map'  # filtered global localization data as an Odometry msg

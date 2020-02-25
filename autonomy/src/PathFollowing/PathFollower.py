@@ -97,13 +97,6 @@ class PathFollower:
 
         offset = self.get_angular_offset()
 
-        position = self.state[:2]
-        line = self.global_path[self.index + 1] - position
-        dist = np.sqrt(line[0]**2 + line[1]**2)
-
-        if dist * np.tan(abs(offset)) < 0.1: # If offset results in less than 10cm deviation
-            offset = 0
-
         self.alpha = config.slowdown_controller.crisp_output(abs(offset))
 
         target_vel = 0
@@ -235,4 +228,3 @@ class PathFollower:
         reference = self.state[:2] + np.dot(rotation_matrix, np.array([[self.reference_point_x], [0]]))
 
         return path, closest_point, reference
-

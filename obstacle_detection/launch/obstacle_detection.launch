@@ -1,4 +1,4 @@
 <launch>
-		<node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py"/>
-		<node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid.py"/>
+		<node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" cwd="node"/>
+		<node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid.py" output="screen" cwd="node"/>
 </launch>

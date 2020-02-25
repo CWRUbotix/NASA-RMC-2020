@@ -7,7 +7,7 @@ import math
 import rospy
 import math
 import matplotlib
-#matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
+matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import numpy as np
 import pandas as pd
 import pyrealsense2 as rs
@@ -35,7 +35,7 @@ class RealSenseIMU:
         self.first_frame = True # initial IMU reference frame
         self.alpha = 0.5
         self.motion_topic = 'realsense_angle'
-        self.visualize = True
+        self.visualize = False
         self.window = 20
 
         self.fig = plt.figure()
@@ -58,14 +58,6 @@ class RealSenseIMU:
         plt.draw()
 
         self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
-
-        os.makedirs(self.viz_dir, exist_ok=True)
-        try:
-            files = glob.glob('%s/*' % self.viz_dir)
-            for f in files:
-                os.remove(f)
-        except Exception as e:
-            print(e)
 
         print('Booting up node...')
         rospy.init_node('realsenseMotion', anonymous=True)
@@ -137,7 +129,7 @@ class RealSenseIMU:
                 ys = []
                 zs = []
 
-                #print("Angle -  X: " + str(round(combinedangleX,2)) + "   Y: " + str(round(combinedangleY,2)) + "   Z: " + str(round(combinedangleZ,2)))
+                print("Angle -  X: " + (str(round(combinedangleX,2))) + "   Y: " + (str(round(combinedangleY,2))) + "   Z: " + (str(round(combinedangleZ,2))))
                 if self.visualize:
                     r = R.from_euler('zyx', [combinedangleX, combinedangleY, combinedangleZ])
                     x_new = r.apply(np.array([1, 0, 0]))

@@ -3,7 +3,8 @@ import rospy
 # from tf.transformations import euler_from_quaternion
 from scipy.spatial.transform import Rotation as R
 from hci.msg import motorCommand
-from hwctrl.srv import SetMotor, SetMotorRequest
+#from hwctrl.srv import SetMotor, SetMotorRequest
+from hwctrl.msg import SetMotorMsg
 from autonomy.msg import goToGoal, transitPath, transitControlData
 from nav_msgs.msg import OccupancyGrid
 from autonomy.srv import RobotState
@@ -32,8 +33,8 @@ wheel_radius = rospy.get_param('wheel_radius')
 
 class TransitNode:
     def __init__(self, visualize=False):
-        self.motor_acceleration = rospy.get_param('motor_command_accel')
-        self.motor_srv = rospy.ServiceProxy("set_motor", SetMotor)
+        self.motor_acceleration = rospy.get_param('autonomy_motor_command_accel')
+        self.motor_pub = rospy.Publisher("motor_setpoints", SetMotorMsg)
         self.path_pub = rospy.Publisher("transitPath", transitPath, queue_size=4)
         self.control_data_pub = rospy.Publisher("transitControlData", transitControlData, queue_size=4)
         self.controller = PathFollower(reference_point_x, goal=(0, 0))
@@ -72,8 +73,8 @@ class TransitNode:
     def go_to_goal(self, msg):
 
         if msg.stop:
-            self.motor_srv(0, self.motor_acceleration, 0)
-            self.motor_srv(1, self.motor_acceleration, 0)
+            self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
+            self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
             return
 
         goal = Position(msg.x, msg.y)
@@ -139,8 +140,8 @@ class TransitNode:
                 true_rpm = effective_rpm(left=left_speed, right=right_speed)
             '''
 
-            self.motor_srv(0, self.motor_acceleration, left_speed)
-            self.motor_srv(1, self.motor_acceleration, right_speed)
+            self.motor_pub.publish(id=0, setpoint=left_speed, acceleration=self.motor_acceleration)
+            self.motor_pub.publish(id=1, setpoint=right_speed, acceleration=self.motor_acceleration)
 
             self.publish_control_data()
 
@@ -194,8 +195,8 @@ class TransitNode:
         self.control_data_pub.publish(data)
 
     def shutdown(self):
-        self.motor_srv(0, self.motor_acceleration, 0)
-        self.motor_srv(1, self.motor_acceleration, 0)
+        self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
+        self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
 
     def draw(self):
         if self.visualize and self.step % self.viz_step == 0:

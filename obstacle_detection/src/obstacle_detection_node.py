@@ -12,13 +12,14 @@ import numpy as np
 import pandas as pd
 import pyrealsense2 as rs
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from scipy import signal
 from scipy.spatial.transform import Rotation as R
 from scipy.ndimage import gaussian_filter
 
 from std_msgs.msg import Header
 from nav_msgs.msg import MapMetaData, OccupancyGrid
-from geometry_msgs.msg import Pose, Point, Quaternion
+from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 
 from realsense_utils import *
 
@@ -35,8 +36,6 @@ config.enable_stream(rs.stream.color,
                      rospy.get_param('realsense_img_w'),
                      rs.format.bgr8,
                      rospy.get_param('realsense_fps'))
-config.enable_stream(rs.stream.accel, rs.format.motion_xyz32f, 200)
-config.enable_stream(rs.stream.gyro, rs.format.motion_xyz32f, 200)
 
 # Start streaming
 pipeline.start(config)
@@ -67,13 +66,14 @@ class ObstacleDetectionNode:
         self.kernel_sigma = 1
         self.first_frame = True # initial IMU reference frame
         self.alpha = 0.98
-        self.save_imgs = True
+        self.save_imgs = False
         self.save_data = True
         self.robot_x = []
         self.robot_y = []
         self.robot_pitch = []
         self.localization_topic = rospy.get_param('localization')
         self.viz_dir = 'obstacle_viz/'
+        self.frame_i = 0
         self.data_dir = 'saved_frames/'
 
         # RealSense physical orientation in the real world.
@@ -84,7 +84,7 @@ class ObstacleDetectionNode:
             "roll": 0,
             # angle in degrees of sensor's roll (used for INU input - trig function for this is commented out by default).
             "azimuth": 0,  # sensor's yaw angle in degrees.
-            "elevation": -10,  # sensor's pitch angle in degrees.
+            "elevation": 20,  # sensor's pitch angle in degrees.
         }
 
         print('Booting up node...')
@@ -94,30 +94,25 @@ class ObstacleDetectionNode:
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.data_dir + 'color', exist_ok=True)
         os.makedirs(self.data_dir + 'localization', exist_ok=True)
-        try:
-            files = glob.glob('%s/*' % self.viz_dir)
-            for f in files:
+        os.makedirs(self.data_dir + 'points', exist_ok=True)
+
+        self.clear_dir(self.viz_dir)
+        self.clear_dir(self.data_dir)
+        self.clear_dir(self.data_dir + 'color')
+        self.clear_dir(self.data_dir + 'localization')
+        self.clear_dir(self.data_dir + 'points')
+
+
+    def clear_dir(self, dir_name):
+        files = glob.glob('%s/*' % (dir_name))
+        for f in files:
+            try:
                 os.remove(f)
-        except Exception as e:
-            print(e)
-        try:
-            files = glob.glob('%s/*' % self.data_dir)
-            for f in files:
-                os.remove(f)
-        except Exception as e:
-            print(e)
-        try:
-            files = glob.glob('%s/*' % (self.data_dir + 'color'))
-            for f in files:
-                os.remove(f)
-        except Exception as e:
-            print(e)
-        try:
-            files = glob.glob('%s/*' % (self.data_dir + 'localization'))
-            for f in files:
-                os.remove(f)
-        except Exception as e:
-            print(e)
+            except Exception as e:
+                print(e)
+
+    def realsense_callback(self, msg):
+        self.CameraPosition['elevation'] = -(msg.z + math.pi / 2) * 57.296
 
     def apply_camera_matrix_orientation(self, pt):
         """
@@ -143,7 +138,7 @@ class ObstacleDetectionNode:
             pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
 
         #rotatePoints(1, 2, CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
-        rotatePoints(0, 1, self.CameraPosition['elevation']) #rotate on the X&Z plane
+        rotatePoints(1, 2, self.CameraPosition['elevation']) #rotate on the X&Z plane
         #rotatePoints(0, 1, self.CameraPosition['azimuth']) #rotate on the X&Y
 
         # Apply offsets for height and linear position of the sensor (from viewport's center)
@@ -152,7 +147,7 @@ class ObstacleDetectionNode:
 
     def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500, pcnt=0):
         # TODO: project points onto ground plane based on Realsense IMU?
-        proj = xyz_arr[..., [0, 2]]  # take only the X and Z components of point cloud
+        proj = xyz_arr[..., [0, 1]]  # take only the X and Y components of point cloud
         proj_img = np.zeros((4500, 4500))
         indices = np.int32(proj * 1000)
         try:
@@ -186,27 +181,21 @@ class ObstacleDetectionNode:
         # Pointcloud data to arrays
         v, t = points.get_vertices(), points.get_texture_coordinates()
         xyz_arr = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+        #self.CameraPosition['elevation'] += 10
+        xyz_arr[:, [1, 2]] = xyz_arr[:, [2, 1]]  # swap axes to be XYZ
         xyz_arr = self.apply_camera_matrix_orientation(xyz_arr)
-        texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  #
+        xyz_arr[:, 2] *= -1
 
-        out.fill(0)
+        if self.save_data:
+            np.save('%s/%d.npy' % (self.data_dir, self.frame_i), depth_image)
+            np.save('%s/%d.npy' % (self.data_dir + 'points', self.frame_i), xyz_arr)
+            cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', self.frame_i), color_image)
+            self.frame_i += 1
 
-        grid(out, (0, 0.5, 1), size=1, n=10)
-        frustum(out, depth_intrinsics)
-        axes(out, view([0, 0, 0]), state.rotation, size=0.1, thickness=1)
+        xyz_arr[..., 2] += self.ground_plane_height
 
-        if not state.scale or out.shape[:2] == (h, w):
-            pointcloud(out, xyz_arr, texcoords, color_source)
-        else:
-            tmp = np.zeros((h, w, 3), dtype=np.uint8)
-            pointcloud(tmp, xyz_arr, texcoords, color_source)
-            tmp = cv2.resize(
-                tmp, out.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
-            np.putmask(out, tmp > 0, tmp)
-
-
-        rocks = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] >= self.ground_plane_height + self.tolerance])
-        holes = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 1] < self.ground_plane_height - self.tolerance])
+        rocks = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 2] >= self.tolerance])
+        holes = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 2] <= -self.tolerance])
         #rocks = self.project_point_cloud_onto_plane(xyz_arr)
         #holes = self.project_point_cloud_onto_plane(xyz_arr)
 
@@ -243,7 +232,7 @@ class ObstacleDetectionNode:
             pass
 
         if self.save_imgs:
-            fig = plt.figure(figsize=(20, 5))
+            fig = plt.figure(figsize=(20, 10))
 
             ax = plt.subplot(241)
             ax.set_xticks([])
@@ -275,6 +264,35 @@ class ObstacleDetectionNode:
             ax.imshow(occupancy_grid, cmap='Reds')
             ax.set_title('Occupancy Grid')
 
+            ax = plt.subplot(246, projection='3d')
+            point_cloud = xyz_arr[::83]
+            point_cloud = point_cloud[point_cloud[: , 1] < 4.5, :]
+            ax.scatter(point_cloud[:, 0], point_cloud[:, 1], point_cloud[:, 2], s=1)
+            ax.set_xlim(-2.5, 2.5)
+            ax.set_ylim(0, 5)
+            ax.set_zlim(-2.5, 2.5)
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
+
+            ax = plt.subplot(247)
+            ax.scatter(point_cloud[:, 1], point_cloud[:, 2], s=1)
+            ax.plot([0, 5], [self.tolerance, self.tolerance])
+            ax.plot([0, 5], [-self.tolerance, -self.tolerance])
+            ax.set_xlim(0, 5)
+            ax.set_ylim(-1, 1)
+            ax.set_xlabel('Y')
+            ax.set_ylabel('Z')
+
+            ax = plt.subplot(248)
+            ax.scatter(point_cloud[:, 0], point_cloud[:, 2], s=1)
+            ax.set_xlim(-2.5, 2.5)
+            ax.set_ylim(-1, 1)
+            ax.set_xlabel('X')
+            ax.set_ylabel('Z')
+
+
+            plt.tight_layout()
             fig.savefig('%s/%d' % (self.viz_dir, len(os.listdir(self.viz_dir))))
             plt.close()
 
@@ -306,10 +324,6 @@ class ObstacleDetectionNode:
             # Convert images to numpy arrays
             depth_image = np.asanyarray(depth_frame.get_data())
             color_image = np.asanyarray(color_frame.get_data())
-
-            if self.save_data:
-                np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), depth_image)
-                cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', len(os.listdir(self.data_dir + 'color'))), color_image)
             self.detect_obstacles_from_above(depth_frame, color_frame)
 
 
@@ -317,6 +331,7 @@ if __name__ == '__main__':
     try:
         obstacle_detection = ObstacleDetectionNode()
         print('Listening for frames...')
+        rospy.Subscriber('realsense_orientation', Vector3, obstacle_detection.realsense_callback)
         obstacle_detection.listen_for_frames()
     except rospy.exceptions.ROSInterruptException:
         pass
