@@ -34,7 +34,7 @@ wheel_radius = rospy.get_param('wheel_radius')
 class TransitNode:
     def __init__(self, visualize=False):
         self.motor_acceleration = rospy.get_param('autonomy_motor_command_accel')
-        self.motor_pub = rospy.Publisher("motor_setpoints", SetMotorMsg)
+        self.motor_pub = rospy.Publisher("motor_setpoints", SetMotorMsg, queue_size=4)
         self.path_pub = rospy.Publisher("transitPath", transitPath, queue_size=4)
         self.control_data_pub = rospy.Publisher("transitControlData", transitControlData, queue_size=4)
         self.controller = PathFollower(reference_point_x, goal=(0, 0))

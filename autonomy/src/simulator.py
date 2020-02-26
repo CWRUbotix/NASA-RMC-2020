@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import rospy
-from hci.msg import sensorValue
-from hci.msg import motorCommand
-from nav_msgs.msg import Odometry
+from hwctrl.msg import MotorData, SetMotorMsg
+from nav_msgs.msg import Odometry, OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseWithCovariance, Pose, Point, Quaternion, Twist, TwistWithCovariance
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
@@ -13,16 +12,23 @@ from scipy.spatial.transform import Rotation as R
 
 effective_robot_width = 0.7
 wheel_radius = 0.2286
+grid_resolution = 0.15
+grid_size = 4.5
 
 
 class Simulator:
     def __init__(self):
-        self.robot = self.robot = SkidSteerSimulator(0.5, 0.5, 0)
+        self.robot = SkidSteerSimulator(1.5, 0.5, -np.pi/2)
         self.target_left_speed = 0
         self.target_right_speed = 0
 
+        self.obstacles = np.array([[1, 3], [2.5, 2.5]], dtype='float64')
+
+        self.camera_offset = [-0.4, 0, np.pi/2]
+
         self.odometryPublisher = rospy.Publisher("odometry/filtered_map", Odometry, queue_size=1)
-        self.sensorsPublisher = rospy.Publisher("hci/sensorValue", sensorValue, queue_size=4)
+        self.sensorsPublisher = rospy.Publisher("motor_data", MotorData, queue_size=4)
+        self.occupancyGridPublisher = rospy.Publisher("local_occupancy_grid", OccupancyGrid, queue_size=1)
 
         print("Initializing simulator node")
         rospy.init_node("simulator", anonymous=False)
@@ -46,30 +52,25 @@ class Simulator:
 
             turn_torque = 7 * (target_angular_vel - self.robot.state_dot[2, 0])
 
-
             right_torque = forward_torque + turn_torque
             left_torque = forward_torque - turn_torque
 
             self.robot.update(right_torque, left_torque, dt)
 
-            # print("x:{:.2f}, y:{:.2f}, ang:{:.1f}, tr:{:.1f}, tl:{:.1f}".format(self.robot.state[0, 0],
-            #                                                                    self.robot.state[1, 0],
-            #                                                                    self.robot.state[2, 0],
-            #                                                                     self.target_right_speed, self.target_left_speed))
-
             self.publishOdometry()
             self.publishSensorValues()
+            self.publishOccupancyGrid()
 
             r.sleep()
 
     def subscribe(self):
-        rospy.Subscriber("motorCommand", motorCommand, self.receiveMotorCommand)
+        rospy.Subscriber("motor_setpoints", SetMotorMsg, self.receiveMotorCommand)
 
     def receiveMotorCommand(self, msg):
-        if msg.motorID == 0:
-            self.target_left_speed = msg.value
-        elif msg.motorID == 1:
-            self.target_right_speed = msg.value
+        if msg.id == 0:
+            self.target_left_speed = msg.setpoint
+        elif msg.id == 1:
+            self.target_right_speed = msg.setpoint
 
     def publishOdometry(self):
         header = Header()
@@ -97,10 +98,65 @@ class Simulator:
         right_speed = (self.robot.state_dot[0, 0] + self.robot.state_dot[2, 0] * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
         left_speed = (self.robot.state_dot[0, 0] - self.robot.state_dot[2, 0] * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
 
-        sensor_data = sensorValue(sensorID=0, value=left_speed)
+        sensor_data = MotorData(id=0, value=left_speed)
         self.sensorsPublisher.publish(sensor_data)
-        sensor_data = sensorValue(sensorID=1, value=right_speed)
+        sensor_data = MotorData(id=1, value=right_speed)
         self.sensorsPublisher.publish(sensor_data)
+
+    def publishOccupancyGrid(self):
+        grid = self.senseOccupancyGrid()
+
+        header = Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = 'odom'
+
+        map_meta_data = MapMetaData()
+        map_meta_data.map_load_time = rospy.Time.now()
+        map_meta_data.resolution = grid_resolution  # each cell is 15cm
+        map_meta_data.width = int(grid_size / grid_resolution)
+        map_meta_data.height = int(grid_size / grid_resolution)
+        map_meta_data.origin = Pose(Point(0, 0, 0),
+                                    Quaternion(0, 0, 0, 1))
+
+        grid_msg = OccupancyGrid()
+        grid_msg.header = header
+        grid_msg.info = map_meta_data
+        grid_msg.data = list(grid)
+
+        self.occupancyGridPublisher.publish(grid_msg)
+
+    """Simulate a camera detecting a putting obstacles into a grid, with noise"""
+    def senseOccupancyGrid(self):
+        size = int(grid_size / grid_resolution)
+        grid = np.zeros((size, size), dtype='int8')
+        x, y, angle = self.robot.state[:, 0]
+
+        for obs in self.obstacles:
+            obs = obs - [x, y]  # translate to robot reference frame
+            obs = self.rot_matrix(-angle).dot(obs)  # rotate to robot's reference frame
+
+            obs = obs - self.camera_offset[:2]  # translate to camera frame
+            obs = self.rot_matrix(-self.camera_offset[2]).dot(obs)  # rotate to camera's frame
+
+            obs = obs / grid_resolution  # convert to grid cells
+
+            # flip and offset because camera is centered on the bottom middle of the grid (add 0.5 because between grid)
+            obs = [int(np.round(size - obs[1])), int(np.round(size/2 + obs[0]))]
+
+            if 0 <= obs[0] < size and 0 <= obs[1] < size:  # add obstacle
+                for i in range(int(obs[0]) - 1, int(obs[0]+1)):
+                    for j in range(int(obs[1]) - 1, int(obs[1]+1)):
+                        grid[i, j] = 50 + np.random.random() * 50
+
+            for i, j in zip(np.random.randint(0, size, 30), np.random.randint(0, size, 30)):
+                grid[i, j] = 50 + np.random.random() * 50  # random noise
+
+        return grid.ravel()
+
+    @staticmethod
+    def rot_matrix(angle):
+        return np.array([[np.cos(angle), -np.sin(angle)],
+                        [np.sin(angle), np.cos(angle)]])
 
 
 if __name__ == "__main__":

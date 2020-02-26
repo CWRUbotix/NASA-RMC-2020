@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
+
 import os
 import sys
+sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')  # Fix cv2 import error
+import cv2  # TODO Dumb fix please fix
+sys.path.append('/opt/ros/kinetic/lib/python2.7/dist-packages')  # Fix cv2 import error
+
 import glob
-import cv2
+
 import math
 import rospy
 import math
@@ -24,8 +29,8 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 class GlobalOccupancyGrid:
 
     def __init__(self):
-        self.save_imgs = False
-        self.save_data = True
+        self.save_imgs = True
+        self.save_data = False
         self.robot_x = []
         self.robot_y = []
         self.robot_pitch = []
@@ -33,6 +38,7 @@ class GlobalOccupancyGrid:
         self.arena_length = rospy.get_param('arena_y')
         self.arena_width = rospy.get_param('arena_x')
         self.resolution = rospy.get_param('grid_resolution')
+        self.camera_offset = [rospy.get_param('realsense_x'), rospy.get_param('realsense_y'), rospy.get_param('realsense_yaw')]
         self.global_grid_shape = (int(self.arena_length / self.resolution), int(self.arena_width / self.resolution))
         self.global_grid = np.zeros(self.global_grid_shape)
         self.global_counts = np.zeros_like(self.global_grid)  # keeps track of number of measurements for each cell
@@ -75,7 +81,7 @@ class GlobalOccupancyGrid:
         self.robot_y.append(pose.position.y)
         quat = pose.orientation
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-        self.robot_pitch.append(euler[2] + math.pi)  # rotation about vertical z-axis
+        self.robot_pitch.append(euler[2])  # rotation about vertical z-axis
         #print('X: %.4f \tY: %.4f \tpitch: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]))
 
     def has_localization_data(self):
@@ -93,43 +99,68 @@ class GlobalOccupancyGrid:
     def paste(self, wall, block, loc):
         loc_zip = zip(loc, block.shape, wall.shape)
         wall_slices, block_slices = zip(*map(self.paste_slices, loc_zip))
-        wall[wall_slices] += block[block_slices]
+
+        wall_copy = -1 * np.ones_like(wall)
+        wall_copy[wall_slices] = block[block_slices]
+
+        return wall_copy
 
     def local_grid_callback(self, msg):
         grid_size = msg.info.width
         self.local_grid = np.reshape(msg.data, (grid_size, grid_size))
+
         if self.has_localization_data():
             if self.save_data:
                 print('Saving...')
                 np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), self.local_grid)
                 np.save('%s/%d.npy' % (self.data_dir + 'localization', len(os.listdir(self.data_dir + 'localization'))),
                         np.array([self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]]))
-            angle = self.robot_pitch[-1] + math.pi/2 + math.pi/2  # angle between robot x and camera y axis
-            local_origin = np.array([grid_size / 2 * msg.info.resolution, 0]).reshape(-1, 1)  # coordinates to center of top down grid image
+
+            #  Rotate image using degrees for some dumb reason
+            rotated_grid = ndimage.rotate(self.local_grid, (self.robot_pitch[-1] * 180 / np.pi + self.camera_offset[2]),
+                                          mode='constant', cval=-1, reshape=True)  # rotate grid by camera + robot angle
+
+            # location of center of top down grid image in camera coordinate frame, in meters
+            local_origin = [0, grid_size / 2 * msg.info.resolution]
+
+            angle = self.camera_offset[2] * np.pi / 180  # Rotate to transform to robot coordinate frame
             local_origin = np.array([[np.cos(angle), -np.sin(angle)],
-                                     [np.sin(angle), np.cos(angle)]]).dot(local_origin)  # Rotate local origin from relative to robot frame
+                                     [np.sin(angle), np.cos(angle)]]).dot(local_origin)
+            local_origin = local_origin + self.camera_offset[:2]  # translate to convert to robot coordinate frame
 
-            # translate center by camera location on robot
-            local_origin = (int((local_origin[0, 0] + self.robot_x[-1] - 0.41) / self.resolution), int((local_origin[1, 0] + self.robot_y[-1]) / self.resolution))
+            angle = self.robot_pitch[-1]  # Rotate to transform to global coordinate frame
+            local_origin = np.array([[np.cos(angle), -np.sin(angle)],
+                                     [np.sin(angle), np.cos(angle)]]).dot(local_origin)
+            local_origin = local_origin + [self.robot_x[-1], self.robot_y[-1]]  # translate to global coordinate frame
 
-            # local_origin = (int(self.robot_x[-1] - (grid_size / 2) * self.resolution * np.cos(self.robot_pitch[-1])),
-                            # int(self.robot_y[-1] - (grid_size / 2) * self.resolution * np.sin(self.robot_pitch[-1])))
+            # convert to grid indices:
+            local_origin = local_origin / self.resolution
 
-            rotated_grid = ndimage.rotate(self.local_grid, -self.robot_pitch[-1] * 180 / math.pi - 90, mode='constant', cval=-1, reshape=True)  # 90 is param of realsense
-
-            # Switch local origin from center of image to bottom left based on new width of rotate image
-            local_origin = (local_origin[0] - int(rotated_grid.shape[0] / 2), local_origin[1] - int(rotated_grid.shape[1] / 2))
+            # flip due to coordinate system of matrix being top left
+            # Switch local origin from center of image to top left based on new width of rotated image
+            local_origin = [int(np.round(self.global_grid_shape[0] - local_origin[1] - rotated_grid.shape[0] / 2)),
+                            int(np.round(local_origin[0] - rotated_grid.shape[1] / 2))]
 
             print(self.global_totals.shape, local_origin, rotated_grid.shape)
 
-            self.paste(self.global_totals, rotated_grid, local_origin)
-            counts = np.ones_like(rotated_grid)
-            counts[rotated_grid == -1] = 0
-            self.paste(self.global_counts, counts, local_origin)
-            #self.global_counts[local_origin[1]: local_origin[1] + rotated_grid.shape[1], local_origin[0] + local_origin[0] + rotated_grid.shape[0]] += counts
-            self.global_grid = np.divide(self.global_totals, self.global_counts, out=np.zeros_like(self.global_totals), where=self.global_counts!=0)
-            self.global_grid = np.nan_to_num(self.global_grid, copy=False)
-            self.global_grid /= np.max(self.global_grid)  # ensure values are 0-1
+            counts = np.ones_like(rotated_grid)  # Count how many times each cell was measured
+            counts = self.paste(self.global_counts, counts, local_origin)
+
+            roi = (counts != -1)
+
+            counts[~roi] = 0
+
+            global_additions = self.paste(self.global_totals, rotated_grid, local_origin)
+            self.global_totals[roi] = (self.global_totals[roi] * self.global_counts[roi] + global_additions[roi]) \
+                                      / (self.global_counts[roi] + 1)
+
+            self.global_counts += counts
+
+            # self.global_grid = np.divide(self.global_totals, self.global_counts, out=np.zeros_like(self.global_totals), where=self.global_counts!=0)
+            # self.global_grid = np.nan_to_num(self.global_grid, copy=False)
+            # self.global_grid /= np.max(self.global_grid)  # ensure values are 0-1
+
+            self.global_grid = ndimage.gaussian_filter(self.global_totals, sigma=1)
 
             header = Header()
             header.stamp = rospy.Time.now()
@@ -146,7 +177,7 @@ class GlobalOccupancyGrid:
             grid_msg = OccupancyGrid()
             grid_msg.header = header
             grid_msg.info = map_meta_data
-            grid_msg.data = list(np.int8(self.global_grid.flatten() * 100))
+            grid_msg.data = list(np.int8(self.global_grid.flatten()))
 
             try:
                 pub = rospy.Publisher(rospy.get_param('obstacle_detection'), OccupancyGrid, queue_size=1)
@@ -159,19 +190,15 @@ class GlobalOccupancyGrid:
                 fig = plt.figure(figsize=(15, 5))
 
                 ax = plt.subplot(131)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                ax.imshow(self.local_grid, cmap='Reds')
+                ax.imshow(self.local_grid, cmap='Reds', vmin=0, vmax=100)
                 ax.set_title('Local Occupancy Grid')
 
                 ax = plt.subplot(132)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                ax.imshow(rotated_grid, cmap='Reds')
+                ax.imshow(rotated_grid, cmap='Reds', vmin=0, vmax=100)
                 ax.set_title('Rotated Occupancy Grid')
 
                 ax = plt.subplot(133)
-                ax.imshow(self.global_grid, cmap='Reds')
+                ax.imshow(self.global_grid, cmap='Reds', vmin=0, vmax=100)
                 ax.set_title('Global Occupancy Grid')
 
                 fig.savefig('%s/%d' % (self.viz_dir, len(os.listdir(self.viz_dir))))

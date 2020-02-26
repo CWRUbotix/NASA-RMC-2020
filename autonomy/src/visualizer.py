@@ -27,7 +27,7 @@ class Visualizer:
         self.ang_vels = []
         self.target_wheel_speeds = [[0, 0]]
         self.wheel_speeds = [[0, 0]]
-        self.global_grid = [[0, 0.5], [1, 0]]
+        self.global_grid = [[0, 50], [100, 0]]
         self.grid_extent = (0, 1, 0, 1)
 
         print("Opening visualizer")
@@ -37,10 +37,10 @@ class Visualizer:
         self.createPlots()
 
     def subscribe(self):
-        rospy.Subscriber("odometry/filtered_map", Odometry, self.receiveOdometry)
-        rospy.Subscriber("transitPath", transitPath, self.receivePath)
-        rospy.Subscriber("transitControlData", transitControlData, self.receiveControlData)
-        rospy.Subscriber("global_occupancy_grid", OccupancyGrid, self.recieveOccupancyGrid)
+        rospy.Subscriber("odometry/filtered_map", Odometry, self.receiveOdometry, queue_size=1)
+        rospy.Subscriber("transitPath", transitPath, self.receivePath, queue_size=1)
+        rospy.Subscriber("transitControlData", transitControlData, self.receiveControlData, queue_size=1)
+        rospy.Subscriber("global_occupancy_grid", OccupancyGrid, self.recieveOccupancyGrid, queue_size=1)
 
     def receiveOdometry(self, msg):
         pose = msg.pose.pose
@@ -87,13 +87,13 @@ class Visualizer:
 
         line_path, = ax1.plot([], [], linewidth=0.75, color='blue')
         line_robot, = ax1.plot([], [], linewidth=0.75, color='blue')
-        img = ax1.imshow(self.global_grid, cmap='Reds', extent=self.grid_extent)
+        img = ax1.imshow(self.global_grid, cmap='Reds', extent=self.grid_extent, vmin=0, vmax=100)
 
         ax1.set_title("Arena")
 
         ax2 = plt.subplot2grid((2, 3), (0, 1), colspan=2)
         ax2.set_xlim([0, 200])
-        ax2.set_ylim([-3, 3])
+        ax2.set_ylim([-1.5, 1.5])
         line_t_vels, = ax2.plot(self.target_vels, label='target vels')
         line_vels, = ax2.plot(self.vels, label='vels')
         line_t_ang_vels, = ax2.plot(self.target_ang_vels, label='target ang vels')
@@ -103,7 +103,7 @@ class Visualizer:
 
         ax3 = plt.subplot2grid((2, 3), (1, 1), colspan=2)
         ax3.set_xlim([0, 200])
-        ax3.set_ylim([-30, 30])
+        ax3.set_ylim([-5, 15])
         line_t_wheel_r, line_t_wheel_l = ax3.plot(self.target_wheel_speeds, label='target wheels')
         line_wheel_r, line_wheel_l, = ax3.plot(self.wheel_speeds, label='wheels')
         ax3.set_title('Wheels')
@@ -122,7 +122,7 @@ class Visualizer:
 
             img.set_data(self.global_grid)
             img.set_extent(self.grid_extent)
-            img.autoscale()
+            # img.autoscale()
 
             length = len(self.target_vels)
             x_values = np.arange(length)
@@ -156,4 +156,6 @@ if __name__ == "__main__":
     try:
         visualizer = Visualizer()
     except rospy.ROSInterruptException:
+        pass
+    except KeyboardInterrupt:
         pass

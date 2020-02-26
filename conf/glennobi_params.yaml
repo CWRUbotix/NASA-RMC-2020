@@ -7,7 +7,7 @@ imu_angular_vel_z_offset: 8.37  # (degrees / s)
 realsense_z: 0.56  # (m) height of the realsense from the ground
 realsense_x: -0.41  # (m) x offset of realsense from center of robot
 realsense_y: 0  # (m) y offset of realsense from center of robot
-realsense_yaw: -90  # (degrees) viewing angle of realsense
+realsense_yaw: 90  # (degrees) angle from robot coordinate to camera coordinate system
 realsense_img_h: 640  # (px) height of realsense depth image
 realsense_img_w: 480  # (px) width of realsense depth image
 realsense_fps: 30  # (frames per second) rate of depth frame updates
