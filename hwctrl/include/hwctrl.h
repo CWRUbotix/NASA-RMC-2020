@@ -28,11 +28,23 @@
 #include <canbus.h>
 #include <uwb.h>
 #include <parse_csv.h>
+#include <gpio.h>
 #include <spi.h>
+#include <ads1120.h>
+#include <adt7310.h>
+#include <lsm6ds3.h>
 
-#define DEFAULT_MAX_ACCEL 	30.0
-#define DEFAULT_MAX_RPM 	50.0
-#define MOTOR_LOOP_PERIOD 	0.005
+#define DEFAULT_MAX_ACCEL 			30.0
+#define DEFAULT_MAX_RPM 				50.0
+#define MOTOR_LOOP_PERIOD 			0.005
+
+#define NUMBER_OF_SPI_DEVICES 	4
+#define MAX_NUMBER_OF_SENSORS 	32
+
+#define ADC_1_IND 							0
+#define ADC_2_IND 							1
+#define TEMP_SENSOR_IND 				2
+#define IMU_IND 								3
 
 const std::string id_hddr 			= "id";
 const std::string name_hddr 		= "name";
@@ -58,7 +70,7 @@ const std::string adc_1_cs 			= "/sys/class/gpio/gpio67/"; 		// gpio file for AD
 const std::string adc_2_cs			= "/sys/class/gpio/gpio68/";
 const std::string temp_sensor_cs= "/sys/class/gpio/gpio69/";
 const std::string imu_cs 				= "/sys/class/gpio/gpio66/";
-const std::string sys_power_on 	= "/sys/class/gpio/gpio45/";
+const std::string sys_power_on 	= "/sys/class/gpio/gpio45/"; 		// 24V_PRESENT
 const std::string ext_5V_ok 		= "/sys/class/gpio/gpio26/";
 const std::string limit_1_gpio 	= "/sys/class/gpio/gpio60/";
 const std::string limit_2_gpio 	= "/sys/class/gpio/gpio48/";
@@ -66,6 +78,8 @@ const std::string limit_3_gpio 	= "/sys/class/gpio/gpio49/";
 const std::string limit_4_gpio 	= "/sys/class/gpio/gpio117/";
 const std::string limit_5_gpio 	= "/sys/class/gpio/gpio115/";
 const std::string limit_6_gpio 	= "/sys/class/gpio/gpio20/";
+const std::string over_temp_gpio= "/sys/class/gpio/gpio27/";
+const std::string crit_temp_gpio= "/sys/class/gpio/gpio61/";
 
 typedef enum MotorType {
 	MOTOR_NONE,
@@ -79,7 +93,13 @@ typedef enum DeviceType {
 	DEVICE_VESC,
 	DEVICE_SABERTOOTH,
 	DEVICE_QUAD_ENC,
-	DEVICE_LIMIT_SW
+	DEVICE_LIMIT_SW,
+	DEVICE_POT,
+	DEVICE_LOAD_CELL,
+	DEVICE_ADS1120,
+	DEVICE_ADT7310,
+	DEVICE_LSM6DS3,
+	DEVICE_POWER_SENSE
 }DeviceType;
 
 typedef enum InterfaceType {
@@ -95,6 +115,10 @@ typedef enum ControlType {
 	CTRL_RPM,
 	CTRL_POSITION
 }ControlType;
+
+////////////////////////////////////////////////////////////////////////////////
+// MOTOR STUFF
+////////////////////////////////////////////////////////////////////////////////
 
 // class to hold info about a motor
 class HwMotor{
@@ -156,6 +180,35 @@ public:
 	HwMotor* get_vesc_from_can_id(int can_id);
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// STUFF PRETAINING TO SENSORS
+////////////////////////////////////////////////////////////////////////////////
+// struct to hold info for a spi device
+typedef struct SpiDevice {
+  std::string name; // a descriptive name of the sensor
+  DeviceType device_type 	= DEVICE_NONE;
+  bool is_setup 					= false; // flag to indicate whether everything is setup
+  std::string gpio_path;
+  int gpio_value_handle; // file handle for controlling the state of the gpio pin
+  uint8_t spi_mode 				= SPI_MODE_0;
+  int spi_max_speed 			= SPI_DEFAULT_SPEED;
+} SpiDevice;
+
+// struct to hold all info about a sensor
+typedef struct SensorInfo {
+	int sys_id = -1; // system-wide ID to use
+	int dev_id = -1;
+  std::string name; // a descriptive name of the sensor
+  bool is_setup 					= false; // flag to indicate whether everything is setup
+	InterfaceType if_type 	= IF_NONE;
+  DeviceType dev_type 		= DEVICE_NONE;
+	std::string gpio_path   = "";
+	int gpio_value_fd 			= -1;
+	SpiDevice * spi_device 	= NULL;
+	char axis 							= (char)0x00;
+	ros::Time timestamp;
+	float value 						= 0.0;
+} SensorInfo;
 
 // class to handle sensor stuff
 class SensorIf{
@@ -164,9 +217,17 @@ private:
 	ros::Subscriber can_rx_sub; 	// get data from canbus
 	int spi_handle; 							// for the spi interface
 	ros::Timer uwb_update_timer;  // when to call the uwb_update_callback
+	ros::Timer temp_update_timer; // when to update ebay temperature
+	ros::Timer load_cell_update_timer; // when to update load cells
+	ros::Timer imu_update_timer; // when to update IMU data
+	bool update_temp = false;
+	bool update_load_cell = false;
+	bool update_imu 	= false;
 	int uwb_ind = 0;
+	int n_sensors = 0;
 //	QuadEncoder quad_encoder; 		// object for our quadrature encoder
 	void get_sensors_from_csv();
+	void setup_spi_devices();
 public:
 	SensorIf(ros::NodeHandle);
 	UwbNode* get_uwb_by_can_id(int can_id);
@@ -176,11 +237,16 @@ public:
 	ros::Publisher limit_sw_pub; 	// send out limit switch states
 	ros::Publisher uwb_data_pub; 	// publish uwb data
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
+	SensorInfo sensors[MAX_NUMBER_OF_SENSORS]; // all our SensorInfo structs
+	SpiDevice spi_devices[NUMBER_OF_SPI_DEVICES]; // all our SpiDevice structs
 	ros::Duration uwb_update_period; // how long to wait before we request data from next UWB node
 	ros::Rate loop_rate; 		// 10ms sleep in every loop
-	void can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame); 			// do things when
+	void can_rx_callback			(boost::shared_ptr<hwctrl::CanFrame> frame); 			// do things when
 	int setup_gpio();
-	void uwb_update_callback(const ros::TimerEvent&);
+	void uwb_update_callback	(const ros::TimerEvent&);
+	void temp_update_cb				(const ros::TimerEvent&);
+	void load_cell_update_cb	(const ros::TimerEvent&);
+	void imu_update_cb				(const ros::TimerEvent&);
 };
 
 void maintain_motors_thread(HwMotorIf* motor_if);

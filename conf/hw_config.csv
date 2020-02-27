@@ -12,3 +12,11 @@ id,name,category,device_type,interface,device_id,aux_1,aux_2,aux_3,aux_4,units,n
 10,UWB NODE 3,sensor,uwb,can,3,0,0,0,0,meters,aux values not yet used
 11,UWB NODE 4,sensor,uwb,can,4,0,0,0,0,meters,aux values not yet used
 12,EXC QUADRATURE ENCODER,sensor,quad_enc,can,10,0,0,0,0,none,aux values not yet used
+13,EBAY TEMPERATURE,sensor,temperature,spi,13,0,0,0,0,Celcius,aux values not yet used
+14,ACCELEROMETER X,sensor,imu,spi,14,accel,x,0,0,m/s,aux_1=type | aux_2=axis
+15,ACCELEROMETER Y,sensor,imu,spi,15,accel,y,0,0,m/s,aux_1=type | aux_2=axis
+16,ACCELEROMETER Z,sensor,imu,spi,16,accel,z,0,0,m/s,aux_1=type | aux_2=axis
+17,GYROSCOPE X,sensor,imu,spi,17,gyro,x,0,0,degrees/s,aux_1=type | aux_2=axis
+18,GYROSCOPE Y,sensor,imu,spi,18,gyro,y,0,0,degrees/s,aux_1=type | aux_2=axis
+19,GYROSCOPE Z,sensor,imu,spi,19,gyro,z,0,0,degrees/s,aux_1=type | aux_2=axis
+20,SYSTEM 24V STATE,sensor,power_sense,gpio,20,0,0,0,0,boolean,aux values not yet used

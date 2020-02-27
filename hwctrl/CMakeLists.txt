@@ -150,6 +150,7 @@ add_executable(hwctrl
   src/spi.cpp
   src/motors.cpp
   src/sensors.cpp
+  src/gpio.cpp
 )
 
 ## Rename C++ executable without prefix

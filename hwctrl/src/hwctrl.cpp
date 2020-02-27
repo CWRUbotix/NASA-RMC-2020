@@ -28,6 +28,18 @@ DeviceType get_device_type(std::string type_str){
 		return DEVICE_QUAD_ENC;
 	}else if(type_str.compare("limit") 	== 0){
 		return DEVICE_LIMIT_SW;
+	}else if(type_str.compare("imu") 	== 0){
+		return DEVICE_LSM6DS3;
+	}else if(type_str.compare("temperature") 	== 0){
+		return DEVICE_ADT7310;
+	}else if(type_str.compare("adc") 	== 0){
+		return DEVICE_ADS1120;
+	}else if(type_str.compare("pot") 	== 0){
+		return DEVICE_POT;
+	}else if(type_str.compare("load_cell") 	== 0){
+		return DEVICE_LOAD_CELL;
+	}else if(type_str.compare("power_sense") 	== 0){
+		return DEVICE_POWER_SENSE;
 	}else{
 		return DEVICE_NONE;
 	}
