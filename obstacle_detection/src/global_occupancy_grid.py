@@ -29,7 +29,7 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 class GlobalOccupancyGrid:
 
     def __init__(self):
-        self.save_imgs = True
+        self.save_imgs = False
         self.save_data = False
         self.robot_x = []
         self.robot_y = []
@@ -101,7 +101,10 @@ class GlobalOccupancyGrid:
         wall_slices, block_slices = zip(*map(self.paste_slices, loc_zip))
 
         wall_copy = -1 * np.ones_like(wall)
-        wall_copy[wall_slices] = block[block_slices]
+        try:
+            wall_copy[wall_slices] = block[block_slices]
+        except ValueError:
+            pass
 
         return wall_copy
 
@@ -141,9 +144,10 @@ class GlobalOccupancyGrid:
             local_origin = [int(np.round(self.global_grid_shape[0] - local_origin[1] - rotated_grid.shape[0] / 2)),
                             int(np.round(local_origin[0] - rotated_grid.shape[1] / 2))]
 
-            print(self.global_totals.shape, local_origin, rotated_grid.shape)
+            print(local_origin)
 
             counts = np.ones_like(rotated_grid)  # Count how many times each cell was measured
+            counts[rotated_grid == -1] = -1
             counts = self.paste(self.global_counts, counts, local_origin)
 
             roi = (counts != -1)
@@ -151,8 +155,8 @@ class GlobalOccupancyGrid:
             counts[~roi] = 0
 
             global_additions = self.paste(self.global_totals, rotated_grid, local_origin)
-            self.global_totals[roi] = (self.global_totals[roi] * self.global_counts[roi] + global_additions[roi]) \
-                                      / (self.global_counts[roi] + 1)
+            self.global_totals[roi] = (self.global_totals[roi] * np.minimum(self.global_counts[roi], 10) + global_additions[roi]) \
+                                      / (np.minimum(self.global_counts[roi], 10) + 1)
 
             self.global_counts += counts
 
@@ -160,7 +164,8 @@ class GlobalOccupancyGrid:
             # self.global_grid = np.nan_to_num(self.global_grid, copy=False)
             # self.global_grid /= np.max(self.global_grid)  # ensure values are 0-1
 
-            self.global_grid = ndimage.gaussian_filter(self.global_totals, sigma=1)
+            self.global_grid = ndimage.maximum_filter(self.global_totals, size=5, mode='nearest')
+            self.global_grid[self.global_grid >= 50] = 100
 
             header = Header()
             header.stamp = rospy.Time.now()

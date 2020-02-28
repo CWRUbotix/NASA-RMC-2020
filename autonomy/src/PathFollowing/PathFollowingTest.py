@@ -35,10 +35,10 @@ vels = []
 for i in range(2000):
     target_vel, target_angular_vel = controller.get_target_vels(robot.state, robot.state_dot, dt)
 
-    if robot.state_dot[0, 0] < target_vel:
-        forward_torque = 30
+    if abs(robot.state_dot[0, 0]) < abs(target_vel):
+        forward_torque = 30 * np.sign(target_vel)
     else:
-        forward_torque = 20
+        forward_torque = 0
 
     turn_torque = 7 * (target_angular_vel - robot.state_dot[2, 0])
 

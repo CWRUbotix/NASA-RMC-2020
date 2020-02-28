@@ -92,7 +92,7 @@ class Vertex(Position):
         return self.row, self.col
 
     def get_blocked(self):
-        return self.prob_blocked >= 0.6
+        return self.prob_blocked >= 0.5
 
     def set_prob_blocked(self, prob_blocked):
         self.prob_blocked = prob_blocked
@@ -126,7 +126,7 @@ class Grid(object):
                 if occupancies:
                     x = occupancies.info.origin.position.x
                     y = occupancies.info.origin.position.y
-                    prob = occupancies.data[i * width + j % width] / 100
+                    prob = occupancies.data[(self.num_rows - i - 1) * self.num_cols + j] / 100
                 vertex = Vertex(x + (j + 0.5) * grid_width, y + (i + 0.5) * grid_width, i, j, prob_blocked=prob)
                 row.append(vertex)
             self.vertices.append(row)
@@ -181,6 +181,15 @@ class Grid(object):
         row_index = min(self.num_rows - 1, max(int(y_pos / self.unit_height), 0))
 
         return int(row_index), int(col_index)
+
+    def __str__(self):
+        string = ""
+        for i in range(self.num_rows):
+            for j in range(self.num_cols):
+                string += str(int(self.get_prob_blocked(i, j) * 100)) + " "
+            string += '\n'
+
+        return string
 
 
 class Obstacle:

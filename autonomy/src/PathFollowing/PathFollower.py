@@ -38,10 +38,14 @@ class PathFollower:
         self.error_dots = []
 
         self.done = False
+        self.drive_backwards = -1  # -1 for backwards, 1 for forwards
 
     def update(self, state, state_dot):
         self.state = state
         self.state_dot = state_dot
+
+        # If driving backwards reference point needs to be on other side
+        self.reference_point_x = abs(self.reference_point_x) * np.sign(self.drive_backwards)
 
     def check_if_done(self):
         # Take dot product of vector going from last point to robot and from last point to second to last point
@@ -51,15 +55,19 @@ class PathFollower:
         dx = self.global_path[-2, 0] - self.global_path[-1, 0]
         dy = self.global_path[-2, 1] - self.global_path[-1, 1]
 
-        if dx * dx_r + dy * dy_r < 0:
+        if dx * dx_r + dy * dy_r < 0 and self.current_index > len(self.global_path) - 2:
             self.done = True
 
     def calculate_path(self):
         # Only update path if robot is more than a 0.5m from the target
         dist = Position(self.state[0, 0], self.state[1, 0]).distanceTo(self.goal_pos)
         if not dist < 0.5 or self.global_path is None:
-            self.global_path = create_path(Position(self.state[0, 0], self.state[1, 0]), self.goal_pos, self.grid)
-            self.global_path = np.array(self.global_path)
+            path = create_path(Position(self.state[0, 0], self.state[1, 0]), self.goal_pos, self.grid)
+            if path:
+                self.global_path = np.array(path)
+                self.current_index = 0  # new paths are created from robot's current position, so robot is at index 0
+            else:
+                print("Path could not be found, using old path")
 
     def set_path(self, path):
         self.global_path = path
@@ -112,12 +120,17 @@ class PathFollower:
         self.check_if_done()  # Check if done, if we are, set vels to 0
 
         if not self.done:
-            if abs(offset) < np.pi / 3:
+            if abs(offset) < np.pi / 6:
                 target_vel = config.target_velocity * self.alpha
                 target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
             else:
                 target_vel = 0
-                target_angular_vel = -np.sign(offset)  # + or - 1 rad/s to turn around if facing wrong way
+                target_angular_vel = -self.drive_backwards * 0.9 * np.sign(offset)  # + or - rad/s to turn around if facing wrong way
+
+        # When driving backwards flip velocity and angular velcity
+        # TODO: is this mathematically equivalent to changing measured vel and angular vel?
+        target_vel *= self.drive_backwards
+        target_angular_vel *= self.drive_backwards
 
         self.target_angular_vel = target_angular_vel  # Store value
 
@@ -136,7 +149,8 @@ class PathFollower:
 
         self.local_path = np.dot(rotation_matrix_reverse, (self.global_path-position.T).T).T  # convert path to local coordinates
 
-        self.index = min(max(int(self.current_index + 0.2), 0), len(self.local_path) - 2)
+        early_turn = 0.0
+        self.index = min(max(int(self.current_index + early_turn), 0), len(self.local_path) - 2)
 
         is_linear = True
         self.a, self.b, self.c, phi, x, y, self.r = self._calculate_path_and_closest_point(self.index, is_linear, x0, y0)
@@ -163,6 +177,9 @@ class PathFollower:
     def get_angular_offset(self):
         segment = self.global_path[self.index + 1] - self.global_path[self.index]
         angle = np.arctan2(segment[1], segment[0])
+
+        if self.drive_backwards == -1:  # trick robot into thinking it is facing other way
+            angle += np.pi
 
         return constrain_angle(self.state[2, 0] - angle)
 

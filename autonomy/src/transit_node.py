@@ -71,7 +71,6 @@ class TransitNode:
         rospy.spin()
 
     def go_to_goal(self, msg):
-
         if msg.stop:
             self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
             self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
@@ -81,7 +80,9 @@ class TransitNode:
         rospy.loginfo("Received ({}, {})".format(goal.x, goal.y))
 
         msg = self.get_robot_state()
+
         self.receive_state(msg.odometry)
+        self.receive_grid(msg.grid)
 
         self.controller.reset()
         self.controller.set_goal(goal)
@@ -99,12 +100,10 @@ class TransitNode:
             self.receive_state(msg.odometry)
 
             if self.step % rate == 0:  # Every second
-                rospy.loginfo("Currently at: {:.2f}".format(self.controller.current_index))
-
+                self.receive_grid(msg.grid)
                 self.controller.calculate_path()
+                rospy.loginfo("Path Generated, Currently at: {:.2f}".format(self.controller.current_index))
                 self.publish_path()
-                #self.receive_grid(msg.grid)
-                pass
 
             time = rospy.get_rostime().nsecs
             dt = (time - last_time) * 1e-9
@@ -150,7 +149,7 @@ class TransitNode:
             last_time = time
             r.sleep()
 
-        print("Path Complete")
+        rospy.loginfo("Path Complete")
 
     def receive_state(self, msg):
         pose = msg.pose.pose
@@ -164,8 +163,9 @@ class TransitNode:
         self.robot_state["state_dot"] = state_dot
 
     def receive_grid(self, msg):
-        grid = Grid(ARENA_WIDTH, ARENA_HEIGHT, occupancies=msg)  # Create a grid and add the obstacles to it
-        self.controller.update_grid(grid)
+        if msg.header.frame_id:  # Verify that the grid was received by checking non-empty
+            grid = Grid(ARENA_WIDTH, ARENA_HEIGHT, occupancies=msg)  # Create a grid and add the obstacles to it
+            self.controller.update_grid(grid)
 
     def subscribe(self):
         rospy.Subscriber("transit_command", goToGoal, self.go_to_goal)

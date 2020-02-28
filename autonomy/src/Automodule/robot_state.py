@@ -55,7 +55,7 @@ def subscribe():
     rospy.Subscriber("hci/sensorValue", sensorValue, update_sensors)
     rospy.Subscriber("motor_data", MotorData, update_encoders)
     rospy.Subscriber("odometry/filtered_map", Odometry, update_odometry)
-    #rospy.Subscriber("", OccupancyGrid, ) #todo
+    rospy.Subscriber("global_occupancy_grid", OccupancyGrid, update_occupancy_grid)
 
 def send_robot_state(req):
     global odometry, occupancy_grid

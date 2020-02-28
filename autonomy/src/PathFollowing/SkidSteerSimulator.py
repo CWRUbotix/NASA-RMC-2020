@@ -145,7 +145,7 @@ class SkidSteerSimulator:
         rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
                                   [np.sin(theta), np.cos(theta)]])
 
-        points = np.array([[1, 1], [1, -1], [-1, -1], [-1, 1]])  # robot edges
+        points = np.array([[1, 0.8], [1, -0.8], [-1, -1], [-1, 1]])  # robot edges
         points = points * np.array([length / 2, width / 2])  # multiply by width and length
         points = np.dot(rotation_matrix, points.T)  # rotate the points to the global frame
 

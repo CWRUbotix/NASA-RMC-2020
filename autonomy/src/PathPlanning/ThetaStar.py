@@ -6,20 +6,23 @@ import math
 
 def create_path(start, end, grid):
     path = a_star(start, end, grid)  # a star algorithm to find path
-    path = post_process(path, grid)  # Do theta star algorithm
+    if path:
+        path = post_process(path, grid)  # Do theta star algorithm
 
-    ret_path = []
-    for v in path:
-        ret_path.append([v.getX(), v.getY()])
+        ret_path = []
+        for v in path:
+            ret_path.append([v.getX(), v.getY()])
 
-    return ret_path
+        return ret_path
+    else:
+        return
 
 
 def a_star(start, end, grid):
     # get start and end indices
     start_coord = grid.getGridIndices(start.getX(), start.getY())
     end_coord = grid.getGridIndices(end.getX(), end.getY())
-    # print("Start", start_coord, end_coord)
+    # print("Going from/to", start_coord, end_coord)
 
     startVertex = grid.getVertex(start_coord[0], start_coord[1])
     endVertex = grid.getVertex(end_coord[0], end_coord[1])

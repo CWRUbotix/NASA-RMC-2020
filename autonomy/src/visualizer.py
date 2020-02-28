@@ -32,6 +32,8 @@ class Visualizer:
 
         print("Opening visualizer")
         rospy.init_node("visualizer_node", anonymous=False)
+        rospy.on_shutdown(self.close_plots)
+
         self.subscribe()
 
         self.createPlots()
@@ -74,6 +76,10 @@ class Visualizer:
         self.grid_extent = (0, scale * width, 0, scale*height)
         self.global_grid = np.reshape(msg.data, (height, width))
 
+    @staticmethod
+    def close_plots():
+        print("Closing  Visualizer")
+        plt.close()
 
     def createPlots(self):
         fig = plt.figure(figsize=(12, 4))
@@ -103,7 +109,7 @@ class Visualizer:
 
         ax3 = plt.subplot2grid((2, 3), (1, 1), colspan=2)
         ax3.set_xlim([0, 200])
-        ax3.set_ylim([-5, 15])
+        ax3.set_ylim([-15, 5])
         line_t_wheel_r, line_t_wheel_l = ax3.plot(self.target_wheel_speeds, label='target wheels')
         line_wheel_r, line_wheel_l, = ax3.plot(self.wheel_speeds, label='wheels')
         ax3.set_title('Wheels')
@@ -156,6 +162,4 @@ if __name__ == "__main__":
     try:
         visualizer = Visualizer()
     except rospy.ROSInterruptException:
-        pass
-    except KeyboardInterrupt:
         pass

@@ -45,8 +45,8 @@ class Simulator:
             target_vel = (self.target_right_speed + self.target_left_speed) * np.pi * wheel_radius / 60
             target_angular_vel = (self.target_right_speed - self.target_left_speed) * np.pi * wheel_radius / effective_robot_width / 30
 
-            if self.robot.state_dot[0, 0] < target_vel:
-                forward_torque = 30
+            if abs(self.robot.state_dot[0, 0]) < abs(target_vel):
+                forward_torque = 30 * np.sign(target_vel)
             else:
                 forward_torque = 0
 
@@ -148,8 +148,8 @@ class Simulator:
                     for j in range(int(obs[1]) - 1, int(obs[1]+1)):
                         grid[i, j] = 50 + np.random.random() * 50
 
-            for i, j in zip(np.random.randint(0, size, 30), np.random.randint(0, size, 30)):
-                grid[i, j] = 50 + np.random.random() * 50  # random noise
+            for i, j in zip(np.random.randint(0, size, 00), np.random.randint(0, size, 0)):
+                grid[i, j] = 50 + np.random.random() * 0  # random noise
 
         return grid.ravel()
 
