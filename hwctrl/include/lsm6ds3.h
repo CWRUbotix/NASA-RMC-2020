@@ -3,6 +3,10 @@
 
 #include <spi.h>
 
+#define LSM6DS3_X_AXIS 0x01
+#define LSM6DS3_Y_AXIS 0x02
+#define LSM6DS3_Z_AXIS 0x03
+
 #define LSM6DS3_SPI_SPEED 			2500000
 #define LSM6DS3_SPI_MODE 			SPI_MODE_3
 #define LSM6DS3_WHO_AM_I_ID 		0x69

@@ -4,6 +4,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <cstdlib>
+#include <string>
+#include <cstdio>
+#include <iostream>
+#include <fstream>
+#include <unistd.h>
 
 #define GPIO_INPUT  0
 #define GPIO_OUTPUT 1

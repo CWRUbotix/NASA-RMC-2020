@@ -16,7 +16,7 @@
 #define ADT7310_SPI_MODE    SPI_MODE_0
 #define ADT7310_SPI_SPEED   4000000
 
-#define ADT7310_MFG_ID_MASK (0x1F << 3);
+#define ADT7310_MFG_ID_MASK (0x1F << 3)
 #define ADT7310_MFG_ID      (0x18 << 3)
 
 /* COMMAND BYTE */

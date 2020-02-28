@@ -3,7 +3,7 @@
 int gpio_set_dir(std::string path, int mode){
   std::string fname = path + "direction";
   int fd = open(fname.c_str(), O_RDWR);
-  if(f < 0){
+  if(fd < 0){
     return -1; //fail
   }
   std::string dir_str = "";
@@ -27,8 +27,8 @@ int gpio_get_value_handle(std::string path){
 
 int gpio_set(int handle){
   if(handle > 0){
-    char * buf = {'1'};
-    return write(handle, buf, 1);
+    char b = '1';
+    return write(handle, &b, 1);
   }else{
     return -1;
   }
@@ -36,8 +36,8 @@ int gpio_set(int handle){
 
 int gpio_reset(int handle){
   if(handle > 0){
-    char * buf = {'0'};
-    return write(handle, buf, 1);
+    char b = '0';
+    return write(handle, &b, 1);
   }else{
     return -1;
   }

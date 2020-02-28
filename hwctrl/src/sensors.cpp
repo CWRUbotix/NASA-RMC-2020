@@ -7,8 +7,10 @@
  * SensorIf constructor
  * creates publishers, subscribers, timers, opens interfaces, initializes GPIO, etc
  */
-SensorIf::SensorIf(ros::NodeHandle n)
-: loop_rate(100), uwb_update_period(0.1) {
+SensorIf::SensorIf(ros::NodeHandle n) : 
+	loop_rate(100), 
+	uwb_update_period(0.1)
+{
 	this->nh = n;
 
 	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
@@ -38,6 +40,12 @@ SensorIf::SensorIf(ros::NodeHandle n)
 	}
 
 	// create the timer that will request data from the next UWB node
+	SensorInfo* sensor;
+	for(int i = 0; i < this->n_sensors; i++){
+		sensor = &(this->sensors[i]);
+		sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, sensor);
+		ROS_INFO("Sensor %d | Update Period: %.3fs", sensor->sys_id, sensor->update_pd.toSec());
+	}
 	this->uwb_update_timer = this->nh.createTimer(this->uwb_update_period, &SensorIf::uwb_update_callback, this);
 }
 
@@ -70,39 +78,37 @@ void sensors_thread(SensorIf* sensor_if){
 
 		// poll limit switches
 		// publish any limit switches that have occurred
-
-		if(this->update_temp){
-			// update temperature data and publish it
-			for(int i = 0; i < this->n_sensors; i++){
-				if(sensors[i].dev_type == DEVICE_ADT7310){
-					// we got one!!
-					SpiDevice* dev = sensors[i].spi_device;
-					spi_set_mode(this->spi_handle, ADT7310_SPI_MODE);
-					spi_set_speed(this->spi_handle, ADT7310_SPI_SPEED);
-					uint8_t cmd = ADT7310_CMD_READ_REG | (ADT7310_REG_TEMP_VAL << 3);
-					uint8_t rpy[2];
-					if(spi_cmd(this->spi_handle, cmd, rpy, 2) == 2){
-						// correct number of bytes read
-						int16_t raw = (rpy[0] << 8) | rpy[1];
-						sensors[i].value = raw * ADT7310_LSB_16_BIT; // convert to celcius
-						SensorData msg;
-						msg.sensorID = sensors[i].sys_id;
-						msg.value = sensors[i].value;
-						this->sensor_data_pub.publish(msg);
-					}
+		// SensorInfo* sensor;
+		for(int n = 0; n < sensor_if->n_sensors; n++){
+			SensorInfo* sensor = &(sensor_if->sensors[n]);
+			if(sensor->update){
+				// do update things based on device type
+				switch(sensor->dev_type){
+					case DEVICE_ADT7310:{
+						SpiDevice* dev = sensor->spi_device;
+						spi_set_mode(sensor_if->spi_handle, dev->spi_mode); 
+						spi_set_speed(sensor_if->spi_handle, dev->spi_max_speed);
+						uint8_t cmd = ADT7310_CMD_READ_REG | (ADT7310_REG_TEMP_VAL << 3);
+						uint8_t rpy[2];
+						if(spi_cmd(sensor_if->spi_handle, cmd, rpy, 2) == 2){
+							// correct number of bytes read
+							int16_t raw = (rpy[0] << 8) | rpy[1];
+							sensor->value = raw * ADT7310_LSB_16_BIT; // convert to celcius
+							hwctrl::SensorData msg;
+							msg.sensorID = sensor->sys_id;
+							msg.value = sensor->value;
+							sensor_if->sensor_data_pub.publish(msg);
+						}
+						break;}
+					case DEVICE_LSM6DS3:{
+						ROS_INFO("***** UPDATE IMU *****");
+						break;}
+					default:{
+						break;}
 				}
+
+				sensor->update = false; // reset this flag
 			}
-			this->update_temp = false;
-		}
-
-		if(this->update_load_cell){
-			// update load cell data and publish it
-			this->update_load_cell = false;
-		}
-
-		if(this->update_imu){
-			// read from the IMU and publish the data
-			this->update_imu = false;
 		}
 
 		sensor_if->loop_rate.sleep();
@@ -173,24 +179,6 @@ void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
 		this->uwb_ind = 0;
 	}
 }
-/**
- * Callback that sets a flag to tell the main thread to update & publish ebay temperature
- */
-void SensorIf::temp_update_cb(const ros::TimerEvent& tim_event){
-	this->update_temp = true;
-}
-/**
- * Callback that sets a flag to tell the main thread to update & publish load cell data
- */
-void SensorIf::load_cell_update_cb(const ros::TimerEvent& tim_event){
-	this->update_load_cell = true;
-}
-/**
- * Callback that sets a flag to tell the main thread to update & publish imu data
- */
-void SensorIf::imu_update_cb(const ros::TimerEvent& tim_event){
-	this->update_imu = true;
-}
 
 /**
  * process the hw_config.csv file to figure our what sensors are specified
@@ -245,6 +233,8 @@ void SensorIf::get_sensors_from_csv(){
 				info.sys_id = std::stoi((*line)[device_id_ind]);
 				info.dev_type = get_device_type((*line)[device_type_ind]);
 				info.dev_id = std::stoi((*line)[device_id_ind]);
+				float pd = std::stof((*line)[aux_4_ind]); 
+				info.update_pd = ros::Duration(pd);
 
 				switch(info.dev_type){
 					case DEVICE_UWB:{
@@ -256,7 +246,7 @@ void SensorIf::get_sensors_from_csv(){
 					}
 					case DEVICE_LSM6DS3:{
 						// this line is for an imu
-						info.axis = (*line)[aux_2_ind][0];
+						info.axis = ((*line)[aux_2_ind])[0];
 						if( (*line)[aux_1_ind].compare("accel") == 0){
 							// it's an acclerometer
 						}else if( (*line)[aux_1_ind].compare("gyro") == 0) {
@@ -298,11 +288,13 @@ void SensorIf::get_sensors_from_csv(){
 					}
 				}
 				// store the sensor info struct
-				if(sensor_ind < MAX_NUMBER_OF_SENSORS)
+				if(sensor_ind < MAX_NUMBER_OF_SENSORS){
 					this->sensors[sensor_ind ++] = info;
 					this->n_sensors = sensor_ind;
-				else
+				}
+				else{
 					ROS_INFO("Too many sensors, can't add any more");
+				}
 			}
 
 		}
@@ -472,4 +464,13 @@ void SensorIf::setup_spi_devices(){
 	}
 
 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//   SENSOR INFO STUFF
+//
+///////////////////////////////////////////////////////////////////////////////
+void SensorInfo::set_update_flag(const ros::TimerEvent& event){
+	this->update = true;
 }

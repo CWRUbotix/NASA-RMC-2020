@@ -194,37 +194,34 @@ typedef struct SpiDevice {
   int spi_max_speed 			= SPI_DEFAULT_SPEED;
 } SpiDevice;
 
-// struct to hold all info about a sensor
-typedef struct SensorInfo {
+// class to hold all info about a sensor
+class SensorInfo {
+public:
 	int sys_id = -1; // system-wide ID to use
 	int dev_id = -1;
-  std::string name; // a descriptive name of the sensor
-  bool is_setup 					= false; // flag to indicate whether everything is setup
+	std::string name; // a descriptive name of the sensor
+	bool is_setup 					= false; // flag to indicate whether everything is setup
 	InterfaceType if_type 	= IF_NONE;
-  DeviceType dev_type 		= DEVICE_NONE;
+	DeviceType dev_type 		= DEVICE_NONE;
 	std::string gpio_path   = "";
 	int gpio_value_fd 			= -1;
 	SpiDevice * spi_device 	= NULL;
-	char axis 							= (char)0x00;
+	uint8_t axis 		= LSM6DS3_X_AXIS;
 	ros::Time timestamp;
 	float value 						= 0.0;
-} SensorInfo;
+	bool update = false; // flag to indicate if it's time to update
+	ros::Duration update_pd; // period with which to update this sensor
+	ros::Timer update_timer; // timer for updating this sensor
+	void set_update_flag(const ros::TimerEvent&); // callback which will set the update flag
+};
 
 // class to handle sensor stuff
 class SensorIf{
 private:
 	ros::NodeHandle nh;
 	ros::Subscriber can_rx_sub; 	// get data from canbus
-	int spi_handle; 							// for the spi interface
 	ros::Timer uwb_update_timer;  // when to call the uwb_update_callback
-	ros::Timer temp_update_timer; // when to update ebay temperature
-	ros::Timer load_cell_update_timer; // when to update load cells
-	ros::Timer imu_update_timer; // when to update IMU data
-	bool update_temp = false;
-	bool update_load_cell = false;
-	bool update_imu 	= false;
 	int uwb_ind = 0;
-	int n_sensors = 0;
 //	QuadEncoder quad_encoder; 		// object for our quadrature encoder
 	void get_sensors_from_csv();
 	void setup_spi_devices();
@@ -241,12 +238,14 @@ public:
 	SpiDevice spi_devices[NUMBER_OF_SPI_DEVICES]; // all our SpiDevice structs
 	ros::Duration uwb_update_period; // how long to wait before we request data from next UWB node
 	ros::Rate loop_rate; 		// 10ms sleep in every loop
+	int spi_handle; 							// for the spi interface
 	void can_rx_callback			(boost::shared_ptr<hwctrl::CanFrame> frame); 			// do things when
 	int setup_gpio();
 	void uwb_update_callback	(const ros::TimerEvent&);
 	void temp_update_cb				(const ros::TimerEvent&);
 	void load_cell_update_cb	(const ros::TimerEvent&);
 	void imu_update_cb				(const ros::TimerEvent&);
+	int n_sensors = 0;
 };
 
 void maintain_motors_thread(HwMotorIf* motor_if);
