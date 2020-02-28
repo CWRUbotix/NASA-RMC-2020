@@ -7,8 +7,8 @@
  * SensorIf constructor
  * creates publishers, subscribers, timers, opens interfaces, initializes GPIO, etc
  */
-SensorIf::SensorIf(ros::NodeHandle n) : 
-	loop_rate(100), 
+SensorIf::SensorIf(ros::NodeHandle n) :
+	loop_rate(100),
 	uwb_update_period(0.1)
 {
 	this->nh = n;
@@ -22,30 +22,35 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	this->limit_sw_pub = this->nh.advertise<hwctrl::LimitSwState>("limit_sw_states", 128);
 	this->uwb_data_pub = this->nh.advertise<hwctrl::UwbData>("localization_data", 1024);
 
-	this->get_sensors_from_csv(); // create all our sensor info structs
+	this->get_sensors_from_csv(); // create all our sensor info objects and whatever
 
 	int gpio_state = this->setup_gpio();
 	if(gpio_state != 0){
-		ROS_INFO("GPIO setup failed :(");
+		ROS_ERROR("GPIO setup failed :(");
 	}else{
-		ROS_INFO("GPIO setup succeeded!");
+		ROS_DEBUG("GPIO setup succeeded!");
 	}
 
 	this->spi_handle = spi_init("/dev/spidev1.0");
 	if(this->spi_handle < 0){
-		ROS_INFO("SPI init failed :(");
+		ROS_ERROR("SPI init failed :(");
 	}else{
-		ROS_INFO("SPI init presumed successful");
+		ROS_DEBUG("SPI init presumed successful");
 		this->setup_spi_devices();
 	}
 
-	// create the timer that will request data from the next UWB node
+	// setup sensors
 	SensorInfo* sensor;
 	for(int i = 0; i < this->n_sensors; i++){
 		sensor = &(this->sensors[i]);
+		if(sensor->if_type == IF_SPI && !sensor->spi_device->is_setup){
+			continue; // skip making a timer for this one
+		}
 		sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, sensor);
-		ROS_INFO("Sensor %d | Update Period: %.3fs", sensor->sys_id, sensor->update_pd.toSec());
+		ROS_DEBUG("Sensor %d | Update Period: %.3fs", sensor->sys_id, sensor->update_pd.toSec());
 	}
+
+	// create the timer that will request data from the next UWB node
 	this->uwb_update_timer = this->nh.createTimer(this->uwb_update_period, &SensorIf::uwb_update_callback, this);
 }
 
@@ -61,7 +66,7 @@ int SensorIf::setup_gpio(){
  * thread to do sensor things
  */
 void sensors_thread(SensorIf* sensor_if){
-	ROS_INFO("Starting sensors_thread");
+	ROS_DEBUG("Starting sensors_thread");
 	ros::AsyncSpinner spinner(1, &(sensor_if->cb_queue));
 	spinner.start();
 	while(ros::ok()){
@@ -81,12 +86,12 @@ void sensors_thread(SensorIf* sensor_if){
 		// SensorInfo* sensor;
 		for(int n = 0; n < sensor_if->n_sensors; n++){
 			SensorInfo* sensor = &(sensor_if->sensors[n]);
-			if(sensor->update){
+			if(sensor->update && sensor->is_setup){
 				// do update things based on device type
 				switch(sensor->dev_type){
 					case DEVICE_ADT7310:{
 						SpiDevice* dev = sensor->spi_device;
-						spi_set_mode(sensor_if->spi_handle, dev->spi_mode); 
+						spi_set_mode(sensor_if->spi_handle, dev->spi_mode);
 						spi_set_speed(sensor_if->spi_handle, dev->spi_max_speed);
 						uint8_t cmd = ADT7310_CMD_READ_REG | (ADT7310_REG_TEMP_VAL << 3);
 						uint8_t rpy[2];
@@ -99,12 +104,27 @@ void sensors_thread(SensorIf* sensor_if){
 							msg.value = sensor->value;
 							sensor_if->sensor_data_pub.publish(msg);
 						}
-						break;}
-					case DEVICE_LSM6DS3:{
-						ROS_INFO("***** UPDATE IMU *****");
-						break;}
-					default:{
-						break;}
+						break;
+					}case DEVICE_LSM6DS3:{
+						ROS_DEBUG("***** UPDATE IMU *****");
+						int spi_fd = sensor->spi_device->spi_handle;
+						int gpio_fd = sensor->spi_device->gpio_value_handle;
+						if(sensor->descrip.compare("accel") == 0){
+							sensor->value = read_accel(spi_fd, gpio_fd, sensor->axis);
+						}else if(sensor->descrip.compare("gyro") == 0){
+							sensor->value = read_gyro(spi_fd, gpio_fd, sensor->axis);
+						}else{
+							break;
+						}
+						sensor->timestamp = ros::Time::now();
+						hwctrl::SensorData msg;
+						msg.sensorID = sensor->sys_id;
+						msg.value = sensor->value;
+						sensor_if->sensor_data_pub.publish(msg);
+						break;
+					}default:{
+						break;
+					}
 				}
 
 				sensor->update = false; // reset this flag
@@ -127,7 +147,7 @@ void SensorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 		// UWB frame or quad encoder frame
 		UwbNode* uwb_node = this->get_uwb_by_can_id(rx_id);
 		if(uwb_node != NULL){
-			ROS_INFO("UWB frame (node id %d)", rx_id);
+			ROS_DEBUG("UWB frame (node id %d)", rx_id);
 			// uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
 			hwctrl::UwbData msg;
 			msg.anchor_id = frame->data[1];
@@ -163,7 +183,7 @@ UwbNode* SensorIf::get_uwb_by_can_id(int can_id){
 void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
 	// ROS_INFO("===== UWB UPDATE CALLBACK =====");
 	if(this->uwb_nodes.size() <= 0){
-		ROS_INFO("No UWB nodes");
+		ROS_DEBUG("No UWB nodes");
 		return;
 	}
 	//UwbNode* nodes = this->uwb_nodes.data();
@@ -227,19 +247,20 @@ void SensorIf::get_sensors_from_csv(){
 			}
 		}else{
 			if((*line)[category_ind].compare(category_sensor) == 0){
-				ROS_INFO("A sensor!");
 				SensorInfo info;
 				info.name = (*line)[name_ind];
 				info.sys_id = std::stoi((*line)[device_id_ind]);
+				info.if_type = get_if_type((*line)[interface_ind]);
 				info.dev_type = get_device_type((*line)[device_type_ind]);
 				info.dev_id = std::stoi((*line)[device_id_ind]);
-				float pd = std::stof((*line)[aux_4_ind]); 
+				float pd = std::stof((*line)[aux_4_ind]);
 				info.update_pd = ros::Duration(pd);
 
 				switch(info.dev_type){
+					ROS_DEBUG("Sensor: %d, %s", info.sys_id, info.name);
 					case DEVICE_UWB:{
 						// this line is for an UWB node
-						ROS_INFO("An UWB node, id: %d!", info.dev_id);
+						ROS_DEBUG("An UWB node, id: %d!", info.dev_id);
 						UwbNode uwb_node((uint32_t)info.dev_id);
 						this->uwb_nodes.push_back(uwb_node);
 						break;
@@ -247,6 +268,7 @@ void SensorIf::get_sensors_from_csv(){
 					case DEVICE_LSM6DS3:{
 						// this line is for an imu
 						info.axis = ((*line)[aux_2_ind])[0];
+						info.descrip = (*line)[aux_1_ind];
 						if( (*line)[aux_1_ind].compare("accel") == 0){
 							// it's an acclerometer
 						}else if( (*line)[aux_1_ind].compare("gyro") == 0) {
@@ -257,7 +279,6 @@ void SensorIf::get_sensors_from_csv(){
 					}
 					case DEVICE_ADT7310:{
 						// this line is for the ebay temperature sensor
-						ROS_INFO("Sensor: %d, %s", info.sys_id, info.name);
 						info.spi_device = &(this->spi_devices[TEMP_SENSOR_IND]); // store the pointer to the spi device
 						break;
 					}
@@ -279,7 +300,11 @@ void SensorIf::get_sensors_from_csv(){
 						// just a gpio that tells if the e-stop is energized or not
 						info.gpio_path = sys_power_on;
 						gpio_set_dir(info.gpio_path, GPIO_INPUT);
-						info.gpio_value_fd = gpio_get_value_handle(info.gpio_path);
+						if((info.gpio_value_fd = gpio_get_value_handle(info.gpio_path)) > 0){
+							// we vibin'
+						}else{
+							ROS_ERROR("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
+						}
 						break;
 					}
 					case DEVICE_LIMIT_SW:{
@@ -293,7 +318,7 @@ void SensorIf::get_sensors_from_csv(){
 					this->n_sensors = sensor_ind;
 				}
 				else{
-					ROS_INFO("Too many sensors, can't add any more");
+					ROS_WARN("Too many sensors, can't add any more");
 				}
 			}
 
@@ -348,6 +373,8 @@ void SensorIf::setup_spi_devices(){
 		gpio_set(dev->gpio_value_handle);
 
 		dev->is_setup = true;
+	}else{
+		ROS_ERROR("Failed to get file descriptor for %svalue", dev->gpio_path.c_str());
 	}
 
 	//======= ADC 2, LOAD CELL ADC =======
@@ -387,6 +414,8 @@ void SensorIf::setup_spi_devices(){
 		gpio_set(dev->gpio_value_handle);
 
 		dev->is_setup = true;
+	}else{
+		ROS_ERROR("Failed to get file descriptor for %svalue", dev->gpio_path.c_str());
 	}
 
 	// ======= TEMP SENSOR =======
@@ -433,6 +462,8 @@ void SensorIf::setup_spi_devices(){
 
 			dev->is_setup = true;
 		}
+	}else{
+		ROS_ERROR("Failed to get file descriptor for %svalue", dev->gpio_path.c_str());
 	}
 
 
@@ -455,12 +486,16 @@ void SensorIf::setup_spi_devices(){
 		gpio_set(dev->gpio_value_handle);
 
 		if(buf[0] == LSM6DS3_WHO_AM_I_ID){
-			ROS_INFO("IMU setup success!");
+			lsm6ds3_xl_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_XL_2G);
+			lsm6ds3_g_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_G_250_DPS)
+			ROS_DEBUG("IMU setup success!");
 			dev->is_setup = true;
 		}else{
-			ROS_INFO("IMU setup failed :(");
+			ROS_ERROR("IMU setup failed :(");
 		}
 
+	}else{
+		ROS_ERROR("Failed to get file descriptor for %svalue", dev->gpio_path.c_str());
 	}
 
 

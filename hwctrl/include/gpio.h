@@ -3,13 +3,15 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <cinttypes>
 #include <cstdlib>
 #include <string>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <unistd.h>
 
 #define GPIO_INPUT  0
 #define GPIO_OUTPUT 1

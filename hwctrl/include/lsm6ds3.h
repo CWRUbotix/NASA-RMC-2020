@@ -2,6 +2,7 @@
 #define LSM6DS3_H_
 
 #include <spi.h>
+#include <gpio.h>
 
 #define LSM6DS3_X_AXIS 0x01
 #define LSM6DS3_Y_AXIS 0x02
@@ -13,10 +14,29 @@
 #define LSM6DS3_SET_READ_MODE(b) 	b |= (1 << 7)
 #define LSM6DS3_SET_WRITE_MODE(b) 	b &= ~(1 << 7)
 
-#define GYRO_PWR_DOWN_MODE 	
-#define GYRO_LOW_PWR_MODE 	
-#define GYRO_NORMAL_MODE 	
-#define GYRO_HIGH_PERF_MODE	
+#define GYRO_PWR_DOWN_MODE
+#define GYRO_LOW_PWR_MODE
+#define GYRO_NORMAL_MODE
+#define GYRO_HIGH_PERF_MODE
+
+/* CTRL1_XL */
+#define LSM6DS3_ODR_104_HZ 	(0x04 << 4)
+#define LSM6DS3_ODR_208_HZ 	(0x05 << 4)
+#define LSM6DS3_ODR_416_HZ 	(0x06 << 4)
+#define LSM6DS3_FS_XL_2G 				(0x00 << 2)
+#define LSM6DS3_FS_XL_4G 				(0x02 << 2)
+#define LSM6DS3_FS_XL_8G 				(0x03 << 2)
+#define LSM6DS3_FS_XL_16G 			(0x01 << 2)
+#define LSM6DS3_BW_XL_400_HZ 		0x00
+#define LSM6DS3_BW_XL_200_HZ 		0x01
+#define LSM6DS3_BW_XL_100_HZ 		0x02
+#define LSM6DS3_BW_XL_50_HZ 		0x03
+
+/* CTRL2_G */
+#define LSM6DS3_FS_G_250_DPS 		(0x00 << 2)
+#define LSM6DS3_FS_G_500_DPS 		(0x01 << 2)
+#define LSM6DS3_FS_G_1000_DPS 	(0x02 << 2)
+#define LSM6DS3_FS_G_2000_DPS 	(0x03 << 2)
 
 typedef enum {
 	FUNC_CFG_ACCESS 	= 0x01,
@@ -106,5 +126,9 @@ typedef enum {
 
 }ImuReg;
 
+void lsm6ds3_xl_power_on(int spi_fd, int gpio_fd, uint8_t config_byte);
+void lsm5ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte);
+float read_accel(int spi_fd, int gpio_fd, int axis);
+float read_gyro(int spi_fd, int gpio_fd, int axis);
 
 #endif

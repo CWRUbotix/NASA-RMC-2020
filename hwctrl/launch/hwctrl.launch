@@ -1,0 +1,3 @@
+<launch>
+  <node name="hwctrl_node" pkg="hwctrl" type="hwctrl" launch-prefix="sudo" output="screen" />
+</launch>

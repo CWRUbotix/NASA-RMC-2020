@@ -95,7 +95,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 				// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
 
 				if(crc != chk_crc){
-					ROS_INFO("Error: Checksum doesn't match");
+					ROS_WARN("Error: VESC checksum doesn't match");
 					// error in transmission
 					break;
 				}
@@ -159,7 +159,7 @@ HwMotor* HwMotorIf::get_vesc_from_can_id(int can_id){
 
 
 void maintain_motors_thread(HwMotorIf* motor_if){
-	ROS_INFO("Starting maintain_motors_thread");
+	ROS_DEBUG("Starting maintain_motors_thread");
 	ros::AsyncSpinner spinner(1, &(motor_if->cb_queue));
 	spinner.start();
 	while(ros::ok()){
@@ -172,7 +172,7 @@ void HwMotorIf::maintain_next_motor(){
 	HwMotor* motors = this->motors.data();
 	HwMotor* motor = &(motors[this->motor_ind]);
 	// HwMotor* motor = &(this->motors.at(this->motor_ind));
-	ROS_INFO("Maintaining motor %s", motor->name.c_str());
+	//ROS_DEBUG("Maintaining motor %s", motor->name.c_str());
 	switch(motor->motor_type){
 		case(DEVICE_NONE):break;
 		case(DEVICE_VESC):{
@@ -207,7 +207,7 @@ void HwMotorIf::maintain_next_motor(){
 				this->can_tx_pub.publish(frame_msg);
 				motor->update_t = ros::Time::now();
 			}else{
-				ROS_INFO("I didn't think this could happen ...");
+				ROS_WARN("I didn't think this could happen ...");
 				motor->online = false;
 			}
 
@@ -228,7 +228,7 @@ void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
 	if(id >= this->motors.size()){
 		return;
 	}
-	ROS_INFO("Setting motor %d to %f at %f", id, msg.setpoint, msg.acceleration);
+	ROS_DEBUG("Setting motor %d to %f at %f", id, msg.setpoint, msg.acceleration);
 	HwMotor* motors = this->motors.data(); // pointer to our motor struct
 	motors[id].setpoint = msg.setpoint;
 	if(fabs(msg.acceleration) > motors[id].max_accel || fabs(msg.acceleration) == 0.0){
@@ -243,7 +243,7 @@ bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::S
 		return false;
 	}
 	int id = request.id;
-	ROS_INFO("Setting motor %d to %f at %f", id, request.setpoint, request.acceleration);
+	ROS_DEBUG("Setting motor %d to %f at %f", id, request.setpoint, request.acceleration);
 	HwMotor* motors = this->motors.data(); // pointer to our motor struct
 
 	motors[id].setpoint = request.setpoint;

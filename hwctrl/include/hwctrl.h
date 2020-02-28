@@ -200,6 +200,7 @@ public:
 	int sys_id = -1; // system-wide ID to use
 	int dev_id = -1;
 	std::string name; // a descriptive name of the sensor
+	std::string descrip;
 	bool is_setup 					= false; // flag to indicate whether everything is setup
 	InterfaceType if_type 	= IF_NONE;
 	DeviceType dev_type 		= DEVICE_NONE;
