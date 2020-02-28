@@ -445,15 +445,31 @@ void SensorIf::setup_spi_devices(){
 
 
 
-	// IMU
+	// ======= IMU ========
 	dev = &(spi_devices[IMU_IND]);
 	dev->device_type 	= DEVICE_LSM6DS3;
 	dev->gpio_path 		= imu_cs;
 	dev->spi_mode 		= LSM6DS3_SPI_MODE;
 	dev->spi_max_speed= LSM6DS3_SPI_SPEED;
-	dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path);
 	gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
-	gpio_set(dev->gpio_value_handle); // make CS high to disable
+	if((dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path)) > 0){
+		gpio_set(dev->gpio_value_handle); // make CS high to disable
+		spi_set_speed(this->spi_handle, dev->spi_max_speed);
+		spi_set_mode(this->spi_handle, dev->spi_mode);
+		buf[0] = WHO_AM_I;
+		LSM6DS3_SET_READ_MODE(buf[0]);
+		gpio_reset(dev->gpio_value_handle);
+		spi_cmd(this->spi_handle, buf[0], buf, 1);
+		gpio_set(dev->gpio_value_handle);
+
+		if(buf[0] == LSM6DS3_WHO_AM_I_ID){
+			ROS_INFO("IMU setup success!");
+			dev->is_setup = true;
+		}else{
+			ROS_INFO("IMU setup failed :(");
+		}
+
+	}
 
 
 }
