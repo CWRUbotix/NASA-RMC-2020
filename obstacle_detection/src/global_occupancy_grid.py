@@ -54,24 +54,19 @@ class GlobalOccupancyGrid:
         os.makedirs(self.viz_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.data_dir + 'localization', exist_ok=True)
-        try:
-            files = glob.glob('%s/*' % self.viz_dir)
-            for f in files:
+
+        self.clear_dir(self.viz_dir)
+        self.clear_dir(self.data_dir)
+        self.clear_dir(self.data_dir + 'localization')
+
+    @staticmethod
+    def clear_dir(dir_name):
+        files = glob.glob('%s/*' % (dir_name))
+        for f in files:
+            try:
                 os.remove(f)
-        except Exception as e:
-            print(e)
-        try:
-            files = glob.glob('%s/*' % self.data_dir)
-            for f in files:
-                os.remove(f)
-        except Exception as e:
-            print(e)
-        try:
-            files = glob.glob('%s/*' % (self.data_dir + 'localization'))
-            for f in files:
-                os.remove(f)
-        except Exception as e:
-            print(e)
+            except OSError as e:
+                print(e)
 
     def localization_listener(self, msg):
         pose = msg.pose.pose
