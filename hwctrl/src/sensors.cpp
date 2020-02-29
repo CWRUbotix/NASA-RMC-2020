@@ -110,9 +110,9 @@ void sensors_thread(SensorIf* sensor_if){
 						int spi_fd = sensor->spi_device->spi_handle;
 						int gpio_fd = sensor->spi_device->gpio_value_handle;
 						if(sensor->descrip.compare("accel") == 0){
-							sensor->value = read_accel(spi_fd, gpio_fd, sensor->axis);
+							sensor->value = read_accel(spi_fd, gpio_fd, sensor->axis, sensor->scale);
 						}else if(sensor->descrip.compare("gyro") == 0){
-							sensor->value = read_gyro(spi_fd, gpio_fd, sensor->axis);
+							sensor->value = read_gyro(spi_fd, gpio_fd, sensor->axis, sensor->scale);
 						}else{
 							break;
 						}
@@ -270,9 +270,11 @@ void SensorIf::get_sensors_from_csv(){
 						info.axis = ((*line)[aux_2_ind])[0];
 						info.descrip = (*line)[aux_1_ind];
 						if( (*line)[aux_1_ind].compare("accel") == 0){
+							info.scale = 2.0; // 4 g's full-scale
 							// it's an acclerometer
 						}else if( (*line)[aux_1_ind].compare("gyro") == 0) {
 							// it's a gyroscope
+							info.scale = 250.0; // 250 deg/sec full-scale
 						}
 						info.spi_device = &(this->spi_devices[IMU_IND]); // store the pointer to the spi device
 						break;

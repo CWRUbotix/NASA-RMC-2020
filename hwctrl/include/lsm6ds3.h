@@ -128,7 +128,7 @@ typedef enum {
 
 void lsm6ds3_xl_power_on(int spi_fd, int gpio_fd, uint8_t config_byte);
 void lsm5ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte);
-float read_accel(int spi_fd, int gpio_fd, int axis);
-float read_gyro(int spi_fd, int gpio_fd, int axis);
+float read_accel(int spi_fd, int gpio_fd, int axis, float fs);
+float read_gyro(int spi_fd, int gpio_fd, int axis, float fs);
 
 #endif

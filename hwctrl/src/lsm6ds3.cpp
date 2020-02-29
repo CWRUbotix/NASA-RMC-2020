@@ -29,32 +29,59 @@ void lsm5ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
 
 /**
  * read acceleration in specified axis
+ * @return acceleration in m/s
  */
-float read_accel(int spi_fd, int gpio_fd, int axis){
+float read_accel(int spi_fd, int gpio_fd, int axis, float fs){
+  uint8_t buf[2] = {};
   switch(axis){
     case LSM6DS3_X_AXIS:{
+      buf[0] = OUTX_L_XL;
       break;
     }case LSM6DS3_Y_AXIS:{
+      buf[0] = OUTY_L_XL;
       break;
     }case LSM6DS3_Z_AXIS:{
+      buf[0] = OUTY_L_XL;
       break;
     }
     default:
-      break;
+      return 0.0;
   }
-}
+  LSM6DS3_SET_READ_MODE(buf[0])
 
+  gpio_reset(gpio_fd);
+  spi_cmd(spi_fd, buf[0], buf, 2); // send cmd byte, read 2 bytes
+  gpio_set(gpio_fd);
 
-/**
- * read just the accleration in x
- */
-float read_accel_x(int spi_fd, int gpio_fd){
-
+  int16_t val = buf[0] | (buf[1] << 8);
+  return (9.81 * fs * ((float)val))/32767.0;
 }
 
 /**
  *
  */
-void read_gyro(int spi_fd, int gpio_fd, float* vals){
+float read_gyro(int spi_fd, int gpio_fd, int axis, float fs){
+  uint8_t buf[2] = {};
+  switch(axis){
+    case LSM6DS3_X_AXIS:{
+      buf[0] = OUTX_L_G;
+      break;
+    }case LSM6DS3_Y_AXIS:{
+      buf[0] = OUTY_L_G;
+      break;
+    }case LSM6DS3_Z_AXIS:{
+      buf[0] = OUTY_L_G;
+      break;
+    }
+    default:
+      return 0.0;
+  }
+  LSM6DS3_SET_READ_MODE(buf[0])
 
+  gpio_reset(gpio_fd);
+  spi_cmd(spi_fd, buf[0], buf, 2); // send cmd byte, read 2 bytes
+  gpio_set(gpio_fd);
+
+  int16_t val = buf[0] | (buf[1] << 8);
+  return (fs * ((float)val))/32767.0;
 }

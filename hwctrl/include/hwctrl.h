@@ -208,6 +208,8 @@ public:
 	int gpio_value_fd 			= -1;
 	SpiDevice * spi_device 	= NULL;
 	uint8_t axis 		= LSM6DS3_X_AXIS;
+	float scale = 1.0;
+	float offset = 0.0;
 	ros::Time timestamp;
 	float value 						= 0.0;
 	bool update = false; // flag to indicate if it's time to update
