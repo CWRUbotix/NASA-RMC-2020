@@ -1,32 +1,46 @@
 #!/usr/bin/env python3
 import rospy
-from autonomy.msg import goToGoal
+import actionlib
+from actionlib_msgs.msg import GoalStatus
+from autonomy.msg import GoToGoalAction, GoToGoalGoal
 
-goal_pub = rospy.Publisher("transit_command", goToGoal, queue_size=10)
-
-def on_shut_down():
-    global goal_pub
-    print("sending stop command")
-    goal_pub.publish(stop=True, x=0.0, y=0.0)
 
 def main():
     rospy.init_node("autonomy")
-    rospy.on_shutdown(on_shut_down)
-    global goal_pub
 
-    print("TEST 2019/11/24")
-    print("Testing simple stuff for transit")
+    client = actionlib.SimpleActionClient('go_to_goal', GoToGoalAction)
+    rospy.loginfo("Waiting for robot action server")
+    client.wait_for_server()
+    rospy.loginfo("Server found")
+
     while True:
-        x = float(input("Enter x-coordinate of where you want to go\n"))
-        y = float(input("Enter y-coordinate of where you want to go\n"))
+        failure = True
+        while failure:
+            try:
+                x = float(input("Enter x-coordinate of where you want to go\n"))
+                y = float(input("Enter y-coordinate of where you want to go\n"))
+                input("Hit <Enter> when you are ready")
+                failure = False
+            except ValueError:
+                print("Oops enter a valid value\n")
+                failure = True
 
-        input("Hit <Enter> when you are ready")
-        print("Sent\n")
+        rospy.loginfo("Sent")
 
-        goal_pub.publish(stop=False, x=x, y=y)
+        goal = GoToGoalGoal(x=x, y=y)
+        client.send_goal(goal)
+
+        input("Press <Enter> to stop robot or continue")
+
+        if client.get_state() == GoalStatus.ACTIVE:
+            rospy.loginfo("Canceling action")
+            client.cancel_goal()
+        else:
+            print("result: ", client.get_state())
 
     while not rospy.is_shutdown():
         rospy.spin()
+
 
 if __name__ == "__main__":
     main()

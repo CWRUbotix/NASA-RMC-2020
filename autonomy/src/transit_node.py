@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 import rospy
-# from tf.transformations import euler_from_quaternion
+import actionlib
 from scipy.spatial.transform import Rotation as R
-from hci.msg import motorCommand
-#from hwctrl.srv import SetMotor, SetMotorRequest
 from hwctrl.msg import SetMotorMsg
-from autonomy.msg import goToGoal, transitPath, transitControlData
-from nav_msgs.msg import OccupancyGrid
+from autonomy.msg import GoToGoalAction, transitPath, transitControlData
 from autonomy.srv import RobotState
-from uwb_localization.srv import EffectiveRPM
 from PathFollowing.PathFollower import PathFollower
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathPlanning.PathPlanningUtils import Position, Grid
@@ -18,6 +14,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import glob
+
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 
 
@@ -33,6 +30,8 @@ wheel_radius = rospy.get_param('wheel_radius')
 
 class TransitNode:
     def __init__(self, visualize=False):
+        self.server = actionlib.SimpleActionServer('go_to_goal', GoToGoalAction, self.go_to_goal, auto_start=False)
+
         self.motor_acceleration = rospy.get_param('autonomy_motor_command_accel')
         self.motor_pub = rospy.Publisher("motor_setpoints", SetMotorMsg, queue_size=4)
         self.path_pub = rospy.Publisher("transitPath", transitPath, queue_size=4)
@@ -66,17 +65,18 @@ class TransitNode:
         rospy.wait_for_service('robot_state')
         self.get_robot_state = rospy.ServiceProxy('robot_state', RobotState)
         rospy.loginfo("Services acquired")
+        self.server.start()
         self.subscribe()
         rospy.on_shutdown(self.shutdown)
         rospy.spin()
 
-    def go_to_goal(self, msg):
-        if msg.stop:
-            self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
-            self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
-            return
+    def go_to_goal(self, goal_msg):
+        # if msg.stop:
+        #     self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
+        #     self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
+        #     return
 
-        goal = Position(msg.x, msg.y)
+        goal = Position(goal_msg.x, goal_msg.y)
         rospy.loginfo("Received ({}, {})".format(goal.x, goal.y))
 
         msg = self.get_robot_state()
@@ -95,7 +95,7 @@ class TransitNode:
         rate = 30
         r = rospy.Rate(rate)  # 'rate' Hz
         last_time = rospy.get_rostime().nsecs
-        while not rospy.is_shutdown() and not self.controller.done:
+        while not self.server.is_preempt_requested() and not self.controller.done:
             msg = self.get_robot_state()
             self.receive_state(msg.odometry)
 
@@ -121,24 +121,6 @@ class TransitNode:
             self.target_wheel_speeds.append([right_speed, left_speed])
             self.wheel_speeds.append([msg.sensors.starboardDriveEncoder, msg.sensors.portDriveEncoder])
 
-            '''
-            goal_right = right_speed
-            goal_left = left_speed
-
-            rospy.wait_for_service("effective_RPM")
-            effective_rpm = rospy.ServiceProxy("effective_RPM", EffectiveRPM)
-            true_rpm = effective_rpm(left=left_speed, right=right_speed)
-            num_iter = 50
-
-            while num_iter > 0 and (math.fabs(true_rpm.effectiveLeft - goal_left) > 0.1 or math.fabs(true_rpm.effectiveRight - goal_right) > 0.1):
-                num_iter -= 1
-                left_diff = goal_left - true_rpm.effectiveLeft
-                right_diff = goal_right - true_rpm.effectiveRight
-                left_speed += 0.025 * left_diff
-                right_speed += 0.025 * right_diff
-                true_rpm = effective_rpm(left=left_speed, right=right_speed)
-            '''
-
             self.motor_pub.publish(id=0, setpoint=left_speed, acceleration=self.motor_acceleration)
             self.motor_pub.publish(id=1, setpoint=right_speed, acceleration=self.motor_acceleration)
 
@@ -149,7 +131,14 @@ class TransitNode:
             last_time = time
             r.sleep()
 
-        rospy.loginfo("Path Complete")
+        if self.server.is_preempt_requested():
+            self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
+            self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
+            self.server.set_preempted()
+            rospy.loginfo("Preempt requested ")
+        else:
+            self.server.set_succeeded()
+            rospy.loginfo("Path Complete")
 
     def receive_state(self, msg):
         pose = msg.pose.pose
@@ -168,10 +157,9 @@ class TransitNode:
             self.controller.update_grid(grid)
 
     def subscribe(self):
-        rospy.Subscriber("transit_command", goToGoal, self.go_to_goal)
         # rospy.Subscriber("robot_state", robotState, self.receive_state)
         # rospy.Subscriber("occupancy_grid", OccupancyGrid, self.receive_grid)
-        #pass
+        pass
 
     def publish_path(self):
         path = self.controller.get_path()
