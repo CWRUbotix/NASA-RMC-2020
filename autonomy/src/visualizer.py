@@ -27,6 +27,9 @@ class Visualizer:
         self.ang_vels = []
         self.target_wheel_speeds = [[0, 0]]
         self.wheel_speeds = [[0, 0]]
+        self.followed_segment = np.array([[0, 0]])
+        self.closest_point = []
+        self.reference_point = []
         self.global_grid = [[0, 50], [100, 0]]
         self.grid_extent = (0, 1, 0, 1)
 
@@ -68,6 +71,9 @@ class Visualizer:
         self.ang_vels = self.ang_vels[-length:]
         self.target_wheel_speeds = self.target_wheel_speeds[-length:]
         self.wheel_speeds = self.wheel_speeds[-length:]
+        self.followed_segment = np.array(list(msg.followed_segment)).reshape((-1, 2))
+        self.closest_point = list(msg.closest_point)
+        self.reference_point = list(msg.reference_point)
 
     def recieveOccupancyGrid(self, msg):
         width = msg.info.width
@@ -93,6 +99,9 @@ class Visualizer:
 
         line_path, = ax1.plot([], [], linewidth=0.75, color='blue')
         line_robot, = ax1.plot([], [], linewidth=0.75, color='blue')
+        line_segment, = ax1.plot([], [], linewidth=0.75, color='orange')
+        reference_point, = ax1.plot([], [], marker='o', markersize=3)
+        closest_point, = ax1.plot([], [], marker='o', markersize=3)
         img = ax1.imshow(self.global_grid, cmap='Reds', extent=self.grid_extent, vmin=0, vmax=100)
 
         ax1.set_title("Arena")
@@ -126,6 +135,15 @@ class Visualizer:
                 line_robot.set_xdata(points[:, 0])
                 line_robot.set_ydata(points[:, 1])
 
+            line_segment.set_xdata(self.followed_segment[:, 0])
+            line_segment.set_ydata(self.followed_segment[:, 1])
+            if len(self.closest_point) > 0:
+                closest_point.set_xdata(self.closest_point[0])
+                closest_point.set_ydata(self.closest_point[1])
+            if len(self.reference_point) > 0:
+                reference_point.set_xdata(self.reference_point[0])
+                reference_point.set_ydata(self.reference_point[1])
+
             img.set_data(self.global_grid)
             img.set_extent(self.grid_extent)
             # img.autoscale()
@@ -151,8 +169,10 @@ class Visualizer:
             line_wheel_r.set_xdata(x_values)
             line_wheel_l.set_xdata(x_values)
 
-            return line_path, line_robot, line_t_vels, line_vels, line_t_ang_vels, line_ang_vels\
-                    , line_t_wheel_r, line_t_wheel_l, line_wheel_r, line_wheel_l, img
+            return line_path, line_robot, line_t_vels, line_vels, line_t_ang_vels, line_ang_vels, \
+                    line_t_wheel_r, line_t_wheel_l, line_wheel_r, line_wheel_l, img, line_segment, \
+                    closest_point, reference_point
+
 
         ani = animation.FuncAnimation(fig, animate, blit=True, interval=50)
         plt.show()

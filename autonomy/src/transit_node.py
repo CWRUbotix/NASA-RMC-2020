@@ -71,11 +71,6 @@ class TransitNode:
         rospy.spin()
 
     def go_to_goal(self, goal_msg):
-        # if msg.stop:
-        #     self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
-        #     self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
-        #     return
-
         goal = Position(goal_msg.x, goal_msg.y)
         rospy.loginfo("Received ({}, {})".format(goal.x, goal.y))
 
@@ -85,10 +80,12 @@ class TransitNode:
         self.receive_grid(msg.grid)
 
         self.controller.reset()
+        self.controller.set_drive_backwards(True)
         self.controller.set_goal(goal)
         self.controller.state = self.robot_state["state"]
         self.controller.state_dot = self.robot_state["state_dot"]
         self.controller.calculate_path()
+        self.publish_path()
 
         rospy.loginfo("Going to ({}, {})".format(goal.x, goal.y))
 
@@ -99,11 +96,13 @@ class TransitNode:
             msg = self.get_robot_state()
             self.receive_state(msg.odometry)
 
-            if self.step % rate == 0:  # Every second
+            if self.step % int(0.5 * rate) == 0:  # Every half second
                 self.receive_grid(msg.grid)
-                self.controller.calculate_path()
-                rospy.loginfo("Path Generated, Currently at: {:.2f}".format(self.controller.current_index))
-                self.publish_path()
+                if self.controller.is_path_blocked():
+                    self.controller.calculate_path()
+                    rospy.loginfo("Path blocked, regenerating")
+                    self.publish_path()
+            rospy.loginfo("Currently at: {:.2f}".format(self.controller.current_index))
 
             time = rospy.get_rostime().nsecs
             dt = (time - last_time) * 1e-9
@@ -163,13 +162,11 @@ class TransitNode:
 
     def publish_path(self):
         path = self.controller.get_path()
-        data = []
-        for point in path:  # Make data 1D
-            data.append(point[0])
-            data.append(point[1])
-        self.path_pub.publish(path=data)
+        self.path_pub.publish(path=path.ravel())
 
     def publish_control_data(self):
+        followed_segment, closest_point, reference_point = self.controller.draw_path_info()
+
         data = transitControlData()
         data.t_vel = self.target_vels[-1]
         data.t_angular_vel = self.target_ang_vels[-1]
@@ -179,6 +176,9 @@ class TransitNode:
         data.t_left_speed = self.target_wheel_speeds[-1][1]
         data.right_speed = self.wheel_speeds[-1][0]
         data.left_speed = self.wheel_speeds[-1][1]
+        data.followed_segment = followed_segment.ravel()
+        data.closest_point = closest_point
+        data.reference_point = reference_point
 
         self.control_data_pub.publish(data)
 

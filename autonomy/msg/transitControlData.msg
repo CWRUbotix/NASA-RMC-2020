@@ -6,3 +6,7 @@ float32 t_right_speed
 float32 t_left_speed
 float32 right_speed
 float32 left_speed
+
+float32[] followed_segment
+float32[] closest_point
+float32[] reference_point

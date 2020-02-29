@@ -3,6 +3,7 @@ from collections import deque
 from PathPlanningUtils import Position, Grid
 from PathFollower import PathFollower
 from SkidSteerSimulator import SkidSteerSimulator
+from numpy import sign
 
 
 class InteractivePathTester:
@@ -117,8 +118,8 @@ class InteractivePathTester:
         for i in range(50):
             target_vel, target_angular_vel = self.controller.get_target_vels(self.robot.state, self.robot.state_dot, dt)
 
-            if self.robot.state_dot[0, 0] < target_vel:
-                forward_torque = 30
+            if abs(self.robot.state_dot[0, 0]) < abs(target_vel):
+                forward_torque = 30 * sign(target_vel)
             else:
                 forward_torque = 0
 

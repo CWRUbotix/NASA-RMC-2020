@@ -1,6 +1,6 @@
 import numpy as np
 import PathFollowing.config as config
-from PathPlanning.ThetaStar import create_path
+from PathPlanning.ThetaStar import create_path, checkBlocked
 from PathPlanning.PathPlanningUtils import Position, constrain_angle
 
 
@@ -81,12 +81,21 @@ class PathFollower:
     def update_grid(self, grid):
         self.grid = grid
 
+    def set_drive_backwards(self, drive_backwards):
+        self.drive_backwards = -1 if drive_backwards else 1
+
     def reset(self):
         self.done = False  # Reset everything that will not automatically be reset by the creation of a new path
         self.last_s = 0
         self.current_index = 0
         self.errors = []
         self.error_dots = []
+
+    def is_path_blocked(self):
+        for i in range(len(self.global_path) - 1):
+            if checkBlocked(Position(*self.global_path[i]), Position(*self.global_path[i+1]), self.grid):
+                return True
+        return False
 
     def get_target_vels(self, state, state_dot, dt):
         self.update(state, state_dot)
@@ -120,7 +129,7 @@ class PathFollower:
         self.check_if_done()  # Check if done, if we are, set vels to 0
 
         if not self.done:
-            if abs(offset) < np.pi / 6:
+            if abs(offset) < np.pi / 3:
                 target_vel = config.target_velocity * self.alpha
                 target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
             else:
@@ -232,6 +241,7 @@ class PathFollower:
         path = []
 
         theta = self.state[2, 0]  # angle
+
         rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
                                     [np.sin(theta), np.cos(theta)]])
 
