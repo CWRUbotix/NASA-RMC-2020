@@ -15,7 +15,7 @@ void lsm6ds3_xl_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
 }
 
 // power on the gyroscope
-void lsm5ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
+void lsm6ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
   // Gyroscope, CTRL2_G
   buf[0] = CTRL2_G; // register to write to
   buf[1] = config_byte;

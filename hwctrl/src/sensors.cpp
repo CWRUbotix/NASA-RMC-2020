@@ -107,7 +107,7 @@ void sensors_thread(SensorIf* sensor_if){
 						break;
 					}case DEVICE_LSM6DS3:{
 						ROS_DEBUG("***** UPDATE IMU *****");
-						int spi_fd = sensor->spi_device->spi_handle;
+						int spi_fd = sensor_if->spi_handle;
 						int gpio_fd = sensor->spi_device->gpio_value_handle;
 						if(sensor->descrip.compare("accel") == 0){
 							sensor->value = read_accel(spi_fd, gpio_fd, sensor->axis, sensor->scale);
@@ -489,7 +489,7 @@ void SensorIf::setup_spi_devices(){
 
 		if(buf[0] == LSM6DS3_WHO_AM_I_ID){
 			lsm6ds3_xl_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_XL_2G);
-			lsm6ds3_g_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_G_250_DPS)
+			lsm6ds3_g_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_G_250_DPS);
 			ROS_DEBUG("IMU setup success!");
 			dev->is_setup = true;
 		}else{
