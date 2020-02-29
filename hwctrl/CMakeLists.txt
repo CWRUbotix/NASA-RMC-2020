@@ -151,6 +151,7 @@ add_executable(hwctrl
   src/motors.cpp
   src/sensors.cpp
   src/gpio.cpp
+  src/lsm6ds3.cpp
 )
 
 ## Rename C++ executable without prefix

@@ -17,6 +17,7 @@ void lsm6ds3_xl_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
 // power on the gyroscope
 void lsm6ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
   // Gyroscope, CTRL2_G
+  uint8_t buf[2] = {};
   buf[0] = CTRL2_G; // register to write to
   buf[1] = config_byte;
   LSM6DS3_SET_WRITE_MODE(buf[0]);
@@ -47,7 +48,7 @@ float read_accel(int spi_fd, int gpio_fd, int axis, float fs){
     default:
       return 0.0;
   }
-  LSM6DS3_SET_READ_MODE(buf[0])
+  LSM6DS3_SET_READ_MODE(buf[0]);
 
   gpio_reset(gpio_fd);
   spi_cmd(spi_fd, buf[0], buf, 2); // send cmd byte, read 2 bytes
@@ -76,7 +77,7 @@ float read_gyro(int spi_fd, int gpio_fd, int axis, float fs){
     default:
       return 0.0;
   }
-  LSM6DS3_SET_READ_MODE(buf[0])
+  LSM6DS3_SET_READ_MODE(buf[0]);
 
   gpio_reset(gpio_fd);
   spi_cmd(spi_fd, buf[0], buf, 2); // send cmd byte, read 2 bytes

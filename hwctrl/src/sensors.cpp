@@ -335,7 +335,7 @@ void SensorIf::setup_spi_devices(){
 	uint8_t buf[8] = {};
 	//====== ADC 1, potentiometers =======
 	dev->device_type   = DEVICE_ADS1120;
-  dev->gpio_path 		 = adc_1_cs;
+	dev->gpio_path 		 = adc_1_cs;
 	dev->spi_mode 		 = ADS1120_SPI_MODE;
 	dev->spi_max_speed = ADS1120_SPI_SPEED;
 	gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
@@ -387,7 +387,7 @@ void SensorIf::setup_spi_devices(){
 	dev->spi_max_speed 	= ADS1120_SPI_SPEED;
 	gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
 	if((dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path)) > 0){
-
+		ROS_INFO("Setting up the load cell ADC");
 		gpio_set(dev->gpio_value_handle); // make CS high to disable
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
@@ -428,6 +428,7 @@ void SensorIf::setup_spi_devices(){
 	dev->spi_max_speed= ADT7310_SPI_SPEED;
 	gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
 	if((dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path)) > 0){
+		ROS_INFO("Setting up the ADT7310");
 		gpio_set(dev->gpio_value_handle); // make CS high to disable
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
@@ -483,11 +484,12 @@ void SensorIf::setup_spi_devices(){
 		spi_set_mode(this->spi_handle, dev->spi_mode);
 		buf[0] = WHO_AM_I;
 		LSM6DS3_SET_READ_MODE(buf[0]);
+		ROS_INFO("Trying the IMU");
 		gpio_reset(dev->gpio_value_handle);
-		spi_cmd(this->spi_handle, buf[0], buf, 1);
+		int n_read = spi_cmd(this->spi_handle, buf[0], buf, 1);
 		gpio_set(dev->gpio_value_handle);
 
-		if(buf[0] == LSM6DS3_WHO_AM_I_ID){
+		if(n_read == 1 && buf[0] == LSM6DS3_WHO_AM_I_ID){
 			lsm6ds3_xl_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_XL_2G);
 			lsm6ds3_g_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_G_250_DPS);
 			ROS_DEBUG("IMU setup success!");
