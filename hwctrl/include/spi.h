@@ -1,6 +1,7 @@
 #ifndef SPI_H_
 #define SPI_H_
 
+#include <ros/ros.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>

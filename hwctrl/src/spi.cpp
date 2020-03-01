@@ -2,8 +2,9 @@
 
 int spi_init(char* fname){
 	int file;
-
+	ROS_INFO("Trying SPI on %s", fname);
     if ((file = open(fname,O_RDWR)) < 0){
+	    ROS_ERROR("SPI open failed");
         return SPI_ERR_OPEN_FAILED;
     }
 
@@ -12,12 +13,22 @@ int spi_init(char* fname){
 
     // set default spi mode
     if (spi_set_mode(file, SPI_DEFAULT_MODE) < 0){
+	    ROS_ERROR("Set SPI mode failed");
         return SPI_ERR_SET_MODE_FAILED;
     }
+    
+    // make sure MSB is first
+    uint8_t value = 0;
+    if (ioctl(file, SPI_IOC_WR_LSB_FIRST, &value) != 0){
+	    return SPI_ERR_SET_MODE_FAILED;
+    }
+
     // set default spi clock speed
     if (spi_set_speed(file, SPI_DEFAULT_SPEED) < 0){
+	    ROS_ERROR("Set SPI max speed failed");
         return SPI_ERR_SET_SPEED_FAILED;
     }
+    return file;
 
 }
 

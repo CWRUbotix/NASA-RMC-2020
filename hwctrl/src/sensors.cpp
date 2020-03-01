@@ -30,12 +30,13 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	}else{
 		ROS_DEBUG("GPIO setup succeeded!");
 	}
-
-	this->spi_handle = spi_init("/dev/spidev1.0");
+	
+	ROS_DEBUG("SPI init time!!");
+	this->spi_handle = spi_init("/dev/spidev2.0");
 	if(this->spi_handle < 0){
 		ROS_ERROR("SPI init failed :(");
 	}else{
-		ROS_DEBUG("SPI init presumed successful");
+		ROS_INFO("SPI init presumed successful: %d", this->spi_handle);
 		this->setup_spi_devices();
 	}
 
@@ -330,17 +331,42 @@ void SensorIf::get_sensors_from_csv(){
 }
 
 void SensorIf::setup_spi_devices(){
+	// SET CS LINES HIGH
+	for(int i = 0; i < NUMBER_OF_SPI_DEVICES; i++){
+		SpiDevice* dev = &(spi_devices[i]);
+		if(i == ADC_1_IND){
+			dev->gpio_path = adc_1_cs;
+			dev->device_type   = DEVICE_ADS1120;
+			dev->spi_mode 		 = ADS1120_SPI_MODE;
+			dev->spi_max_speed = ADS1120_SPI_SPEED;
+		}else if(i == ADC_2_IND){
+			dev->gpio_path = adc_2_cs;
+			dev->device_type 		= DEVICE_ADS1120;
+			dev->spi_mode 			= ADS1120_SPI_MODE;
+			dev->spi_max_speed 	= ADS1120_SPI_SPEED;
+		}else if(i == TEMP_SENSOR_IND){
+			dev->gpio_path = temp_sensor_cs;
+			dev->device_type 	= DEVICE_ADT7310;
+			dev->spi_mode 		= ADT7310_SPI_MODE;
+			dev->spi_max_speed= ADT7310_SPI_SPEED;
+		}else if(i == IMU_IND){
+			dev->gpio_path = imu_cs;
+			dev->device_type 	= DEVICE_LSM6DS3;
+			dev->spi_mode 		= LSM6DS3_SPI_MODE;
+			dev->spi_max_speed	= LSM6DS3_SPI_SPEED;
+		}else{
+			continue;
+		}
+		gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
+		dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path);
+		gpio_set(dev->gpio_value_handle);
+	}
+
 	// SETUP DATA FOR SPI DEVICES
 	SpiDevice* dev = &(spi_devices[ADC_1_IND]);
 	uint8_t buf[8] = {};
 	//====== ADC 1, potentiometers =======
-	dev->device_type   = DEVICE_ADS1120;
-	dev->gpio_path 		 = adc_1_cs;
-	dev->spi_mode 		 = ADS1120_SPI_MODE;
-	dev->spi_max_speed = ADS1120_SPI_SPEED;
-	gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
-	if((dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path)) > 0){
-		gpio_set(dev->gpio_value_handle); // make CS high to disable
+	if((dev->gpio_value_handle) > 0){
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
 
@@ -381,14 +407,8 @@ void SensorIf::setup_spi_devices(){
 
 	//======= ADC 2, LOAD CELL ADC =======
 	dev = &(spi_devices[ADC_2_IND]);
-	dev->device_type 		= DEVICE_ADS1120;
-	dev->gpio_path 			= adc_2_cs;
-	dev->spi_mode 			= ADS1120_SPI_MODE;
-	dev->spi_max_speed 	= ADS1120_SPI_SPEED;
-	gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
-	if((dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path)) > 0){
+	if((dev->gpio_value_handle) > 0){
 		ROS_INFO("Setting up the load cell ADC");
-		gpio_set(dev->gpio_value_handle); // make CS high to disable
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
 
@@ -422,24 +442,19 @@ void SensorIf::setup_spi_devices(){
 
 	// ======= TEMP SENSOR =======
 	dev = &(spi_devices[TEMP_SENSOR_IND]);
-	dev->device_type 	= DEVICE_ADT7310;
-	dev->gpio_path 		= temp_sensor_cs;
-	dev->spi_mode 		= ADT7310_SPI_MODE;
-	dev->spi_max_speed= ADT7310_SPI_SPEED;
-	gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
-	if((dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path)) > 0){
+	if((dev->gpio_value_handle) > 0){
 		ROS_INFO("Setting up the ADT7310");
-		gpio_set(dev->gpio_value_handle); // make CS high to disable
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
 		buf[0] = ADT7310_CMD_READ_REG | (ADT7310_REG_ID << 3); // read ID register
 
 		gpio_reset(dev->gpio_value_handle);
+		ros::Duration(0.005).sleep();
 		int read_len = spi_cmd(this->spi_handle, buf[0], buf, 1); // write command byte and read resp byte
 		gpio_set(dev->gpio_value_handle);
 
 		if(read_len > 0 && (buf[0] & ADT7310_MFG_ID_MASK) == ADT7310_MFG_ID){
-
+			ROS_INFO("Great, ADT7310 Mfg ID read correct!");
 			buf[0] = (ADT7310_REG_CONFIG << 3); // writing to config register
 			buf[1] = ADT7310_FAULTS_1 | ADT7310_RES_16_BIT; // why not 16 bit?
 			gpio_reset(dev->gpio_value_handle);
@@ -464,6 +479,8 @@ void SensorIf::setup_spi_devices(){
 			gpio_set(dev->gpio_value_handle);
 
 			dev->is_setup = true;
+		}else{
+			ROS_INFO("Read %d bytes from ADT7310: %x", read_len, buf[0]);
 		}
 	}else{
 		ROS_ERROR("Failed to get file descriptor for %svalue", dev->gpio_path.c_str());
@@ -473,19 +490,14 @@ void SensorIf::setup_spi_devices(){
 
 	// ======= IMU ========
 	dev = &(spi_devices[IMU_IND]);
-	dev->device_type 	= DEVICE_LSM6DS3;
-	dev->gpio_path 		= imu_cs;
-	dev->spi_mode 		= LSM6DS3_SPI_MODE;
-	dev->spi_max_speed= LSM6DS3_SPI_SPEED;
-	gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
-	if((dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path)) > 0){
-		gpio_set(dev->gpio_value_handle); // make CS high to disable
+	if((dev->gpio_value_handle) > 0){
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
 		buf[0] = WHO_AM_I;
 		LSM6DS3_SET_READ_MODE(buf[0]);
 		ROS_INFO("Trying the IMU");
 		gpio_reset(dev->gpio_value_handle);
+		ros::Duration(0.005).sleep();
 		int n_read = spi_cmd(this->spi_handle, buf[0], buf, 1);
 		gpio_set(dev->gpio_value_handle);
 
@@ -495,7 +507,7 @@ void SensorIf::setup_spi_devices(){
 			ROS_DEBUG("IMU setup success!");
 			dev->is_setup = true;
 		}else{
-			ROS_ERROR("IMU setup failed :(");
+			ROS_ERROR("IMU setup failed :(, read %d bytes, %x...", n_read, buf[0]);
 		}
 
 	}else{
