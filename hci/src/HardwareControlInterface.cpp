@@ -192,6 +192,7 @@ void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
  		//ROS_INFO("sensorValue: %f", val);
  		sensorMessage.value = val;
     sensorMessage.header = std_msgs::Header();
+    sensorMessage.header.stamp = ros::Time::now();
 
  		it += 3;
 
