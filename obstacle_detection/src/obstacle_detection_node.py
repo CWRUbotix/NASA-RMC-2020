@@ -62,11 +62,13 @@ class ObstacleDetectionNode:
         self.resolution = rospy.get_param('grid_resolution')  # meters per grid cell
         self.grid_size = rospy.get_param('grid_size')  # number of rows/cols grid cells
         self.tolerance = rospy.get_param('ground_tolerance')  # tolerance in meters above/below ground to ignore
-        self.kernel_sigma = 1  # standard deviation of gaussian kernel used to smooth local grid
+        self.kernel_sigma = 0.5  # standard deviation of gaussian kernel used to smooth local grid
         self.save_imgs = True  # set to True to save local grid visualizations
         self.save_data = True  # set to True to save testing data
         self.localization_topic = rospy.get_param('localization')  # filtered global localization topic
         self.viz_dir = 'obstacle_viz/'  # directory to save visualizations
+        self.viz_step = 20
+        self.viz_i = 0
         self.frame_i = 0  # current frame number
         self.data_dir = 'saved_frames/'  # directory to save testing data
 
@@ -104,6 +106,7 @@ class ObstacleDetectionNode:
                 print(e)
 
     def realsense_callback(self, msg):
+        self.CameraPosition['roll'] = -(msg.x) * 57.296
         self.CameraPosition['elevation'] = -(msg.z + math.pi / 2) * 57.296
 
     def apply_camera_matrix_orientation(self, pt):
@@ -128,25 +131,29 @@ class ObstacleDetectionNode:
             pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
             pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
 
-        #rotatePoints(1, 2, CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
+        rotatePoints(0, 2, self.CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
         rotatePoints(1, 2, self.CameraPosition['elevation']) #rotate on the X&Z plane
         #rotatePoints(0, 1, self.CameraPosition['azimuth']) #rotate on the X&Y
 
         # Apply offsets for height and linear position of the sensor (from viewport's center)
+        pt[:, 2] *= -1  # TODO: Is this still necessary?
         pt[:] += np.float_([self.CameraPosition['x'], self.CameraPosition['y'], self.CameraPosition['z']])
         return pt
 
     def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500, pcnt=0):
+        grid_size = 4500
         proj = xyz_arr[..., [0, 1]]  # take only the X and Y components of point cloud
-        proj_img = np.zeros((4500, 4500))
+        proj_img = np.zeros((grid_size, grid_size))
         indices = np.int32(proj * 1000)
         try:
-            indices[..., 0] += 4500 // 2
-            indices = np.clip(indices, 0, 4499)
+            indices[..., 0] += grid_size // 2
+            indices = np.clip(indices, 0, grid_size - 1)
             proj_img[indices[..., 0], indices[..., 1]] = 255
-            new_size = 4500 // resize_factor
+            new_size = grid_size // resize_factor
             proj_img = cv2.rotate(proj_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
+            #_, proj_img = cv2.threshold(proj_img, 127, 255, cv2.THRESH_BINARY)
+            #proj_img = cv2.dilate(proj_img, kernel=np.ones((3, 3)), iterations=1)
+            proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_LINEAR)
         except ValueError:
             pass
         return np.uint8(proj_img)
@@ -157,6 +164,7 @@ class ObstacleDetectionNode:
         :param depth_frame: depth frame object from realsense
         :param color_frame: color frame object from realsense
         '''
+        self.viz_i += 1
         # convert frame objects to arrays
         depth_image = np.asanyarray(depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
@@ -177,7 +185,7 @@ class ObstacleDetectionNode:
         xyz_arr = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # (n x 3) XZY array
         xyz_arr[:, [1, 2]] = xyz_arr[:, [2, 1]]  # swap axes to be XYZ since realsense Z is depth
         xyz_arr = self.apply_camera_matrix_orientation(xyz_arr)  # apply height param and orientation from IMU
-        xyz_arr[:, 2] *= -1  # TODO: Is this still necessary?
+
 
         if self.save_data:  # save testing data
             np.save('%s/%d.npy' % (self.data_dir, self.frame_i), depth_image)
@@ -197,7 +205,7 @@ class ObstacleDetectionNode:
         obs_grid = np.maximum(rock_grid, hole_grid)  # combine rocks and holes into single obstacle grid
 
         occupancy_grid = gaussian_filter(obs_grid, sigma=self.kernel_sigma)  # smooth local grid using gaussian kernel
-        occupancy_grid /= np.max(occupancy_grid)  # ensure values are 0-1
+        occupancy_grid = occupancy_grid / np.max(occupancy_grid)  # ensure values are 0-1
 
         header = Header()
         header.stamp = rospy.Time.now()
@@ -223,7 +231,7 @@ class ObstacleDetectionNode:
             print(e.getMessage())
             pass
 
-        if self.save_imgs:
+        if self.save_imgs and self.viz_i % self.viz_step == 0:
             fig = plt.figure(figsize=(20, 10))
 
             ax = plt.subplot(241)
@@ -257,7 +265,7 @@ class ObstacleDetectionNode:
             ax.set_title('Occupancy Grid')
 
             ax = plt.subplot(246, projection='3d')
-            point_cloud = xyz_arr[::83]
+            point_cloud = xyz_arr[::150]
             point_cloud = point_cloud[point_cloud[: , 1] < 4.5, :]
             ax.scatter(point_cloud[:, 0], point_cloud[:, 1], point_cloud[:, 2], s=1)
             ax.set_xlim(-2.5, 2.5)

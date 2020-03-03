@@ -26,7 +26,7 @@ grid_size: 30 # (cells) width and height of occupancy grid
 
 # transit params
 motor_command_accel: 15  # (RPM  / s) rate to change the motor speed upon sending a new command
-autonomy_motor_command_accel: 15
+autonomy_motor_command_accel: 30
 
 # message topics
 localization: 'odometry/filtered_map'  # filtered global localization data as an Odometry msg

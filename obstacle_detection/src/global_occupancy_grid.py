@@ -30,7 +30,7 @@ class GlobalOccupancyGrid:
 
     def __init__(self):
         self.save_imgs = False
-        self.save_data = False
+        self.save_data = True
         self.robot_x = []
         self.robot_y = []
         self.robot_pitch = []
@@ -113,7 +113,10 @@ class GlobalOccupancyGrid:
                 np.save('%s/%d.npy' % (self.data_dir, len(os.listdir(self.data_dir))), self.local_grid)
                 np.save('%s/%d.npy' % (self.data_dir + 'localization', len(os.listdir(self.data_dir + 'localization'))),
                         np.array([self.robot_x[-1], self.robot_y[-1], self.robot_pitch[-1]]))
-
+            indices = np.indices(self.local_grid.shape)
+            mask = abs(indices[1] - self.local_grid.shape[1] / 2) < (self.local_grid.shape[0] - indices[0])
+            mask = np.reshape(mask, (grid_size, grid_size))
+            self.local_grid[~mask] = -1
             #  Rotate image using degrees for some dumb reason
             rotated_grid = ndimage.rotate(self.local_grid, (self.robot_pitch[-1] * 180 / np.pi + self.camera_offset[2]),
                                           mode='constant', cval=-1, reshape=True)  # rotate grid by camera + robot angle
@@ -150,8 +153,9 @@ class GlobalOccupancyGrid:
             counts[~roi] = 0
 
             global_additions = self.paste(self.global_totals, rotated_grid, local_origin)
-            self.global_totals[roi] = (self.global_totals[roi] * np.minimum(self.global_counts[roi], 10) + global_additions[roi]) \
-                                      / (np.minimum(self.global_counts[roi], 10) + 1)
+            window_size = 100
+            self.global_totals[roi] = (self.global_totals[roi] * np.minimum(self.global_counts[roi], window_size) + global_additions[roi]) \
+                                      / (np.minimum(self.global_counts[roi], window_size) + 1)
 
             self.global_counts += counts
 
@@ -159,7 +163,7 @@ class GlobalOccupancyGrid:
             # self.global_grid = np.nan_to_num(self.global_grid, copy=False)
             # self.global_grid /= np.max(self.global_grid)  # ensure values are 0-1
 
-            self.global_grid = ndimage.maximum_filter(self.global_totals, size=5, mode='nearest')
+            self.global_grid = ndimage.maximum_filter(self.global_totals, size=7, mode='nearest')
             self.global_grid[self.global_grid >= 50] = 100
 
             header = Header()

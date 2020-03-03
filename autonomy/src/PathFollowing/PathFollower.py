@@ -134,7 +134,7 @@ class PathFollower:
                 target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
             else:
                 target_vel = 0
-                target_angular_vel = -self.drive_backwards * 0.9 * np.sign(offset)  # + or - rad/s to turn around if facing wrong way
+                target_angular_vel = -self.drive_backwards * 0.2 * np.sign(offset)  # + or - rad/s to turn around if facing wrong way
 
         # When driving backwards flip velocity and angular velcity
         # TODO: is this mathematically equivalent to changing measured vel and angular vel?

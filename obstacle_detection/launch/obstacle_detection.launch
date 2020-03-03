@@ -1,4 +1,5 @@
 <launch>
 		<node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" cwd="node"/>
 		<node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid.py" output="screen" cwd="node"/>
+		<node name="realsense_motion_tracking" pkg="obstacle_detection" type="realsense_motion_tracking.py" cwd="node"/>
 </launch>

@@ -23,7 +23,7 @@ ARENA_WIDTH = rospy.get_param('arena_x')
 ARENA_HEIGHT = rospy.get_param('arena_y')
 ROBOT_WIDTH = rospy.get_param('robot_width')
 ROBOT_LENGTH = rospy.get_param('robot_length')
-effective_robot_width = 0.7
+effective_robot_width = 0.9
 reference_point_x = 0.5
 wheel_radius = rospy.get_param('wheel_radius')
 
