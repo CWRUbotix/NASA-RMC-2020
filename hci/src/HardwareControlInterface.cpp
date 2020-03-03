@@ -1,4 +1,5 @@
 #include <HardwareControlInterface.h>
+#include <std_msgs/Header.h>
 
 map<uint8_t, float> motorValues;
 ros::Publisher sensorPublisher;
@@ -6,7 +7,7 @@ ros::Subscriber motorSubscriber;
 ros::Subscriber driveSubscriber;
 
 serial::Serial hcSerial;
-unsigned long baud = 115200; 
+unsigned long baud = 115200;
 string hcDescription = "Teensyduino USB Serial 4822650"; //description of the HCb
 
 uint8_t setOutputsByte = 0x51;
@@ -112,7 +113,7 @@ vector<uint8_t> generateMotorCommandMessage(void){
         checksum += (uint16_t)(0x00ff & value[3]);
 
         ROS_INFO("MotorCommand: motor %u to %f", it->first, f);
-    }   
+    }
 
     vector<uint8_t>::iterator it = commandMessage.begin();
     it++; //now points to position 1
@@ -121,7 +122,7 @@ vector<uint8_t> generateMotorCommandMessage(void){
     it = commandMessage.insert(it, checksum >> 8);
     it = commandMessage.insert(it, length);
     it = commandMessage.insert(it, length >> 8);
-    
+
     return commandMessage;
 }
 
@@ -134,7 +135,7 @@ vector<uint8_t> generateSensorRequestMessage(void){
         sensorMessage.push_back(sensorID);
 
         checksum += (uint16_t)(0x00ff & sensorID);
-    }   
+    }
 
     vector<uint8_t>::iterator it = sensorMessage.begin();
     it++; //now points to position 1
@@ -143,7 +144,7 @@ vector<uint8_t> generateSensorRequestMessage(void){
     it = sensorMessage.insert(it, checksum >> 8);
     it = sensorMessage.insert(it, length);
     it = sensorMessage.insert(it, length >> 8);
-    
+
     return sensorMessage;
 
 }
@@ -151,7 +152,7 @@ vector<uint8_t> generateSensorRequestMessage(void){
 void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
 
 	//do checks to make sure everything is correct format
-	//but not now 
+	//but not now
 	if(sensorResponse.size() < 6){
 		//test sensorResponse:
 		/*sensorResponse = vector<uint8_t>();
@@ -178,7 +179,7 @@ void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
         hci::sensorValue sensorMessage;
         sensorMessage.sensorID = *it;
         it++; //points to the first byte of the data
- 
+
         uint8_t data[4];
 
  		data[0] = *it++;
@@ -187,14 +188,15 @@ void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
  		data[3] = *it++;
  		//ROS_INFO("%d, %u, %u, %u, %u", sensorMessage.sensorID, data[0],data[1],data[2],data[3]);
  		float val = *reinterpret_cast<float*>(&data[0]);
- 
+
  		//ROS_INFO("sensorValue: %f", val);
  		sensorMessage.value = val;
+    sensorMessage.header = std_msgs::Header();
 
  		it += 3;
 
  		sensorPublisher.publish(sensorMessage);
-    }   
+    }
 }
 
 
@@ -203,20 +205,20 @@ void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
 int main(int argc, char** argv) {
 
     ros::init(argc, argv, "hci");
-    ros::NodeHandle n; 
+    ros::NodeHandle n;
     sensorPublisher = n.advertise<hci::sensorValue>("sensorValue", 32);
-    motorSubscriber = n.subscribe("motorCommand",100,addMotorCallback); 
+    motorSubscriber = n.subscribe("motorCommand",100,addMotorCallback);
     driveSubscriber = n.subscribe("driveCommand",10,driveCommandCallback);
 
     string port = "0";
     while(port == "0"){
         port = findHardwareControllerPort();
         ros::Duration(1).sleep();
-    } 
+    }
     ROS_INFO("%s\n ", port.c_str());
 
     ros::Rate loop_rate(200);
-    
+
     while(ros::ok()){
         if(!hcSerial.isOpen()){
             while(!hcSerial.isOpen()){
@@ -240,7 +242,7 @@ int main(int argc, char** argv) {
         }
         ROS_INFO("NEW MOTOR MESSAGE");
         vector<uint8_t> motorCommandMessage = generateMotorCommandMessage();
-        
+
         //for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
         //    ROS_INFO("%u", *i);
         //}
@@ -272,14 +274,14 @@ int main(int argc, char** argv) {
         //ROS_INFO("SENSOR RESPONSE LENGTH: %lu" , sensorRequestResponse.size());
 
         parseSensorResponseMessage(sensorRequestResponse);
-        
+
         //ros::Duration(.005).sleep();
         loop_rate.sleep();
         //ROS_INFO("test");
         ros::spinOnce();
 
     }
-    
+
     ros::spin();
 
     return 0;
