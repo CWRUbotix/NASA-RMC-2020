@@ -53,7 +53,19 @@ int spi_set_mode(int f, uint8_t spi_mode){
 /**
  * 
  */
-int spi_cmd(int fd, uint8_t cmd, uint8_t * rpy, int rpy_len){
+int spi_cmd(int fd, unsigned char cmd, unsigned char * rpy, int rpy_len){
 	write(fd, &cmd, 1);
 	return read(fd, rpy, rpy_len);
+}
+
+unsigned char* spi_transfer(int fd, unsigned char * buf, int buf_len){
+	struct spi_ioc_transfer xfer[2];
+	int status;
+	memset(xfer, 0, sizeof xfer);
+	xfer[0].tx_buf = (unsigned long)buf;
+	xfer[0].rx_buf = (unsigned long)buf;
+	xfer[0].len = buf_len;
+	xfer[0].delay_usecs = 400;
+	status = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
+	return buf;
 }

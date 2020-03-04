@@ -10,6 +10,8 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  sensor_msgs
+  geometry_msgs
   rospy
   message_generation
 )
@@ -76,6 +78,8 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  sensor_msgs
+  geometry_msgs
 )
 
 ################################################
@@ -110,7 +114,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES hwctrl
-  CATKIN_DEPENDS roscpp std_msgs message_runtime
+  CATKIN_DEPENDS roscpp std_msgs message_runtime sensor_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 
@@ -139,19 +143,19 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(hwctrl
-  src/hwctrl_node.cpp
-  src/hwctrl.cpp
-  src/parse_csv.cpp
   src/buffer.cpp
   src/canbus.cpp
   src/crc.cpp
+  src/gpio.cpp
+  src/hwctrl_node.cpp
+  src/hwctrl.cpp
+  src/lsm6ds3.cpp
+  src/motors.cpp
+  src/parse_csv.cpp
+  src/sensors.cpp
+  src/spi.cpp
   src/uwb.cpp
   src/vesc.cpp
-  src/spi.cpp
-  src/motors.cpp
-  src/sensors.cpp
-  src/gpio.cpp
-  src/lsm6ds3.cpp
 )
 
 ## Rename C++ executable without prefix

@@ -21,6 +21,7 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	this->sensor_data_pub = this->nh.advertise<hwctrl::SensorData>("sensor_data", 128);
 	this->limit_sw_pub = this->nh.advertise<hwctrl::LimitSwState>("limit_sw_states", 128);
 	this->uwb_data_pub = this->nh.advertise<hwctrl::UwbData>("localization_data", 1024);
+	this->imu_data_pub = this->nh.advertise<sensor_msgs::Imu>("imu_data", 128);
 
 	this->get_sensors_from_csv(); // create all our sensor info objects and whatever
 
@@ -107,21 +108,28 @@ void sensors_thread(SensorIf* sensor_if){
 						}
 						break;
 					}case DEVICE_LSM6DS3:{
-						ROS_DEBUG("***** UPDATE IMU *****");
+						ROS_INFO("***** UPDATE IMU *****");
 						int spi_fd = sensor_if->spi_handle;
 						int gpio_fd = sensor->spi_device->gpio_value_handle;
-						if(sensor->descrip.compare("accel") == 0){
-							sensor->value = read_accel(spi_fd, gpio_fd, sensor->axis, sensor->scale);
-						}else if(sensor->descrip.compare("gyro") == 0){
-							sensor->value = read_gyro(spi_fd, gpio_fd, sensor->axis, sensor->scale);
-						}else{
-							break;
-						}
-						sensor->timestamp = ros::Time::now();
-						hwctrl::SensorData msg;
-						msg.sensorID = sensor->sys_id;
-						msg.value = sensor->value;
-						sensor_if->sensor_data_pub.publish(msg);
+						float xl_x, xl_y, xl_z, g_x, g_y, g_z;
+						xl_x = read_accel(spi_fd, gpio_fd, LSM6DS3_X_AXIS, 2.0);
+						xl_y = read_accel(spi_fd, gpio_fd, LSM6DS3_Y_AXIS, 2.0);
+						xl_z = read_accel(spi_fd, gpio_fd, LSM6DS3_Z_AXIS, 2.0);
+						g_x  = read_gyro(spi_fd, gpio_fd, LSM6DS3_X_AXIS, 250.0);
+						g_y  = read_gyro(spi_fd, gpio_fd, LSM6DS3_Y_AXIS, 250.0); 
+						g_z  = read_gyro(spi_fd, gpio_fd, LSM6DS3_Z_AXIS, 250.0);
+						sensor_msgs::Imu msg;
+						msg.header.seq 	= sensor->seq++; // just a counter, could help track missed messages?
+						msg.header.stamp = ros::Time::now();
+						msg.header.frame_id = sensor->name;
+						msg.orientation_covariance[0] = -1.0; // indicates that we don't provide orientation data (yet)
+						msg.linear_acceleration.x = (double)xl_x;
+						msg.linear_acceleration.y = (double)xl_y;
+						msg.linear_acceleration.z = (double)xl_z;
+						msg.angular_velocity.x = (double)g_x;
+						msg.angular_velocity.y = (double)g_y;
+						msg.angular_velocity.z = (double)g_z;
+						sensor_if->imu_data_pub.publish(msg);
 						break;
 					}default:{
 						break;
@@ -268,15 +276,15 @@ void SensorIf::get_sensors_from_csv(){
 					}
 					case DEVICE_LSM6DS3:{
 						// this line is for an imu
-						info.axis = ((*line)[aux_2_ind])[0];
-						info.descrip = (*line)[aux_1_ind];
-						if( (*line)[aux_1_ind].compare("accel") == 0){
-							info.scale = 2.0; // 4 g's full-scale
+						// info.axis = ((*line)[aux_2_ind])[0];
+						// info.descrip = (*line)[aux_1_ind];
+						//if( (*line)[aux_1_ind].compare("accel") == 0){
+						//	info.scale = 2.0; // 4 g's full-scale
 							// it's an acclerometer
-						}else if( (*line)[aux_1_ind].compare("gyro") == 0) {
+						//}else if( (*line)[aux_1_ind].compare("gyro") == 0) {
 							// it's a gyroscope
-							info.scale = 250.0; // 250 deg/sec full-scale
-						}
+						//	info.scale = 250.0; // 250 deg/sec full-scale
+						//}
 						info.spi_device = &(this->spi_devices[IMU_IND]); // store the pointer to the spi device
 						break;
 					}
@@ -356,10 +364,10 @@ void SensorIf::setup_spi_devices(){
 			dev->spi_max_speed	= LSM6DS3_SPI_SPEED;
 		}else{
 			continue;
-		}
-		gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
+		}	
 		dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path);
 		gpio_set(dev->gpio_value_handle);
+		gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
 	}
 
 	// SETUP DATA FOR SPI DEVICES
@@ -372,33 +380,38 @@ void SensorIf::setup_spi_devices(){
 
 		buf[0] = ADS1120_CMD_RESET;
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 1); // send the reset byte
+		spi_transfer(this->spi_handle, buf, 1); // send the reset byte
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		buf[0] = ADS1120_CMD_WREG | 1; // writing to register 0x00, 1 byte
 		buf[1] = ADS1120_PGA_BYPASS; 			// we want to bypass the PGA
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 2); // send the bytes
+		spi_transfer(this->spi_handle, buf, 2); // send the bytes
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		buf[0] = ADS1120_CMD_WREG | (0x01 << 2) | 1; // register 0x01, 1 byte
 		buf[1] = ADS1120_MODE_NORMAL | ADS1120_DR_4 | ADS1120_CM_CONT; // 330 SPS, continuous conversion
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 2); // send the bytes
+		spi_transfer(this->spi_handle, buf, 2); // send the bytes
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		buf[0] = ADS1120_CMD_WREG | (0x02 << 2) | 1; // reg 0x02, 1 byte
 		buf[1] = ADS1120_VREF_AIN0_AIN3; // set reference to AIN0 and AIN3
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 2); // send the bytes
+		spi_transfer(this->spi_handle, buf, 2); // send the bytes
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		// initial mux configuration
 		buf[0] = ADS1120_CMD_WREG | (0x01 << 2) | 1;
 		buf[1] = ADS1120_MUX_P1_NVSS | ADS1120_PGA_BYPASS;
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 2); // send the bytes
+		spi_transfer(this->spi_handle, buf, 2); // send the bytes
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		dev->is_setup = true;
 	}else{
@@ -411,29 +424,34 @@ void SensorIf::setup_spi_devices(){
 		ROS_INFO("Setting up the load cell ADC");
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
-
+		ros::Duration(0.001).sleep();
+		
 		buf[0] = ADS1120_CMD_RESET;
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 1); // send the reset byte
+		spi_transfer(this->spi_handle, buf, 1); // send the reset byte
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		buf[0] = ADS1120_CMD_WREG | 1; // writing to register 0x00, 1 byte
 		buf[1] = ADS1120_MUX_P1_N2 | ADS1120_PGA_GAIN_128; // set mux, plus lotsa gain
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 2); // send the bytes
+		spi_transfer(this->spi_handle, buf, 2); // send the bytes
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		buf[0] = ADS1120_CMD_WREG | (0x01 << 2) | 1; // register 0x01, 1 byte
 		buf[1] = ADS1120_MODE_NORMAL | ADS1120_DR_1 | ADS1120_CM_CONT; // 45 SPS, continuous conversion
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 2); // send the bytes
+		spi_transfer(this->spi_handle, buf, 2); // send the bytes
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		buf[0] = ADS1120_CMD_WREG | (0x02 << 2) | 1; // reg 0x02, 1 byte
 		buf[1] = ADS1120_VREF_AIN0_AIN3; // set reference to AIN0 and AIN3
 		gpio_reset(dev->gpio_value_handle); // pull CS low
-		write(this->spi_handle, buf, 2); // send the bytes
+		spi_transfer(this->spi_handle, buf, 2); // send the bytes
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		dev->is_setup = true;
 	}else{
@@ -444,22 +462,25 @@ void SensorIf::setup_spi_devices(){
 	dev = &(spi_devices[TEMP_SENSOR_IND]);
 	if((dev->gpio_value_handle) > 0){
 		ROS_INFO("Setting up the ADT7310");
+		ros::Duration(0.001).sleep();
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
 		buf[0] = ADT7310_CMD_READ_REG | (ADT7310_REG_ID << 3); // read ID register
+		buf[1] = 0x00;
 
 		gpio_reset(dev->gpio_value_handle);
-		ros::Duration(0.005).sleep();
-		int read_len = spi_cmd(this->spi_handle, buf[0], buf, 1); // write command byte and read resp byte
+		// ros::Duration(0.005).sleep();
+		spi_transfer(this->spi_handle, buf, 2); // write command byte and read resp byte
 		gpio_set(dev->gpio_value_handle);
 
-		if(read_len > 0 && (buf[0] & ADT7310_MFG_ID_MASK) == ADT7310_MFG_ID){
+		if((buf[1] & ADT7310_MFG_ID_MASK) == ADT7310_MFG_ID){
 			ROS_INFO("Great, ADT7310 Mfg ID read correct!");
 			buf[0] = (ADT7310_REG_CONFIG << 3); // writing to config register
 			buf[1] = ADT7310_FAULTS_1 | ADT7310_RES_16_BIT; // why not 16 bit?
 			gpio_reset(dev->gpio_value_handle);
-			write(this->spi_handle, buf, 2);
+			spi_transfer(this->spi_handle, buf, 2);
 			gpio_set(dev->gpio_value_handle);
+			ros::Duration(0.001).sleep();
 
 			int16_t temp;
 			buf[0] = (ADT7310_REG_T_CRIT << 3); // writing to critical temperature register
@@ -467,20 +488,22 @@ void SensorIf::setup_spi_devices(){
 			buf[1] = (temp >> 8);
 			buf[2] = temp & 0xFF;
 			gpio_reset(dev->gpio_value_handle);
-			write(this->spi_handle, buf, 3);
+			spi_transfer(this->spi_handle, buf, 3);
 			gpio_set(dev->gpio_value_handle);
+			ros::Duration(0.001).sleep();
 
 			buf[0] = (ADT7310_REG_T_HIGH << 3); // writing to critical temperature register
 			temp   = T_HIGH_16_BIT;
 			buf[1] = (temp >> 8);
 			buf[2] = temp & 0xFF;
 			gpio_reset(dev->gpio_value_handle);
-			write(this->spi_handle, buf, 3);
+			spi_transfer(this->spi_handle, buf, 3);
 			gpio_set(dev->gpio_value_handle);
+			ros::Duration(0.001).sleep();
 
 			dev->is_setup = true;
 		}else{
-			ROS_INFO("Read %d bytes from ADT7310: %x", read_len, buf[0]);
+			ROS_INFO("Read %x from ADT7310", buf[1]);
 		}
 	}else{
 		ROS_ERROR("Failed to get file descriptor for %svalue", dev->gpio_path.c_str());
@@ -493,21 +516,30 @@ void SensorIf::setup_spi_devices(){
 	if((dev->gpio_value_handle) > 0){
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
+		ros::Duration(0.001).sleep();
+		buf[0] = CTRL3_C;
+		buf[1] = 0x01; // setting the SW_RESET bit
+		gpio_reset(dev->gpio_value_handle);
+		spi_transfer(this->spi_handle, buf, 2);
+		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.01).sleep();
+		
 		buf[0] = WHO_AM_I;
+		buf[1] = 0x00;
 		LSM6DS3_SET_READ_MODE(buf[0]);
 		ROS_INFO("Trying the IMU");
 		gpio_reset(dev->gpio_value_handle);
-		ros::Duration(0.005).sleep();
-		int n_read = spi_cmd(this->spi_handle, buf[0], buf, 1);
+		//ros::Duration(0.0005).sleep();
+		spi_transfer(this->spi_handle, buf, 2);
 		gpio_set(dev->gpio_value_handle);
 
-		if(n_read == 1 && buf[0] == LSM6DS3_WHO_AM_I_ID){
+		if(buf[1] == LSM6DS3_WHO_AM_I_ID){
 			lsm6ds3_xl_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_XL_2G);
 			lsm6ds3_g_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_G_250_DPS);
 			ROS_DEBUG("IMU setup success!");
 			dev->is_setup = true;
 		}else{
-			ROS_ERROR("IMU setup failed :(, read %d bytes, %x...", n_read, buf[0]);
+			ROS_ERROR("IMU setup failed :(, read [%x , %x]...", buf[0], buf[1]);
 		}
 
 	}else{

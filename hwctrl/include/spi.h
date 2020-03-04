@@ -28,6 +28,9 @@ int spi_set_speed(int f, uint32_t speed);
 int spi_set_mode(int f, uint8_t mode);
 
 /* send a command and read reply bytes */
-int spi_cmd(int fd, uint8_t cmd, uint8_t * rpy, int rpy_len);
+int spi_cmd(int fd, unsigned char cmd, unsigned char * rpy, int rpy_len);
+
+/* transfer buf_len bytes from buf, store received bytes in buf */
+unsigned char* spi_transfer(int fd, unsigned char * buf, int buf_len);
 
 #endif

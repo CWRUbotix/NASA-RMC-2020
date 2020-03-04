@@ -8,6 +8,9 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Header.h>
+#include <sensor_msgs/Imu.h>
+#include <geometry_msgs/Vector3.h>
 #include <ros/message_forward.h>
 #include <hwctrl/UwbData.h>
 #include <hwctrl/VescData.h>
@@ -199,6 +202,7 @@ class SensorInfo {
 public:
 	int sys_id = -1; // system-wide ID to use
 	int dev_id = -1;
+	uint32_t seq = 0;
 	std::string name; // a descriptive name of the sensor
 	std::string descrip;
 	bool is_setup 					= false; // flag to indicate whether everything is setup
@@ -236,6 +240,7 @@ public:
 	ros::Publisher can_tx_pub;		// send data to canbus
 	ros::Publisher limit_sw_pub; 	// send out limit switch states
 	ros::Publisher uwb_data_pub; 	// publish uwb data
+	ros::Publisher imu_data;	// publishe IMU data!
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
 	SensorInfo sensors[MAX_NUMBER_OF_SENSORS]; // all our SensorInfo structs
 	SpiDevice spi_devices[NUMBER_OF_SPI_DEVICES]; // all our SpiDevice structs

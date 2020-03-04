@@ -9,7 +9,7 @@ void lsm6ds3_xl_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
   LSM6DS3_SET_WRITE_MODE(buf[0]);
 
   gpio_reset(gpio_fd);
-  write(spi_fd, buf, 2);
+  spi_transfer(spi_fd, buf, 2);
   gpio_set(gpio_fd);
 
 }
@@ -23,7 +23,7 @@ void lsm6ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
   LSM6DS3_SET_WRITE_MODE(buf[0]);
 
   gpio_reset(gpio_fd);
-  write(spi_fd, buf, 2);
+  spi_transfer(spi_fd, buf, 2);
   gpio_set(gpio_fd);
 }
 
@@ -33,7 +33,7 @@ void lsm6ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte){
  * @return acceleration in m/s
  */
 float read_accel(int spi_fd, int gpio_fd, int axis, float fs){
-  uint8_t buf[2] = {};
+  uint8_t buf[3] = {};
   switch(axis){
     case LSM6DS3_X_AXIS:{
       buf[0] = OUTX_L_XL;
@@ -51,10 +51,10 @@ float read_accel(int spi_fd, int gpio_fd, int axis, float fs){
   LSM6DS3_SET_READ_MODE(buf[0]);
 
   gpio_reset(gpio_fd);
-  spi_cmd(spi_fd, buf[0], buf, 2); // send cmd byte, read 2 bytes
+  spi_transfer(spi_fd, buf, 3); // send cmd byte, read 2 bytes
   gpio_set(gpio_fd);
 
-  int16_t val = buf[0] | (buf[1] << 8);
+  int16_t val = buf[1] | (buf[2] << 8);
   return (9.81 * fs * ((float)val))/32767.0;
 }
 
@@ -62,7 +62,7 @@ float read_accel(int spi_fd, int gpio_fd, int axis, float fs){
  *
  */
 float read_gyro(int spi_fd, int gpio_fd, int axis, float fs){
-  uint8_t buf[2] = {};
+  uint8_t buf[3] = {};
   switch(axis){
     case LSM6DS3_X_AXIS:{
       buf[0] = OUTX_L_G;
@@ -80,9 +80,9 @@ float read_gyro(int spi_fd, int gpio_fd, int axis, float fs){
   LSM6DS3_SET_READ_MODE(buf[0]);
 
   gpio_reset(gpio_fd);
-  spi_cmd(spi_fd, buf[0], buf, 2); // send cmd byte, read 2 bytes
+  spi_transfer(spi_fd, buf, 3); // send cmd byte, read 2 bytes
   gpio_set(gpio_fd);
 
-  int16_t val = buf[0] | (buf[1] << 8);
+  int16_t val = buf[1] | (buf[2] << 8);
   return (fs * ((float)val))/32767.0;
 }
