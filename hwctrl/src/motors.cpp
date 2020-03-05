@@ -39,6 +39,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 		// ROS_INFO("VESC %d sent msg type %d", id, cmd);
 		HwMotor* vesc = this->get_vesc_from_can_id(id);
 		vesc->online = true;
+    vesc->data_t = ros::Time::now(); // update time that we heard this motor is alive
 		switch(cmd){
 			case CAN_PACKET_STATUS:{
 				if(vesc == NULL){
@@ -171,8 +172,11 @@ void maintain_motors_thread(HwMotorIf* motor_if){
 void HwMotorIf::maintain_next_motor(){
 	HwMotor* motors = this->motors.data();
 	HwMotor* motor = &(motors[this->motor_ind]);
-	// HwMotor* motor = &(this->motors.at(this->motor_ind));
-	//ROS_DEBUG("Maintaining motor %s", motor->name.c_str());
+
+  if((ros::Time::now().toSec() - motor->data_t.toSec()) > motor->timeout){
+    motor->online = false; // assume we are offline
+  }
+
 	switch(motor->motor_type){
 		case(DEVICE_NONE):break;
 		case(DEVICE_VESC):{
@@ -194,21 +198,26 @@ void HwMotorIf::maintain_next_motor(){
 					}
 				}
 				motor->last_setpoint = motor->last_setpoint + delta; // the new setpoint based on delta
-			}else{
-				// ROS_INFO("Motor %d offline",motor->id);
-			}
 
-			float eRPM = motor->rpm_coef * motor->last_setpoint;
-			boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
+        if((ros::Time::now().toSec() - motor->set_t.toSec()) > motor->timeout){
+          motor->last_setpoint = 0.0; // shut it down
+        }
 
-			if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
-				// presumed success
-				// ROS_INFO("ID, eRPM: %d, %f",motor->device_id, eRPM);
-				this->can_tx_pub.publish(frame_msg);
-				motor->update_t = ros::Time::now();
+        float eRPM = motor->rpm_coef * motor->last_setpoint;
+  			boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
+
+  			if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
+  				// presumed success
+  				// ROS_INFO("ID, eRPM: %d, %f",motor->device_id, eRPM);
+  				this->can_tx_pub.publish(frame_msg);
+  				motor->update_t = ros::Time::now();
+  			}else{
+  				ROS_WARN("I didn't think this could happen ...");
+  				motor->online = false;
+  			}
+
 			}else{
-				ROS_WARN("I didn't think this could happen ...");
-				motor->online = false;
+        ROS_WARN("%s (Motor %d) offline", motor->name.c_str(), motor->id);
 			}
 
 			break;}
@@ -223,6 +232,9 @@ void HwMotorIf::maintain_next_motor(){
 	}
 }
 
+/**
+ * set motors based on messages from a topic
+ */
 void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
 	int id = msg.id;
 	if(id >= this->motors.size()){
@@ -231,6 +243,7 @@ void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
 	ROS_DEBUG("Setting motor %d to %f at %f", id, msg.setpoint, msg.acceleration);
 	HwMotor* motors = this->motors.data(); // pointer to our motor struct
 	motors[id].setpoint = msg.setpoint;
+  motors[id].set_t = ros::Time::now(); // used to guess if autonomy node has crashed
 	if(fabs(msg.acceleration) > motors[id].max_accel || fabs(msg.acceleration) == 0.0){
 		motors[id].accel_setpoint = motors[id].max_accel;
 	}else {
@@ -238,6 +251,9 @@ void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
 	}
 }
 
+/**
+ * set motors via a service request, we might not be using this
+ */
 bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response){
 	if(request.id >= this->motors.size()){
 		return false;

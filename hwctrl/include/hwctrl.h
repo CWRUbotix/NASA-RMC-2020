@@ -44,6 +44,8 @@
 #define NUMBER_OF_SPI_DEVICES 	4
 #define MAX_NUMBER_OF_SENSORS 	32
 
+#define SENSOR_SAMPLES 					5
+
 #define ADC_1_IND 							0
 #define ADC_2_IND 							1
 #define TEMP_SENSOR_IND 				2
@@ -137,7 +139,10 @@ public:
 	ControlType ctrl_type = CTRL_NONE;
 	DeviceType motor_type = DEVICE_NONE;
 	InterfaceType if_type = IF_NONE;
-	ros::Time update_t;
+	float timeout 	= 2.0; // how long between setpoints before we shut it down
+	ros::Time data_t; 	// when did we last talk to this motor
+	ros::Time set_t; 		// when was the last set of this motor
+	ros::Time update_t; // when was the last time we updated this motor (maintained motor)
 	float setpoint = 0.0;
 	float last_setpoint = 0.0;
 	float accel_setpoint = DEFAULT_MAX_ACCEL;
@@ -149,6 +154,7 @@ public:
 
 InterfaceType get_if_type(std::string type_str);
 DeviceType get_device_type(std::string type_str);
+float get_running_mean(float* data, int size);
 
 // class to manage the interfaces to motors, be it canbus, uart, etc.
 class HwMotorIf{
@@ -197,6 +203,7 @@ typedef struct SpiDevice {
   int spi_max_speed 			= SPI_DEFAULT_SPEED;
 } SpiDevice;
 
+
 // class to hold all info about a sensor
 class SensorInfo {
 public:
@@ -211,11 +218,12 @@ public:
 	std::string gpio_path   = "";
 	int gpio_value_fd 			= -1;
 	SpiDevice * spi_device 	= NULL;
-	uint8_t axis 		= LSM6DS3_X_AXIS;
-	float scale = 1.0;
-	float offset = 0.0;
-	ros::Time timestamp;
 	float value 						= 0.0;
+	float scale 						= 1.0;
+	float offset 						= 0.0;
+	ImuData * imu;
+	int sample_ind 					= 0;
+	ros::Time timestamp;
 	bool update = false; // flag to indicate if it's time to update
 	ros::Duration update_pd; // period with which to update this sensor
 	ros::Timer update_timer; // timer for updating this sensor

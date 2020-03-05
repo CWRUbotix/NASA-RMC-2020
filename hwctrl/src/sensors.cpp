@@ -31,7 +31,7 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	}else{
 		ROS_DEBUG("GPIO setup succeeded!");
 	}
-	
+
 	ROS_DEBUG("SPI init time!!");
 	this->spi_handle = spi_init("/dev/spidev2.0");
 	if(this->spi_handle < 0){
@@ -48,8 +48,11 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 		if(sensor->if_type == IF_SPI && !sensor->spi_device->is_setup){
 			continue; // skip making a timer for this one
 		}
+		if(sensor->dev_type == DEVICE_LSM6DS3){
+			sensor->imu = new ImuData;
+		}
 		sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, sensor);
-		ROS_DEBUG("Sensor %d | Update Period: %.3fs", sensor->sys_id, sensor->update_pd.toSec());
+		ROS_INFO("Sensor %d | Update Period: %.3fs", sensor->sys_id, sensor->update_pd.toSec());
 	}
 
 	// create the timer that will request data from the next UWB node
@@ -111,24 +114,43 @@ void sensors_thread(SensorIf* sensor_if){
 						ROS_INFO("***** UPDATE IMU *****");
 						int spi_fd = sensor_if->spi_handle;
 						int gpio_fd = sensor->spi_device->gpio_value_handle;
-						float xl_x, xl_y, xl_z, g_x, g_y, g_z;
-						xl_x = read_accel(spi_fd, gpio_fd, LSM6DS3_X_AXIS, 2.0);
-						xl_y = read_accel(spi_fd, gpio_fd, LSM6DS3_Y_AXIS, 2.0);
-						xl_z = read_accel(spi_fd, gpio_fd, LSM6DS3_Z_AXIS, 2.0);
-						g_x  = read_gyro(spi_fd, gpio_fd, LSM6DS3_X_AXIS, 250.0);
-						g_y  = read_gyro(spi_fd, gpio_fd, LSM6DS3_Y_AXIS, 250.0); 
-						g_z  = read_gyro(spi_fd, gpio_fd, LSM6DS3_Z_AXIS, 250.0);
+						double xl_data[3];
+						double gyro_data[3];
+						lsm6ds3_read_all_data(spi_fd, gpio_fd, xl_data, gyro_data);
 						sensor_msgs::Imu msg;
 						msg.header.seq 	= sensor->seq++; // just a counter, could help track missed messages?
 						msg.header.stamp = ros::Time::now();
 						msg.header.frame_id = sensor->name;
 						msg.orientation_covariance[0] = -1.0; // indicates that we don't provide orientation data (yet)
-						msg.linear_acceleration.x = (double)xl_x;
-						msg.linear_acceleration.y = (double)xl_y;
-						msg.linear_acceleration.z = (double)xl_z;
-						msg.angular_velocity.x = (double)g_x;
-						msg.angular_velocity.y = (double)g_y;
-						msg.angular_velocity.z = (double)g_z;
+						msg.linear_acceleration.x = xl_data[0];
+						msg.linear_acceleration.y = xl_data[1];
+						msg.linear_acceleration.z = xl_data[2];
+						msg.linear_acceleration_covariance = sensor->imu->cov_xl;
+						msg.angular_velocity.x = gyro_data[0];
+						msg.angular_velocity.y = gyro_data[1];
+						msg.angular_velocity.z = gyro_data[2];
+						msg.angular_velocity_covariance  = sensor->imu->cov_g;
+
+						sensor->imu->sample_buf_1[sensor->imu->sample_ind] = (float)xl_data[0];
+						sensor->imu->sample_buf_2[sensor->imu->sample_ind] = (float)xl_data[1];
+						sensor->imu->sample_buf_3[sensor->imu->sample_ind] = (float)xl_data[2];
+						sensor->imu->sample_buf_4[sensor->imu->sample_ind] = (float)gyro_data[0];
+						sensor->imu->sample_buf_5[sensor->imu->sample_ind] = (float)gyro_data[1];
+						sensor->imu->sample_buf_6[sensor->imu->sample_ind] = (float)gyro_data[2];
+
+						if(++sensor->imu->sample_ind >= SENSOR_SAMPLES){
+							sensor->imu->sample_ind = 0;
+
+							sensor->imu->value_rm_1 = get_running_mean(sensor->imu->sample_buf_1, IMU_SAMPLES);
+							sensor->imu->value_rm_2 = get_running_mean(sensor->imu->sample_buf_2, IMU_SAMPLES);
+							sensor->imu->value_rm_3 = get_running_mean(sensor->imu->sample_buf_3, IMU_SAMPLES);
+							sensor->imu->value_rm_4 = get_running_mean(sensor->imu->sample_buf_4, IMU_SAMPLES);
+							sensor->imu->value_rm_5 = get_running_mean(sensor->imu->sample_buf_5, IMU_SAMPLES);
+							sensor->imu->value_rm_6 = get_running_mean(sensor->imu->sample_buf_6, IMU_SAMPLES);
+
+							// update covariance matrix
+
+						}
 						sensor_if->imu_data_pub.publish(msg);
 						break;
 					}default:{
@@ -364,7 +386,7 @@ void SensorIf::setup_spi_devices(){
 			dev->spi_max_speed	= LSM6DS3_SPI_SPEED;
 		}else{
 			continue;
-		}	
+		}
 		dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path);
 		gpio_set(dev->gpio_value_handle);
 		gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
@@ -425,7 +447,7 @@ void SensorIf::setup_spi_devices(){
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
 		ros::Duration(0.001).sleep();
-		
+
 		buf[0] = ADS1120_CMD_RESET;
 		gpio_reset(dev->gpio_value_handle); // pull CS low
 		spi_transfer(this->spi_handle, buf, 1); // send the reset byte
@@ -523,20 +545,21 @@ void SensorIf::setup_spi_devices(){
 		spi_transfer(this->spi_handle, buf, 2);
 		gpio_set(dev->gpio_value_handle);
 		ros::Duration(0.01).sleep();
-		
+
 		buf[0] = WHO_AM_I;
 		buf[1] = 0x00;
 		LSM6DS3_SET_READ_MODE(buf[0]);
 		ROS_INFO("Trying the IMU");
 		gpio_reset(dev->gpio_value_handle);
-		//ros::Duration(0.0005).sleep();
 		spi_transfer(this->spi_handle, buf, 2);
 		gpio_set(dev->gpio_value_handle);
+		ros::Duration(0.001).sleep();
 
 		if(buf[1] == LSM6DS3_WHO_AM_I_ID){
-			lsm6ds3_xl_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_XL_2G);
-			lsm6ds3_g_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_104_HZ | LSM6DS3_FS_G_250_DPS);
-			ROS_DEBUG("IMU setup success!");
+			lsm6ds3_xl_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_208_HZ | LSM6DS3_FS_XL_2G);
+			ros::Duration(0.001).sleep();
+			lsm6ds3_g_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_208_HZ | LSM6DS3_FS_G_250_DPS);
+			ROS_INFO("IMU setup success!");
 			dev->is_setup = true;
 		}else{
 			ROS_ERROR("IMU setup failed :(, read [%x , %x]...", buf[0], buf[1]);

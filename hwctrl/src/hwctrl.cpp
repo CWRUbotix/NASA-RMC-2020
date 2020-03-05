@@ -45,6 +45,18 @@ DeviceType get_device_type(std::string type_str){
 	}
 }
 
+/**
+ * basic running average
+ */
+float get_running_mean(float* data, int size){
+	float weight = 1.0/size;
+	float retval = 0.0;
+	for(int i = start; i < size; i++){
+		retval += data[i] * weight;
+	}
+	return retval;
+}
+
 /*
 // OBSOLTETE
 void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
