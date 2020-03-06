@@ -26,8 +26,8 @@
 /* variance due to noise */
 /* assuming the std-dev of our gaussian white noise is ~= RMS noise */
 /* not sure if that's a good assumption */
-#define LSM6DS3_G_VAR  ((double)LSM6DS3_G_FS * LSM6DS3_G_RMS_NOISE^2)
-#define LSM6DS3_XL_VAR  ((double)LSM6DS3_XL_FS * LSM6DS3_XL_RMS_NOISE^2)
+#define LSM6DS3_G_VAR  ((double)LSM6DS3_G_FS * LSM6DS3_G_RMS_NOISE * LSM6DS3_G_RMS_NOISE)
+#define LSM6DS3_XL_VAR  ((double)LSM6DS3_XL_FS * LSM6DS3_XL_RMS_NOISE * LSM6DS3_XL_RMS_NOISE)
 
 #define LSM6DS3_SPI_SPEED 			5000000
 #define LSM6DS3_SPI_MODE 			SPI_MODE_3
@@ -156,6 +156,7 @@ typedef struct ImuData {
 	float gyro_fs = LSM6DS3_G_FS;
 	float xl_offsets[3]; // x,y,z offsets in m/s^2
 	float gyro_offsets[3]; // x,y,z offsets in rads/s
+	int sample_ind = 0;
 	float sample_buf_1[IMU_SAMPLES]; // stores past samples, for science
 	float sample_buf_2[IMU_SAMPLES]; // stores past samples, for science
 	float sample_buf_3[IMU_SAMPLES]; // stores past samples, for science
@@ -168,10 +169,10 @@ typedef struct ImuData {
 	float value_rm_4 				= 0.0; // running mean
 	float value_rm_5 				= 0.0; // running mean
 	float value_rm_6 				= 0.0; // running mean
-	double cov_xl[9] = {LSM6DS3_XL_VAR, 0.0, 0.0,
+	boost::array<double,9> cov_xl = {LSM6DS3_XL_VAR, 0.0, 0.0,
 											0.0, LSM6DS3_XL_VAR, 0.0,
 											0.0, 0.0, LSM6DS3_XL_VAR};
-	double cov_g[9] = {LSM6DS3_G_VAR, 0.0, 0.0,
+	boost::array<double,9> cov_g = {LSM6DS3_G_VAR, 0.0, 0.0,
 											0.0, LSM6DS3_G_VAR, 0.0,
 											0.0, 0.0, LSM6DS3_G_VAR};
 } ImuData;

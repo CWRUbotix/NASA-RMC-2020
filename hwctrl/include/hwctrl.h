@@ -248,7 +248,7 @@ public:
 	ros::Publisher can_tx_pub;		// send data to canbus
 	ros::Publisher limit_sw_pub; 	// send out limit switch states
 	ros::Publisher uwb_data_pub; 	// publish uwb data
-	ros::Publisher imu_data;	// publishe IMU data!
+	ros::Publisher imu_data_pub;	// publishe IMU data!
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
 	SensorInfo sensors[MAX_NUMBER_OF_SENSORS]; // all our SensorInfo structs
 	SpiDevice spi_devices[NUMBER_OF_SPI_DEVICES]; // all our SpiDevice structs

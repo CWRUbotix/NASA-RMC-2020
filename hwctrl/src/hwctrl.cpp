@@ -51,7 +51,7 @@ DeviceType get_device_type(std::string type_str){
 float get_running_mean(float* data, int size){
 	float weight = 1.0/size;
 	float retval = 0.0;
-	for(int i = start; i < size; i++){
+	for(int i = 0; i < size; i++){
 		retval += data[i] * weight;
 	}
 	return retval;
