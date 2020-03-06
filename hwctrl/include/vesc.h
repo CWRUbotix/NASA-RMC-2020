@@ -30,7 +30,7 @@ typedef struct VescData {
 	std::string motor_type;
 	int8_t sys_id;
 	int8_t can_id;
-	float raw_rpm;
+	// float raw_rpm;
 	float current;
 	float duty_cycle;
 	float temp_mos1;
