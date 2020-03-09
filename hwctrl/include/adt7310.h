@@ -8,7 +8,7 @@
 #define T_CRIT_CELCIUS 55.0
 
 #define ADT7310_LSB_13_BIT ((float)0.0625)
-#define ADT7310_LSB_16_BIT ((float)0.0078125)
+#define ADT7310_LSB_16_BIT ((float)0.00781)
 
 #define T_HIGH_16_BIT ((int16_t)(T_HIGH_CELCIUS/ADT7310_LSB_16_BIT))
 #define T_CRIT_16_BIT ((int16_t)(T_CRIT_CELCIUS/ADT7310_LSB_16_BIT))

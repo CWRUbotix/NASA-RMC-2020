@@ -1,5 +1,33 @@
 #include <gpio.h>
 
+int gpio_init(std::string path, int mode, int value){
+  if(mode == GPIO_INPUT){
+    gpio_set_dir(path, mode);
+    return gpio_get_value_handle(path);
+  }else if(mode == GPIO_OUTPUT){
+    std::string fname = path + "value";
+    int fd = open(fname.c_str(), O_RDWR);
+    if(value >= 1){
+      gpio_set(fd);
+    }else{
+      gpio_reset(fd);
+    }
+    gpio_set_dir(path, GPIO_OUTPUT);
+    return fd;
+  }else{
+    return -1;
+  }
+}
+
+std::string gpio_get_dir(std::string path){
+  std::string fname = path + "direction";
+  std::ifstream file(fname, std::ios::in);
+  std::string retval;
+  std::getline(file, retval);
+  file.close();
+  return retval;
+}
+
 int gpio_set_dir(std::string path, int mode){
   std::string fname = path + "direction";
   int fd = open(fname.c_str(), O_RDWR);
@@ -22,7 +50,12 @@ int gpio_set_dir(std::string path, int mode){
 
 int gpio_get_value_handle(std::string path){
   std::string fname = path + "value";
-  return open(fname.c_str(), O_RDWR);
+  std::string dir = gpio_get_dir(path);
+  if(dir.compare("in") == 0){
+    return open(fname.c_str(), O_RDONLY);
+  }else{
+    return open(fname.c_str(), O_RDWR);
+  }
 }
 
 int gpio_set(int handle){
@@ -45,16 +78,16 @@ int gpio_reset(int handle){
 
 int gpio_read(int handle){
   if(handle > 0){
-    uint8_t buf[32] = {};
-    int len = read(handle, buf, 32);
-    if((char)buf[0] == '1'){
+    uint8_t buf = 0x00;
+    int len = read(handle, &buf, 1);
+    if(buf == 1){
       return 1;
-    }else if((char)buf[0] == '0'){
+    }else if(buf == 0){
       return 0;
     }else{
-      return -1; // what happened??
+      return GPIO_ERR_READ_FAILED; // what happened??
     }
   }else{
-    return -1;
+    return GPIO_ERR_BAD_HANDLE;
   }
 }

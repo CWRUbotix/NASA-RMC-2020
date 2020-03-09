@@ -8,7 +8,7 @@
  * creates publishers, subscribers, timers, opens interfaces, initializes GPIO, etc
  */
 SensorIf::SensorIf(ros::NodeHandle n) :
-	loop_rate(100),
+	loop_rate(1000),
 	uwb_update_period(0.1)
 {
 	this->nh = n;
@@ -47,12 +47,18 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 		sensor = &(this->sensors[i]);
 		if(sensor->if_type == IF_SPI && !sensor->spi_device->is_setup){
 			continue; // skip making a timer for this one
+		}else if(sensor->if_type == IF_GPIO && sensor->gpio_value_fd <= 0){
+			sensor->is_setup = false;
+			continue; // not good-to-go
 		}
 		if(sensor->dev_type == DEVICE_LSM6DS3){
 			sensor->imu = new ImuData;
 		}
-		sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, sensor);
-		ROS_INFO("Sensor %d | Update Period: %.3fs", sensor->sys_id, sensor->update_pd.toSec());
+		if(sensor->update_pd.toSec() > 0.0){
+			sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, sensor);
+		}
+		sensor->is_setup = true;
+		ROS_INFO("Sensor %d (%s) | Update Period: %.3fs", sensor->sys_id, sensor->name.c_str(), sensor->update_pd.toSec());
 	}
 
 	// create the timer that will request data from the next UWB node
@@ -98,24 +104,31 @@ void sensors_thread(SensorIf* sensor_if){
 						SpiDevice* dev = sensor->spi_device;
 						spi_set_mode(sensor_if->spi_handle, dev->spi_mode);
 						spi_set_speed(sensor_if->spi_handle, dev->spi_max_speed);
-						uint8_t cmd = ADT7310_CMD_READ_REG | (ADT7310_REG_TEMP_VAL << 3);
-						uint8_t rpy[2];
-						if(spi_cmd(sensor_if->spi_handle, cmd, rpy, 2) == 2){
-							// correct number of bytes read
-							int16_t raw = (rpy[0] << 8) | rpy[1];
-							sensor->value = raw * ADT7310_LSB_16_BIT; // convert to celcius
-							hwctrl::SensorData msg;
-							msg.sensorID = sensor->sys_id;
-							msg.value = sensor->value;
-							sensor_if->sensor_data_pub.publish(msg);
-						}
+						uint8_t spi_buf[3];
+						memset(spi_buf, 0, 3);
+						spi_buf[0] = ADT7310_CMD_READ_REG | (ADT7310_REG_TEMP_VAL << 3);
+						gpio_reset(dev->gpio_value_handle);
+						spi_transfer(sensor_if->spi_handle, spi_buf, 3);
+						gpio_set(dev->gpio_value_handle);
+						int16_t raw = (spi_buf[1] << 8) | spi_buf[2];
+						sensor->value = (float)raw * ADT7310_LSB_16_BIT; // convert to celcius
+						hwctrl::SensorData msg;
+						msg.sensorID = sensor->sys_id;
+						msg.value = sensor->value;
+						msg.name = sensor->name;
+						sensor_if->sensor_data_pub.publish(msg);
+
 						break;
 					}case DEVICE_LSM6DS3:{
-						ROS_INFO("***** UPDATE IMU *****");
+						// ROS_INFO("***** UPDATE IMU *****");
+						SpiDevice* dev = sensor->spi_device;
 						int spi_fd = sensor_if->spi_handle;
-						int gpio_fd = sensor->spi_device->gpio_value_handle;
+						int gpio_fd = dev->gpio_value_handle;
 						double xl_data[3];
 						double gyro_data[3];
+						spi_set_mode(sensor_if->spi_handle, dev->spi_mode);
+						spi_set_speed(sensor_if->spi_handle, dev->spi_max_speed);
+						ros::Duration(0.0005).sleep();
 						lsm6ds3_read_all_data(spi_fd, gpio_fd, xl_data, gyro_data);
 						sensor_msgs::Imu msg;
 						msg.header.seq 	= sensor->seq++; // just a counter, could help track missed messages?
@@ -138,7 +151,7 @@ void sensors_thread(SensorIf* sensor_if){
 						sensor->imu->sample_buf_5[sensor->imu->sample_ind] = (float)gyro_data[1];
 						sensor->imu->sample_buf_6[sensor->imu->sample_ind] = (float)gyro_data[2];
 
-						if(++sensor->imu->sample_ind >= SENSOR_SAMPLES){
+						if(++sensor->imu->sample_ind >= IMU_SAMPLES){
 							sensor->imu->sample_ind = 0;
 
 							sensor->imu->value_rm_1 = get_running_mean(sensor->imu->sample_buf_1, IMU_SAMPLES);
@@ -152,6 +165,22 @@ void sensors_thread(SensorIf* sensor_if){
 
 						}
 						sensor_if->imu_data_pub.publish(msg);
+						break;
+					}case DEVICE_POWER_SENSE:{
+						int val = gpio_read(sensor->gpio_value_fd);
+						hwctrl::SensorData msg;
+						msg.sensorID = sensor->sys_id;
+						msg.name = sensor->name;
+						msg.value = (float)val;
+						sensor_if->sensor_data_pub.publish(msg);
+						break;
+					}case DEVICE_LIMIT_SW:{
+						int val = gpio_read(sensor->gpio_value_fd);
+						boost::shared_ptr<hwctrl::LimitSwState> msg(new hwctrl::LimitSwState());
+						msg->id = sensor->sys_id;
+						msg->state = (val == 1);
+						msg->timestamp = ros::Time::now();
+						sensor_if->limit_sw_pub.publish(msg);
 						break;
 					}default:{
 						break;
@@ -280,33 +309,22 @@ void SensorIf::get_sensors_from_csv(){
 			if((*line)[category_ind].compare(category_sensor) == 0){
 				SensorInfo info;
 				info.name = (*line)[name_ind];
-				info.sys_id = std::stoi((*line)[device_id_ind]);
+				info.sys_id = std::stoi((*line)[id_ind]);
 				info.if_type = get_if_type((*line)[interface_ind]);
 				info.dev_type = get_device_type((*line)[device_type_ind]);
-				info.dev_id = std::stoi((*line)[device_id_ind]);
-				float pd = std::stof((*line)[aux_4_ind]);
-				info.update_pd = ros::Duration(pd);
+				info.update_pd = ros::Duration(std::stof((*line)[aux_4_ind]));
 
 				switch(info.dev_type){
 					ROS_DEBUG("Sensor: %d, %s", info.sys_id, info.name);
 					case DEVICE_UWB:{
 						// this line is for an UWB node
+						info.dev_id = std::stoi((*line)[device_id_ind]);
 						ROS_DEBUG("An UWB node, id: %d!", info.dev_id);
 						UwbNode uwb_node((uint32_t)info.dev_id);
 						this->uwb_nodes.push_back(uwb_node);
 						break;
 					}
 					case DEVICE_LSM6DS3:{
-						// this line is for an imu
-						// info.axis = ((*line)[aux_2_ind])[0];
-						// info.descrip = (*line)[aux_1_ind];
-						//if( (*line)[aux_1_ind].compare("accel") == 0){
-						//	info.scale = 2.0; // 4 g's full-scale
-							// it's an acclerometer
-						//}else if( (*line)[aux_1_ind].compare("gyro") == 0) {
-							// it's a gyroscope
-						//	info.scale = 250.0; // 250 deg/sec full-scale
-						//}
 						info.spi_device = &(this->spi_devices[IMU_IND]); // store the pointer to the spi device
 						break;
 					}
@@ -332,8 +350,8 @@ void SensorIf::get_sensors_from_csv(){
 						// 24V Present input
 						// just a gpio that tells if the e-stop is energized or not
 						info.gpio_path = sys_power_on;
-						gpio_set_dir(info.gpio_path, GPIO_INPUT);
-						if((info.gpio_value_fd = gpio_get_value_handle(info.gpio_path)) > 0){
+						ROS_INFO("System power sense on GPIO %s", info.gpio_path.c_str());
+						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) > 0){
 							// we vibin'
 						}else{
 							ROS_ERROR("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
@@ -342,7 +360,12 @@ void SensorIf::get_sensors_from_csv(){
 					}
 					case DEVICE_LIMIT_SW:{
 						// a limit switch, high if activated
-						// deal with this later
+						info.gpio_path = sys_gpio_base + (*line)[device_id_ind];
+						ROS_INFO("Limit switch on GPIO %s", info.gpio_path.c_str());
+						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) <= 0){
+							ROS_ERROR("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
+						}
+						break;
 					}
 				}
 				// store the sensor info struct
@@ -360,6 +383,10 @@ void SensorIf::get_sensors_from_csv(){
 	}
 }
 
+/**
+ * goes through the array of spi devices and sets them up depending on their type
+ * here's where lots of behavior and configs get hard-coded in :)
+ */
 void SensorIf::setup_spi_devices(){
 	// SET CS LINES HIGH
 	for(int i = 0; i < NUMBER_OF_SPI_DEVICES; i++){
@@ -387,9 +414,10 @@ void SensorIf::setup_spi_devices(){
 		}else{
 			continue;
 		}
-		dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path);
-		gpio_set(dev->gpio_value_handle);
-		gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
+		dev->gpio_value_handle = gpio_init(dev->gpio_path, GPIO_OUTPUT, 1);
+		// dev->gpio_value_handle = gpio_get_value_handle(dev->gpio_path);
+		// gpio_set(dev->gpio_value_handle);
+		// gpio_set_dir(dev->gpio_path, GPIO_OUTPUT);
 	}
 
 	// SETUP DATA FOR SPI DEVICES
@@ -538,13 +566,9 @@ void SensorIf::setup_spi_devices(){
 	if((dev->gpio_value_handle) > 0){
 		spi_set_speed(this->spi_handle, dev->spi_max_speed);
 		spi_set_mode(this->spi_handle, dev->spi_mode);
-		ros::Duration(0.001).sleep();
-		buf[0] = CTRL3_C;
-		buf[1] = 0x01; // setting the SW_RESET bit
-		gpio_reset(dev->gpio_value_handle);
-		spi_transfer(this->spi_handle, buf, 2);
-		gpio_set(dev->gpio_value_handle);
-		ros::Duration(0.01).sleep();
+		ros::Duration(0.002).sleep();
+		lsm6ds3_soft_reset(this->spi_handle, dev->gpio_value_handle);
+		ros::Duration(0.1).sleep();
 
 		buf[0] = WHO_AM_I;
 		buf[1] = 0x00;
@@ -553,12 +577,13 @@ void SensorIf::setup_spi_devices(){
 		gpio_reset(dev->gpio_value_handle);
 		spi_transfer(this->spi_handle, buf, 2);
 		gpio_set(dev->gpio_value_handle);
-		ros::Duration(0.001).sleep();
+		ros::Duration(0.002).sleep();
 
 		if(buf[1] == LSM6DS3_WHO_AM_I_ID){
 			lsm6ds3_xl_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_208_HZ | LSM6DS3_FS_XL_2G);
-			ros::Duration(0.001).sleep();
+			ros::Duration(0.002).sleep();
 			lsm6ds3_g_power_on(this->spi_handle, dev->gpio_value_handle, LSM6DS3_ODR_208_HZ | LSM6DS3_FS_G_250_DPS);
+			ros::Duration(0.002).sleep();
 			ROS_INFO("IMU setup success!");
 			dev->is_setup = true;
 		}else{
@@ -578,5 +603,6 @@ void SensorIf::setup_spi_devices(){
 //
 ///////////////////////////////////////////////////////////////////////////////
 void SensorInfo::set_update_flag(const ros::TimerEvent& event){
+	// ROS_INFO("==== SETTING UPDATE FLAG ====");
 	this->update = true;
 }

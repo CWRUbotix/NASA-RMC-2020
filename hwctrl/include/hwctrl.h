@@ -71,6 +71,7 @@ const std::string vesc_log_fname 	= "hwctrl/vesc_log.csv";
 
 static std::string vesc_log_path 	= "";
 
+const std::string sys_gpio_base = "/sys/class/gpio/";
 const std::string adc_1_cs 			= "/sys/class/gpio/gpio67/"; 		// gpio file for ADC 1 chip select
 const std::string adc_2_cs			= "/sys/class/gpio/gpio68/";
 const std::string temp_sensor_cs= "/sys/class/gpio/gpio69/";
@@ -169,12 +170,14 @@ private:
 	ros::Subscriber limit_sw_sub; 	// listen for limit switch interrupts
 	ros::ServiceServer set_motor_srv; // to provide the set_motor service
 	ros::Subscriber set_motor_sub; // set motors
+	void init_motors(); 						// called when power sense turns on
 public:
 	HwMotorIf(ros::NodeHandle);
 	ros::CallbackQueue cb_queue;
 	ros::Rate loop_rate; 		// 1ms delay in each loop
 	std::vector<HwMotor> motors;
 	int motor_ind = 0;
+	bool sys_power_on = false; // to track current system power state
 	bool set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response);
 	void set_motor_cb_alt(hwctrl::SetMotorMsg msg);
 	void add_motor(HwMotor mtr);
@@ -217,7 +220,7 @@ public:
 	DeviceType dev_type 		= DEVICE_NONE;
 	std::string gpio_path   = "";
 	int gpio_value_fd 			= -1;
-	SpiDevice * spi_device 	= NULL;
+	SpiDevice * spi_device;
 	float value 						= 0.0;
 	float scale 						= 1.0;
 	float offset 						= 0.0;

@@ -16,7 +16,17 @@
 #define GPIO_INPUT  0
 #define GPIO_OUTPUT 1
 
+#define GPIO_ERR_UNSPEC       -1
+#define GPIO_ERR_BAD_HANDLE   GPIO_ERR_UNSPEC-1
+#define GPIO_ERR_OPEN_FAILED  GPIO_ERR_UNSPEC-2
+#define GPIO_ERR_WRITE_FAILED GPIO_ERR_UNSPEC-3
+#define GPIO_ERR_READ_FAILED  GPIO_ERR_UNSPEC-4
+
+int gpio_init(std::string path, int mode, int value);
+
 int gpio_set_dir(std::string path, int mode);
+
+std::string gpio_get_dir(std::string path);
 
 int gpio_get_value_handle(std::string path);
 

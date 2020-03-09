@@ -12,6 +12,10 @@ id,name,category,device_type,interface,device_id,aux_1,aux_2,aux_3,aux_4,units,n
 10,UWB NODE 3,sensor,uwb,can,3,0,0,0,0,meters,aux values not yet used
 11,UWB NODE 4,sensor,uwb,can,4,0,0,0,0,meters,aux values not yet used
 12,EXC QUADRATURE ENCODER,sensor,quad_enc,can,10,0,0,0,0,none,aux values not yet used
-13,EBAY TEMPERATURE,sensor,temperature,spi,13,0,0,0,0,Celcius,aux values not yet used
-14,IMU,sensor,imu,spi,14,0,0,0,0,none,aux values not yet used
-15,SYSTEM 24V STATE,sensor,power_sense,gpio,20,0,0,0,0,boolean,aux values not yet used
+13,EBAY TEMPERATURE,sensor,temperature,spi,13,0,0,0,0.5,Celcius,aux values not yet used
+14,IMU,sensor,imu,spi,14,0,0,0,0.001,none,aux values not yet used
+15,SYSTEM 24V STATE,sensor,power_sense,gpio,20,0,0,0,0.1,boolean,aux values not yet used
+16,LIMIT DEP LOWER,sensor,limit,gpio,gpio60/,0,0,0,0.005,boolean,aux values not yet used
+17,LIMIT DEP UPPER,sensor,limit,gpio,gpio48/,0,0,0,0.005,boolean,aux values not yet used
+18,LIMIT EXC TRANS LOWER,sensor,limit,gpio,gpio49/,0,0,0,0.005,boolean,aux values not yet used
+19,LIMIT EXC TRANS UPPER,sensor,limit,gpio,gpio117/,0,0,0,0.005,boolean,aux values not yet used
