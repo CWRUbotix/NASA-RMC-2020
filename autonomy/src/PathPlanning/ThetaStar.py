@@ -87,7 +87,7 @@ def updateHeuristic(end, grid):
     for i in range(grid.num_rows):
         for j in range(grid.num_cols):
             v = grid.getVertex(i, j)
-            v.setHeuristic(5 * v.get_prob_blocked() + v.distanceTo(end))
+            v.setHeuristic(2 * v.get_prob_blocked() + v.distanceTo(end))
 
 
 def post_process(path, grid):
@@ -104,7 +104,7 @@ def theta_star(path, grid):
     counter = 1
     while True:
         if index < len(path) - 2:  # If not at end of path - the nodes that will be joined
-            if not checkBlocked(path[index], path[index + 2], grid) and counter % 10 != 0:  # if there is a line of sight
+            if not checkBlocked(path[index], path[index + 2], grid) and counter % 5 != 0:  # if there is a line of sight
                 path[index + 2].setParent(path[index])  # Join the two end nodes
                 path.remove(path[index + 1])  # and cut out the middle node
                 counter += 1

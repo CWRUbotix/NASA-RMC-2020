@@ -29,27 +29,28 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 class GlobalOccupancyGrid:
 
     def __init__(self):
+
+        print('Booting up node...')
+        rospy.init_node('globalMap', anonymous=True)
         self.save_imgs = False
-        self.save_data = True
+        self.save_data = False
         self.robot_x = []
         self.robot_y = []
         self.robot_pitch = []
         self.local_grid = None
         self.arena_length = rospy.get_param('arena_y')
         self.arena_width = rospy.get_param('arena_x')
-        self.resolution = rospy.get_param('grid_resolution')
-        self.camera_offset = [rospy.get_param('realsense_x'), rospy.get_param('realsense_y'), rospy.get_param('realsense_yaw')]
+        self.resolution = rospy.get_param('obstacle_detection/grid_resolution')
+        self.camera_offset = [rospy.get_param('obstacle_detection/realsense/x'),
+                              rospy.get_param('obstacle_detection/realsense/y'), rospy.get_param('obstacle_detection/realsense/yaw')]
         self.global_grid_shape = (int(self.arena_length / self.resolution), int(self.arena_width / self.resolution))
         self.global_grid = np.zeros(self.global_grid_shape)
         self.global_counts = np.zeros_like(self.global_grid)  # keeps track of number of measurements for each cell
         self.global_totals = np.zeros_like(self.global_grid)  # keeps track of sum of measurements for each cell
-        self.localization_topic = rospy.get_param('localization')
+        self.localization_topic = rospy.get_param('localization_name')
         self.local_grid_topic = 'local_occupancy_grid'
         self.viz_dir = 'global_map/'
         self.data_dir = 'occupancy_grid_data/'
-
-        print('Booting up node...')
-        rospy.init_node('globalMap', anonymous=True)
 
         os.makedirs(self.viz_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
@@ -163,7 +164,9 @@ class GlobalOccupancyGrid:
             # self.global_grid = np.nan_to_num(self.global_grid, copy=False)
             # self.global_grid /= np.max(self.global_grid)  # ensure values are 0-1
 
-            self.global_grid = ndimage.maximum_filter(self.global_totals, size=7, mode='nearest')
+            self.global_grid = ndimage.maximum_filter(self.global_totals, size=6, mode='nearest')
+            self.global_grid[self.global_grid >= 50] = 100
+            self.global_grid = ndimage.gaussian_filter(self.global_grid, sigma=1.5)
             self.global_grid[self.global_grid >= 50] = 100
 
             header = Header()
@@ -184,7 +187,7 @@ class GlobalOccupancyGrid:
             grid_msg.data = list(np.int8(self.global_grid.flatten()))
 
             try:
-                pub = rospy.Publisher(rospy.get_param('obstacle_detection'), OccupancyGrid, queue_size=1)
+                pub = rospy.Publisher(rospy.get_param('obstacle_detection_name'), OccupancyGrid, queue_size=1)
                 pub.publish(grid_msg)
             except rospy.ROSInterruptException as e:
                 print(e.getMessage())

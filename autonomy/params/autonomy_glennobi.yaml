@@ -1,0 +1,9 @@
+motor_command_accel: 30  # (RPM/s) Wheel acceleration limit for path following
+target_velocity: 0.15  # (m/s) Path following speed
+lambda_e: 0.85 # larger values make robot turn towards path faster
+G_u: 3  # Overall robot turning speed multiplier
+reference_point_x: 0.5  # (m) x position of point on robot that controller is trying to drive towards the path
+effective_robot_width: 0.9  # (m) The width used to calculate conversion between angular velocity and wheel speed
+                            # is larger than the actual robot width due to friction
+turn_speed: 0.2  # (rad/s) speed at which robot turns in place
+

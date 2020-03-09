@@ -1,11 +1,11 @@
 import numpy as np
-import PathFollowing.config as config
 from PathPlanning.ThetaStar import create_path, checkBlocked
 from PathPlanning.PathPlanningUtils import Position, constrain_angle
 
 
 class PathFollower:
-    def __init__(self, reference_point_x, goal=None, path=None):
+    def __init__(self, reference_point_x, goal=None, path=None, config=None):
+        self.config = config
         self.global_path = path
         self.local_path = None
 
@@ -105,12 +105,12 @@ class PathFollower:
         self.errors.append(error)
         self.error_dots.append(error_dot)
 
-        s = error_dot + config.lambda_e * error
+        s = error_dot + self.config.lambda_e * error
         s_dot = (s - self.last_s) / dt
         self.last_s = s
 
-        S = s * config.G_s
-        S_dot = s_dot * config.G_s_dot
+        S = s * self.config.G_s
+        S_dot = s_dot * self.config.G_s_dot
 
         offset = self.get_angular_offset()
 
@@ -121,7 +121,7 @@ class PathFollower:
         # if dist * np.tan(abs(offset)) < 0.1: # If offset results in less than 10cm deviation
         #     offset = 0
 
-        self.alpha = config.slowdown_controller.crisp_output(abs(offset))
+        self.alpha = self.config.slowdown_controller.crisp_output(abs(offset))
 
         target_vel = 0
         target_angular_vel = 0
@@ -130,11 +130,11 @@ class PathFollower:
 
         if not self.done:
             if abs(offset) < np.pi / 3:
-                target_vel = config.target_velocity * self.alpha
-                target_angular_vel = config.G_u * config.sliding_controller.crisp_output(S, S_dot)
+                target_vel = self.config.target_velocity * self.alpha
+                target_angular_vel = self.config.G_u * self.config.sliding_controller.crisp_output(S, S_dot)
             else:
                 target_vel = 0
-                target_angular_vel = -self.drive_backwards * 0.2 * np.sign(offset)  # + or - rad/s to turn around if facing wrong way
+                target_angular_vel = -self.drive_backwards * self.config.turn_speed * np.sign(offset)  # + or - rad/s to turn around if facing wrong way
 
         # When driving backwards flip velocity and angular velcity
         # TODO: is this mathematically equivalent to changing measured vel and angular vel?

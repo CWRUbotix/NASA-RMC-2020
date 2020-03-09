@@ -108,7 +108,7 @@ class Visualizer:
 
         ax2 = plt.subplot2grid((2, 3), (0, 1), colspan=2)
         ax2.set_xlim([0, 200])
-        ax2.set_ylim([-1.5, 1.5])
+        ax2.set_ylim([-0.9, 0.9])
         line_t_vels, = ax2.plot(self.target_vels, label='target vels')
         line_vels, = ax2.plot(self.vels, label='vels')
         line_t_ang_vels, = ax2.plot(self.target_ang_vels, label='target ang vels')

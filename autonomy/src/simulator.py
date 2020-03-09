@@ -13,7 +13,7 @@ from scipy.spatial.transform import Rotation as R
 effective_robot_width = 0.7
 wheel_radius = 0.2286
 grid_resolution = 0.15
-grid_size = 4.5
+grid_size = 4
 
 
 class Simulator:

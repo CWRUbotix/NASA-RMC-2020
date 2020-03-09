@@ -26,3 +26,5 @@ lambda_e = 0.85
 G_s = 0.4
 G_s_dot = 0.02
 G_u = 3
+
+turn_speed = 0.9

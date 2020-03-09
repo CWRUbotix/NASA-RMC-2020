@@ -7,7 +7,6 @@ import math
 import rospy
 import math
 import matplotlib
-matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import numpy as np
 import pandas as pd
 import pyrealsense2 as rs
@@ -22,20 +21,21 @@ from nav_msgs.msg import MapMetaData, OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 
 from realsense_utils import *
+matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 
 # Configure depth and color streams
 pipeline = rs.pipeline()
 config = rs.config()
 config.enable_stream(rs.stream.depth,
-                     rospy.get_param('realsense_img_h'),
-                     rospy.get_param('realsense_img_w'),
+                     rospy.get_param('obstacle_detection/realsense/img_h'),
+                     rospy.get_param('obstacle_detection/realsense/img_w'),
                      rs.format.z16,
-                     rospy.get_param('realsense_fps'))
+                     rospy.get_param('obstacle_detection/realsense/fps'))
 config.enable_stream(rs.stream.color,
-                     rospy.get_param('realsense_img_h'),
-                     rospy.get_param('realsense_img_w'),
+                     rospy.get_param('obstacle_detection/realsense/img_h'),
+                     rospy.get_param('obstacle_detection/realsense/img_w'),
                      rs.format.bgr8,
-                     rospy.get_param('realsense_fps'))
+                     rospy.get_param('obstacle_detection/realsense/fps'))
 
 # Start streaming
 pipeline.start(config)
@@ -58,14 +58,15 @@ colorizer = rs.colorizer()
 class ObstacleDetectionNode:
 
     def __init__(self):
-        self.h, self.w = rospy.get_param('realsense_img_h'), rospy.get_param('realsense_img_w')  # realsense depth image size
-        self.resolution = rospy.get_param('grid_resolution')  # meters per grid cell
-        self.grid_size = rospy.get_param('grid_size')  # number of rows/cols grid cells
-        self.tolerance = rospy.get_param('ground_tolerance')  # tolerance in meters above/below ground to ignore
+        self.h, self.w = rospy.get_param('obstacle_detection/realsense/img_h'), \
+                         rospy.get_param('obstacle_detection/realsense/img_w')  # realsense depth image size
+        self.resolution = rospy.get_param('obstacle_detection/grid_resolution')  # meters per grid cell
+        self.grid_size = rospy.get_param('obstacle_detection/grid_size')  # number of rows/cols grid cells
+        self.tolerance = rospy.get_param('obstacle_detection/ground_tolerance')  # tolerance in meters above/below ground to ignore
         self.kernel_sigma = 0.5  # standard deviation of gaussian kernel used to smooth local grid
         self.save_imgs = True  # set to True to save local grid visualizations
         self.save_data = True  # set to True to save testing data
-        self.localization_topic = rospy.get_param('localization')  # filtered global localization topic
+        self.localization_topic = rospy.get_param('localization_name')  # filtered global localization topic
         self.viz_dir = 'obstacle_viz/'  # directory to save visualizations
         self.viz_step = 20
         self.viz_i = 0
@@ -74,10 +75,10 @@ class ObstacleDetectionNode:
 
         # RealSense physical orientation in the real world.
         self.CameraPosition = {
-            "x": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
-            "y": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
-            "z": rospy.get_param('realsense_z'),  # height in meters of actual RealSense sensor from the floor.
-            "roll": 0, # sensor's roll angle in degrees (trig function for this is commented out by default).
+            "x":rospy.get_param('obstacle_detection/realsense/x'),  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "y": rospy.get_param('obstacle_detection/realsense/y'),  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "z": rospy.get_param('obstacle_detection/realsense/z'),  # height in meters of actual RealSense sensor from the floor.
+            "roll": 0,  # sensor's roll angle in degrees (trig function for this is commented out by default).
             "azimuth": 0,  # sensor's yaw angle in degrees.
             "elevation": 20,  # sensor's pitch angle in degrees.
         }
