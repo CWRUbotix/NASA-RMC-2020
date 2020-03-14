@@ -20,7 +20,6 @@ from hci.msg import sensorValue
 from hwctrl.msg import MotorData
 
 
-
 class IMU:
     def __init__(self):
         self.topic = 'imu'
@@ -37,7 +36,7 @@ class IMU:
         self.port_encoder = 0
         self.starboard_encoder = 0
         self.wheel_radius = rospy.get_param('wheel_radius')
-        self.robot_width = rospy.get_param('robot_width')
+        self.robot_width = rospy.get_param('effective_robot_width')
 
         self.orientation_plot = np.zeros(3)
         self.angular_velocity_plot = np.zeros(3)

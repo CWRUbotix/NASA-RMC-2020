@@ -31,7 +31,7 @@ config.lambda_e = rospy.get_param("autonomy/lambda_e")
 config.target_velocity = rospy.get_param("autonomy/target_velocity")
 config.turn_speed = rospy.get_param("autonomy/turn_speed")
 reference_point_x = rospy.get_param("autonomy/reference_point_x")
-effective_robot_width = rospy.get_param("autonomy/effective_robot_width")
+effective_robot_width = rospy.get_param("effective_robot_width")
 
 
 class State(Enum):
