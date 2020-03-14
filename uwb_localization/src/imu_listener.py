@@ -25,7 +25,7 @@ class IMU:
     def __init__(self):
         self.topic = 'imu'
         self.viz_dir = 'imu_plots'
-        self.save_plots = True
+        self.save_plots = False
         print('Booting up node...')
         rospy.init_node('imu_listener', anonymous=True)
         self.orientation = np.zeros(3)
@@ -135,11 +135,11 @@ class IMU:
         orientation_quat = R.from_euler('xyz', self.orientation, degrees=True).as_quat()
         orientation_cov = np.ravel(np.eye(3) * 1e-9)
         quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
-        self.angular_velocity = np.deg2rad(self.angular_velocity)
-        angular_vel_msg = Vector3(self.angular_velocity[0],
-                                  self.angular_velocity[1],
-                                  self.angular_velocity[2])
-        angular_vel_cov = np.ravel(np.eye(3) * 1e-9)
+        angular_velocity = np.deg2rad(self.angular_velocity)
+        angular_vel_msg = Vector3(angular_velocity[0],
+                                  angular_velocity[1],
+                                  angular_velocity[2])
+        angular_vel_cov = np.ravel(np.eye(3) * 1e-4)
         accel_msg = Vector3(-self.acceleration[0],
                             -self.acceleration[1],
                             -self.acceleration[2])
@@ -181,7 +181,7 @@ class IMU:
         linear_twist = Vector3(x_dot, y_dot, 0)
         angular_twist = Vector3(0, 0, theta_dot)
 
-        twist_cov = np.diag([0.05, 0.05, 0, 0, 0, 0.05]).flatten()
+        twist_cov = np.diag([0.002, 0.02, 0, 0, 0, 0.001]).flatten()
         twist_with_cov = TwistWithCovariance()
         twist_with_cov.twist = Twist(linear_twist, angular_twist)
         twist_with_cov.covariance = twist_cov

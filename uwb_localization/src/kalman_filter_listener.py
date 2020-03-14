@@ -38,7 +38,7 @@ class KalmanFilterNode:
         self.robot_yaw = []
         self.node_yaw = []
         self.viz_dir = 'robot_localization_viz'
-        self.viz_step = 50
+        self.viz_step = 40
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -131,8 +131,9 @@ class KalmanFilterNode:
 
         if len(self.robot_x) % self.viz_step == 0:
             fig, ax = plt.subplots(figsize=(6, 9))
-            if len(self.unfiltered_x) > 0 and len(self.unfiltered_y) > 0 and len(self.unfiltered_x) == len(self.unfiltered_y):
-                ax.scatter(self.unfiltered_x, self.unfiltered_y, label='raw UWB', alpha=0.2, marker='+')
+            if len(self.unfiltered_x) > 0 and len(self.unfiltered_y) > 0:
+                length = len(self.unfiltered_x)
+                ax.scatter(self.unfiltered_x[:length], self.unfiltered_y[:length], label='raw UWB', alpha=0.2, marker='+')
             ax.plot(self.robot_x, self.robot_y, label='kalman filter', alpha=0.75, c='tab:orange')
             self.confidence_ellipse(self.robot_x[-1], self.robot_y[-1], covariance[0: 2, 0: 2], ax, edgecolor='red')
             ax.arrow(self.robot_x[-1], self.robot_y[-1], .3 * math.cos(self.robot_yaw[-1]), .3 * math.sin(self.robot_yaw[-1]), head_width=0.1)

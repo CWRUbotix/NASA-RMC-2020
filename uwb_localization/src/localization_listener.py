@@ -21,7 +21,7 @@ from geometry_msgs.msg import Quaternion, PoseWithCovarianceStamped, PoseWithCov
 
 
 class LocalizationNode:
-    def __init__(self, visualize=True):
+    def __init__(self, visualize=False):
         self.topic = 'localization_data'  # topic where UWB distances are published
         self.viz_dir = 'visualizations/'  # directory to store node visualizations
         self.visualize = visualize
@@ -60,16 +60,17 @@ class LocalizationNode:
             if start_node.is_valid() and end_node.is_valid():
                 # get vector with tail at start node and head at end end
                 robot_edge = -np.array([start_node.relative_x, start_node.relative_y]) + np.array([end_node.relative_x, end_node.relative_y])
-                dot_product = np.dot(robot_edge, np.array([1, 0]))
+
                 # each edge vector is at a different angle relative to the robot coordinate system
                 theta_offset = np.arctan2(robot_edge[1], robot_edge[0])
                 dY = end_node.y - start_node.y
                 dX = end_node.x - start_node.x
                 theta = np.arctan2(dY, dX) - theta_offset
                 thetas.append([np.cos(theta), np.sin(theta)])
-        theta = np.mean(thetas, axis=0)
-        self.robot_theta.append(np.arctan2(theta[1], theta[0]))
-        return self.robot_theta[-1]
+        if len(thetas) > 0:
+            theta = np.mean(thetas, axis=0)
+            self.robot_theta.append(np.arctan2(theta[1], theta[0]))
+        return 0 if len(self.robot_theta) == 0 else self.robot_theta[-1]
 
     def position_callback(self, msg):
         for node in self.nodes:
