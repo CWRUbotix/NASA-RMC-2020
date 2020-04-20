@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from autonomy.msg import transitPath, transitControlData
+from autonomy.msg import TransitPath, TransitControlData
 from nav_msgs.msg import Odometry, OccupancyGrid
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from scipy.spatial.transform import Rotation as R
@@ -45,8 +45,8 @@ class Visualizer:
     def subscribe(self):
         rospy.Subscriber("odometry/filtered_map", Odometry, self.receiveOdometry, queue_size=1)
         rospy.Subscriber("uwb_nodes", PoseWithCovarianceStamped, self.recieveUwb, queue_size=1)
-        rospy.Subscriber("transitPath", transitPath, self.receivePath, queue_size=1)
-        rospy.Subscriber("transitControlData", transitControlData, self.receiveControlData, queue_size=1)
+        rospy.Subscriber("transit_path", TransitPath, self.receivePath, queue_size=1)
+        rospy.Subscriber("transit_control_data", TransitControlData, self.receiveControlData, queue_size=1)
         rospy.Subscriber("global_occupancy_grid", OccupancyGrid, self.recieveOccupancyGrid, queue_size=1)
 
     def receiveOdometry(self, msg):

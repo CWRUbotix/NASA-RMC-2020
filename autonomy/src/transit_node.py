@@ -3,7 +3,7 @@ import rospy
 import actionlib
 from scipy.spatial.transform import Rotation as R
 from hwctrl.msg import SetMotorMsg
-from autonomy.msg import GoToGoalAction, transitPath, transitControlData
+from autonomy.msg import GoToGoalAction, TransitPath, TransitControlData
 from autonomy.srv import RobotState
 from PathFollowing.PathFollower import PathFollower
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
@@ -46,8 +46,8 @@ class TransitNode:
 
         self.motor_acceleration = rospy.get_param('/motor_command_accel')
         self.motor_pub = rospy.Publisher("motor_setpoints", SetMotorMsg, queue_size=4)
-        self.path_pub = rospy.Publisher("transitPath", transitPath, queue_size=4)
-        self.control_data_pub = rospy.Publisher("transitControlData", transitControlData, queue_size=4)
+        self.path_pub = rospy.Publisher("transit_path", TransitPath, queue_size=4)
+        self.control_data_pub = rospy.Publisher("transit_control_data", TransitControlData, queue_size=4)
         self.controller = PathFollower(reference_point_x, goal=(0, 0), config=config)
         self.robot_state = dict(state=np.array([[0, 0, 0]]).T, state_dot=np.array([[0, 0, 0]]).T)
         self.controller.update_grid(Grid(ARENA_WIDTH, ARENA_HEIGHT))
@@ -196,7 +196,7 @@ class TransitNode:
     def publish_control_data(self):
         followed_segment, closest_point, reference_point = self.controller.draw_path_info()
 
-        data = transitControlData()
+        data = TransitControlData()
         data.t_vel = self.target_vels[-1]
         data.t_angular_vel = self.target_ang_vels[-1]
         data.vel = self.vels[-1]

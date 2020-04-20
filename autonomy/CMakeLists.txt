@@ -52,10 +52,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
     FILES
-    transitPath.msg
-    goToGoal.msg
+    TransitPath.msg
     sensor_value.msg
-    transitControlData.msg
+    TransitControlData.msg
 )
 
 add_action_files(
@@ -67,7 +66,7 @@ add_action_files(
 add_service_files(
   FILES
   RobotState.srv
-  start.srv
+  StartAutonomy.srv
 )
 
 ## Generate actions in the 'action' folder
