@@ -65,7 +65,7 @@ const std::string aux_4_hddr 		= "aux_4";
 const std::string category_motor 	= "motor";
 const std::string category_sensor = "sensor";
 
-const std::string config_file_fname = "conf/hw_config.csv";
+const std::string config_file_fname = "config/params/hw_config.csv";
 
 const std::string vesc_log_fname 	= "hwctrl/vesc_log.csv";
 
