@@ -152,7 +152,7 @@ class TransitNode:
             self.vels.append(self.robot_state["state_dot"][0, 0])
             self.ang_vels.append(self.robot_state["state_dot"][2, 0])
             self.target_wheel_speeds.append([right_speed, left_speed])
-            self.wheel_speeds.append([msg.sensors.starboardDriveEncoder, msg.sensors.portDriveEncoder])
+            self.wheel_speeds.append([msg.sensors.starboard_drive_encoder, msg.sensors.port_drive_encoder])
 
             self.motor_pub.publish(id=0, setpoint=left_speed, acceleration=self.motor_acceleration)
             self.motor_pub.publish(id=1, setpoint=right_speed, acceleration=self.motor_acceleration)

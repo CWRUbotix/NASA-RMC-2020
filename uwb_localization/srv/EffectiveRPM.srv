@@ -1,5 +1,5 @@
 float32 left
 float32 right
 ---
-float32 effectiveLeft
-float32 effectiveRight
+float32 effective_left
+float32 effective_right

@@ -1332,7 +1332,7 @@ Attitude:o/l</string>
      </rect>
     </property>
     <property name="text">
-     <string>23: depLowerLimit</string>
+     <string>23: dep_lower_limit</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="sensor23_lineedit">
@@ -1361,7 +1361,7 @@ Attitude:o/l</string>
      </rect>
     </property>
     <property name="text">
-     <string>24: depUpperLimit</string>
+     <string>24: dep_upper_limit</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="sensor24_lineedit">
@@ -1390,7 +1390,7 @@ Attitude:o/l</string>
      </rect>
     </property>
     <property name="text">
-     <string>25: excForeLimit</string>
+     <string>25: exc_fore_limit</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="sensor25_lineedit">
@@ -1419,7 +1419,7 @@ Attitude:o/l</string>
      </rect>
     </property>
     <property name="text">
-     <string>26: excAftLimit</string>
+     <string>26: exc_aft_limit</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="sensor26_lineedit">
@@ -1448,7 +1448,7 @@ Attitude:o/l</string>
      </rect>
     </property>
     <property name="text">
-     <string>27: bcLowerLimit</string>
+     <string>27: bc_lower_limit</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="sensor27_lineedit">
@@ -1477,7 +1477,7 @@ Attitude:o/l</string>
      </rect>
     </property>
     <property name="text">
-     <string>28: bcUpperLimit</string>
+     <string>28: bc_upper_limit</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="sensor28_lineedit">

@@ -5,7 +5,7 @@ from nav_msgs.msg import Odometry
 from nav_msgs.msg import OccupancyGrid
 from hci.msg import sensorValue
 from hwctrl.msg import MotorData
-from autonomy.msg import sensor_value
+from autonomy.msg import ExtraSensorValues
 from autonomy.srv import RobotState, RobotStateResponse
 
 odometry = None
@@ -16,16 +16,16 @@ sensors = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 sensormap = {
     0  : 0,  # port encoder
     1  : 1,  # starboard encoder
-    5  : 2,  # bcAttitudePortPot
-    6  : 3,  # bcAttitudeStarboardPot
-    9  : 4,  # depLoadCell
-    10 : 5,  # excLoadCell
-    23 : 6,  # depLowerLimit
-    24 : 7,  # depUpperLimit
-    25 : 8,  # excForeLimit
-    26 : 9, # excAftLimit
-    27 : 10, # bcLowerLimit
-    28 : 11  # bcUpperLimit
+    5  : 2,  # bc_attitude_port_pot
+    6  : 3,  # bc_attitude_starboard_pot
+    9  : 4,  # dep_load_cell
+    10 : 5,  # exc_load_cell
+    23 : 6,  # dep_lower_limit
+    24 : 7,  # dep_upper_limit
+    25 : 8,  # exc_fore_limit
+    26 : 9, # exc_aft_limit
+    27 : 10, # bc_lower_limit
+    28 : 11  # bc_upper_limit
 }
 
 def update_odometry(msg):
@@ -60,9 +60,9 @@ def subscribe():
 def send_robot_state(req):
     global odometry, occupancy_grid
     (s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11) = tuple(sensors)
-    sensor_msg = sensor_value(portDriveEncoder=s0, starboardDriveEncoder=s1, bcAttitudePortPot=s2, bcAttitudeStarboardPot=s3,
-                              depLoadCell=s4, excLoadCell=s5, depLowerLimit=s6, depUpperLimit=s7, excForeLimit=s8, excAftLimit=s9,
-                              bcLowerLimit=s10, bcUpperLimit=s11)
+    sensor_msg = ExtraSensorValues(port_drive_encoder=s0, starboard_drive_encoder=s1, bc_attitude_port_pot=s2, bc_attitude_starboard_pot=s3,
+                              dep_load_cell=s4, exc_load_cell=s5, dep_lower_limit=s6, dep_upper_limit=s7, exc_fore_limit=s8, exc_aft_limit=s9,
+                              bc_lower_limit=s10, bc_upper_limit=s11)
     return RobotStateResponse(odometry=odometry, grid=occupancy_grid, sensors=sensor_msg, stamp=rospy.Time.now())
 
 def on_shut_down():

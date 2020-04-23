@@ -53,7 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
     FILES
     TransitPath.msg
-    sensor_value.msg
+    ExtraSensorValues.msg
     TransitControlData.msg
 )
 
