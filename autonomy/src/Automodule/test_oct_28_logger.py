@@ -59,17 +59,17 @@ logfile = None
 def updateState(msg):
     global currentState
 
-    if msg.sensorID == 0:
+    if msg.sensor_id == 0:
         currentState.port_rpm = msg.value
-    elif msg.sensorID == 1:
+    elif msg.sensor_id == 1:
         currentState.star_rpm = msg.value
-    elif msg.sensorID == 13:
+    elif msg.sensor_id == 13:
         currentState.gyro0Z = msg.value
-    elif msg.sensorID == 19:
+    elif msg.sensor_id == 19:
         currentState.gyro1Z = msg.value
-    elif msg.sensorID == 14:
+    elif msg.sensor_id == 14:
         currentState.acce0X = msg.value
-    elif msg.sensorID == 20:
+    elif msg.sensor_id == 20:
         currentState.acce1X = msg.value
 
 def updatePos(msg):

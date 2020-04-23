@@ -91,11 +91,11 @@ def sendDriveCommand(direction, value, accel=35):
     return True
 
 def sensorValueCallback(data):
-    rospy.loginfo("Sensor %u has value %f", data.sensorID, data.value)
-    sensorValueMap[data.sensorID] = data.value;
+    rospy.loginfo("Sensor %u has value %f", data.sensor_id, data.value)
+    sensorValueMap[data.sensor_id] = data.value;
 
-def getSensorValue(sensorID):
-    return sensorValueMap(sensorID);
+def getSensorValue(sensor_id):
+    return sensorValueMap(sensor_id);
 
 def initializeRobotInterface():
     #rospy.init_node(node_name,disable_signals=True)

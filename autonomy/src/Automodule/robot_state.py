@@ -37,8 +37,8 @@ def update_occupancy_grid(msg):
 
 def update_sensors(msg):
     global sensors, sensormap
-    if msg.sensorID in sensormap.keys() and msg.id != 0 and msg.id != 1:
-        sensors[sensormap[msg.sensorID]] = msg.value
+    if msg.sensor_id in sensormap.keys() and msg.id != 0 and msg.id != 1:
+        sensors[sensormap[msg.sensor_id]] = msg.value
 
 def update_encoders(msg):
     global sensors, sensormap

@@ -62,31 +62,31 @@ class IMU:
         self.compose_wheel_msg()
 
     def sensor_callback(self, msg):
-        if msg.sensorID == 30:
+        if msg.sensor_id == 30:
             self.orientation[0] = msg.value
             self.orientation_marker[0] = 1
-        elif msg.sensorID == 31:
+        elif msg.sensor_id == 31:
             self.orientation[1] = msg.value
             self.orientation_marker[1] = 1
-        elif msg.sensorID == 32:
+        elif msg.sensor_id == 32:
             self.orientation[2] = msg.value
             self.orientation_marker[2] = 1
-        elif msg.sensorID == 17:
+        elif msg.sensor_id == 17:
             self.angular_velocity[0] = msg.value + self.angular_velocity_offset[0]
             self.angular_velocity_marker[0] = 1
-        elif msg.sensorID == 18:
+        elif msg.sensor_id == 18:
             self.angular_velocity[1] = msg.value + self.angular_velocity_offset[1]
             self.angular_velocity_marker[1] = 1
-        elif msg.sensorID == 19:
+        elif msg.sensor_id == 19:
             self.angular_velocity[2] = msg.value + self.angular_velocity_offset[2]
             self.angular_velocity_marker[2] = 1
-        elif msg.sensorID == 20:
+        elif msg.sensor_id == 20:
             self.acceleration[0] = msg.value + self.acceleration_offset[0]
             self.acceleration_marker[0] = 1
-        elif msg.sensorID == 21:
+        elif msg.sensor_id == 21:
             self.acceleration[1] = msg.value + self.acceleration_offset[1]
             self.acceleration_marker[1] = 1
-        elif msg.sensorID == 22:
+        elif msg.sensor_id == 22:
             self.acceleration[2] = msg.value
             self.acceleration_marker[2] = 1
 
