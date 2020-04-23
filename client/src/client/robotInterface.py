@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 import rospy
-
-#from client.srv import motorCommand
-#from client.msg import sensorValue
-from hci.msg import sensorValue
-from hci.msg import motorCommand
-from hci.msg import driveCommand
-import hwctrl.srv
+from hwctrl.msg import SensorData
 from hwctrl.msg import SetMotorMsg
 
 node_name = 'robotInterface'
@@ -105,5 +99,5 @@ def getSensorValue(sensorID):
 
 def initializeRobotInterface():
     #rospy.init_node(node_name,disable_signals=True)
-    rospy.Subscriber(sensorValueTopic,sensorValue,sensorValueCallback)
+    rospy.Subscriber(sensorValueTopic,SensorData,sensorValueCallback)
     #rospy.spin()

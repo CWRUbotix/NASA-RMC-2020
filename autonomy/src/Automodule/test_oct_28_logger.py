@@ -4,7 +4,7 @@ import rospy
 import sys
 import time
 
-from hci.msg import sensorValue
+from hwctrl.msg import SensorValue
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from scipy.spatial.transform import Rotation as R
@@ -81,7 +81,7 @@ def updatePos(msg):
 	currentState.theta = theta[2]
 
 def subscribe():
-    rospy.Subscriber('sensorValue', sensorValue, updateState)
+    rospy.Subscriber('sensorValue', SensorValue, updateState)
     rospy.Subscriber('uwb_nodes', PoseWithCovarianceStamped, updatePos)
 
 def shutdown():

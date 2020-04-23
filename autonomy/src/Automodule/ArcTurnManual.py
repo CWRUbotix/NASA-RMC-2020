@@ -3,10 +3,10 @@
 import rospy
 import math
 from graphics import *
-from hci.msg import motorCommand
+from hwctrl.msg import MotorCommand
 
 robot_speed = 20
-motor_pub = rospy.Publisher("motorCommand", motorCommand, queue_size=100)
+motor_pub = rospy.Publisher("motorCommand", MotorCommand, queue_size=100)
 win = GraphWin("Turn Control", 500, 500)
 speed_text = Text(Point(75, 75), str(robot_speed))
 speed_text.draw(win)

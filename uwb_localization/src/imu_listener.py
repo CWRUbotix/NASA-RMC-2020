@@ -16,8 +16,7 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, TwistWithCovariance, Twist
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
-from hci.msg import sensorValue
-from hwctrl.msg import MotorData
+from hwctrl.msg import MotorData, SensorValue
 
 
 class IMU:
@@ -203,6 +202,6 @@ class IMU:
 
 if __name__ == '__main__':
     imu_node = IMU()
-    sub = rospy.Subscriber('sensorValue', sensorValue, imu_node.sensor_callback)
+    sub = rospy.Subscriber('sensorValue', SensorValue, imu_node.sensor_callback)
     rospy.Subscriber('motor_data', MotorData, imu_node.motor_callback)
     rospy.spin()
