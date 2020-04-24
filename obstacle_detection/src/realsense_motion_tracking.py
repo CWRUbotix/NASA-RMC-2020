@@ -61,7 +61,7 @@ class RealSenseIMU:
         self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
 
         print('Booting up node...')
-        rospy.init_node('realsenseMotion', anonymous=True)
+        rospy.init_node('realsense_motion', anonymous=True)
 
     def listen_for_frames(self):
         xs = []

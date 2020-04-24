@@ -3,7 +3,7 @@ import rospy
 from hwctrl.msg import SensorData
 from hwctrl.msg import SetMotorMsg
 
-node_name = 'robotInterface'
+node_name = 'robot_interface'
 motorCommandTopic = 'motor_setpoints'
 sensorValueTopic = 'sensor_value'
 

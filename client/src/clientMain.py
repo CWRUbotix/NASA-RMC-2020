@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import robotInterface
 
-node_name = 'clientNode'
+node_name = 'client_node'
 
 
 if __name__=='__main__':
