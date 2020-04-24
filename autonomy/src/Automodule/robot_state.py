@@ -3,7 +3,7 @@
 import rospy
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import OccupancyGrid
-from hwctrl.msg import MotorData, SensorValue
+from hwctrl.msg import MotorData, SensorData
 from autonomy.msg import ExtraSensorValues
 from autonomy.srv import RobotState, RobotStateResponse
 
@@ -51,7 +51,7 @@ def update_encoders(msg):
 
 
 def subscribe():
-    rospy.Subscriber("sensor_value", SensorValue, update_sensors)
+    rospy.Subscriber("sensor_value", SensorData, update_sensors)
     rospy.Subscriber("motor_data", MotorData, update_encoders)
     rospy.Subscriber("odometry/filtered_map", Odometry, update_odometry)
     rospy.Subscriber("global_occupancy_grid", OccupancyGrid, update_occupancy_grid)
