@@ -5,8 +5,7 @@ from hwctrl.msg import SetMotorMsg
 
 node_name = 'robotInterface'
 motorCommandTopic = 'motor_setpoints'
-driveCommandTopic = 'driveCommand'
-sensorValueTopic = 'sensorValue'
+sensorValueTopic = 'sensor_value'
 
 motorCommandPub = None
 driveCommandPub = None

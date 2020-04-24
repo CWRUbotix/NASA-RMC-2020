@@ -14,8 +14,8 @@ from python_qt_binding.QtCore import Qt, QTimer, Slot
 from python_qt_binding.QtWidgets import QWidget
 
 node_name = 'robotInterface'
-motorCommandTopic = 'motorCommand'
-sensorValueTopic = 'sensorValue'
+motorCommandTopic = 'motor_setpoints'
+sensorValueTopic = 'sensor_value'
 
 # --------------------------------------------------
 #

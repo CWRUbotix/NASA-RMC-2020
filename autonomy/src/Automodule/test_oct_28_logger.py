@@ -81,7 +81,7 @@ def updatePos(msg):
 	currentState.theta = theta[2]
 
 def subscribe():
-    rospy.Subscriber('sensorValue', SensorValue, updateState)
+    rospy.Subscriber('sensor_value', SensorValue, updateState)
     rospy.Subscriber('uwb_nodes', PoseWithCovarianceStamped, updatePos)
 
 def shutdown():

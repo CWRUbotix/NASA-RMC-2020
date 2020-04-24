@@ -202,6 +202,6 @@ class IMU:
 
 if __name__ == '__main__':
     imu_node = IMU()
-    sub = rospy.Subscriber('sensorValue', SensorValue, imu_node.sensor_callback)
+    sub = rospy.Subscriber('sensor_value', SensorValue, imu_node.sensor_callback)
     rospy.Subscriber('motor_data', MotorData, imu_node.motor_callback)
     rospy.spin()
