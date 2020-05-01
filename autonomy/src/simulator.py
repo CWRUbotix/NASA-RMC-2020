@@ -26,7 +26,7 @@ class Simulator:
 
         self.camera_offset = [-0.4, 0, np.pi/2]
 
-        self.odometryPublisher = rospy.Publisher("odometry/filtered_map", Odometry, queue_size=1)
+        self.odometryPublisher = rospy.Publisher("glennobi_diff_drive_controller/odom", Odometry, queue_size=1)
         self.sensorsPublisher = rospy.Publisher("motor_data", MotorData, queue_size=4)
         self.occupancyGridPublisher = rospy.Publisher("local_occupancy_grid", OccupancyGrid, queue_size=1)
 

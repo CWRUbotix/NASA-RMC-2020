@@ -1,4 +1,5 @@
 <launch>
+    <rosparam command="load" file = "$(find config)/params/glennobi_params.yaml"/>
     <rosparam command="load" file = "$(find autonomy)/params/autonomy_simulator.yaml" ns="autonomy"/>
 
     <node name="transit_node" pkg="autonomy" type="transit_node.py" launch-prefix="xterm -e"/>

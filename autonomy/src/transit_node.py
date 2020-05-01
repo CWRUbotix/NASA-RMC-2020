@@ -2,7 +2,7 @@
 import rospy
 import actionlib
 from scipy.spatial.transform import Rotation as R
-from hwctrl.msg import SetMotorMsg
+from geometry_msgs.msg import Twist
 from autonomy.msg import GoToGoalAction, TransitPath, TransitControlData
 from autonomy.srv import RobotState
 from PathFollowing.PathFollower import PathFollower
@@ -39,6 +39,7 @@ except KeyError:
     # but I don't want these to have to be class members so for now I'm using this failed variable
     failed = True
 
+print(config.G_u, config.lambda_e)
 
 class State(Enum):
     FOLLOWING = 0
@@ -57,7 +58,7 @@ class TransitNode:
         self.server = actionlib.SimpleActionServer('go_to_goal', GoToGoalAction, self.go_to_goal, auto_start=False)
 
         self.motor_acceleration = rospy.get_param('/motor_command_accel')
-        self.motor_pub = rospy.Publisher("motor_setpoints", SetMotorMsg, queue_size=4)
+        self.command_vel_pub = rospy.Publisher("/glennobi_diff_drive_controller/cmd_vel", Twist, queue_size=4)
         self.path_pub = rospy.Publisher("transit_path", TransitPath, queue_size=4)
         self.control_data_pub = rospy.Publisher("transit_control_data", TransitControlData, queue_size=4)
         self.controller = PathFollower(reference_point_x, goal=(0, 0), config=config)
@@ -155,6 +156,7 @@ class TransitNode:
                 rospy.loginfo("Preempt requested")
                 self.server.set_preempted()
 
+            # only used for target wheel speeds for now, not published directly
             right_speed = (vel + angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
             left_speed = (vel - angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
 
@@ -165,8 +167,9 @@ class TransitNode:
             self.target_wheel_speeds.append([right_speed, left_speed])
             self.wheel_speeds.append([msg.sensors.starboard_drive_encoder, msg.sensors.port_drive_encoder])
 
-            self.motor_pub.publish(id=0, setpoint=left_speed, acceleration=self.motor_acceleration)
-            self.motor_pub.publish(id=1, setpoint=right_speed, acceleration=self.motor_acceleration)
+            self.publish_command_vel(vel, angular_vel)
+            # self.motor_pub.publish(id=0, setpoint=left_speed, acceleration=self.motor_acceleration)
+            # self.motor_pub.publish(id=1, setpoint=right_speed, acceleration=self.motor_acceleration)
 
             self.publish_control_data()
 
@@ -222,9 +225,18 @@ class TransitNode:
 
         self.control_data_pub.publish(data)
 
+    def publish_command_vel(self, linear, angular):
+        twist_msg = Twist()
+        twist_msg.linear.x = linear
+        twist_msg.angular.z = angular
+
+        self.command_vel_pub.publish(twist_msg)
+
     def shutdown(self):
-        self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
-        self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
+        self.command_vel_pub.publish(Twist())  # publish all 0s
+
+        # self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
+        # self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
 
     def draw(self):
         if self.visualize and self.step % self.viz_step == 0:
