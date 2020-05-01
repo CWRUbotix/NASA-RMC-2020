@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+
+<robot name="glennobi_gazebo_description" xmlns:xacro="http://www.ros.org/wiki/xacro">
+	
+	<xacro:macro name="wheel_gazebo" params="prefix">
+		<gazebo reference="${prefix}_wheel_link">
+			<material>Gazebo/Grey</material>
+			<mu1>4</mu1>
+			<mu2>4</mu2>
+		</gazebo>
+	</xacro:macro>
+	
+	<gazebo reference="base_link">
+		<material>Gazebo/Blue</material>
+	</gazebo>
+	
+	<gazebo reference="realsense_link">
+		<sensor name="realsense_camera" type="depth">
+			<update_rate>20</update_rate>
+			<camera>
+				<horizontal_fov>1.047198</horizontal_fov>
+				<image>
+					<width>640</width>
+					<height>480</height>
+					<format>R8G8B8</format>
+				</image>
+				<clip>
+					<near>0.05</near>
+					<far>4</far>
+				</clip>
+			</camera>
+			<plugin name="depth_camera_plugin" filename="libgazebo_ros_openni_kinect.so">
+				<alwaysOn>true</alwaysOn>
+				<updateRate>0.0</updateRate>
+				<cameraName>realsense</cameraName>
+				<frameName>realsense_depth_link</frameName>
+				<imageTopicName>color/image_raw</imageTopicName>
+				<cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
+				<depthImageTopicName>depth/image_raw</depthImageTopicName>
+				<depthImageInfoTopicName>depth/camera_info</depthImageInfoTopicName>
+				<pointCloudTopicName>depth/points</pointCloudTopicName>
+				<pointCloudCutoff>0.5</pointCloudCutoff>
+				<pointCloudCutoffMax>4.0</pointCloudCutoffMax>
+				<distortionK1>0.0</distortionK1>
+				<distortionK2>0.0</distortionK2>
+				<distortionK3>0.0</distortionK3>
+				<distortionT1>0.0</distortionT1>
+				<distortionT2>0.0</distortionT2>
+				<CxPrime>0</CxPrime>
+				<Cx>0</Cx>
+				<Cy>0</Cy>
+				<focalLength>0</focalLength>
+			</plugin>
+		</sensor>
+	</gazebo>
+	
+  <!-- Gazebo plugin for ROS Control -->
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+    </plugin>
+  </gazebo>
+
+</robot>
