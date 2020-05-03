@@ -1,58 +1,24 @@
 #!/usr/bin/env python3
 import os
-import sys
 import glob
-import cv2
-import math
+import sys
+sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')  # Fix cv2 import error
+import cv2  # TODO Dumb fix please fix
+sys.path.append('/opt/ros/kinetic/lib/python2.7/dist-packages')  # Fix cv2 import error
 import rospy
 import math
-import matplotlib
 import numpy as np
-import pandas as pd
-import pyrealsense2 as rs
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from scipy import signal
 from scipy.spatial.transform import Rotation as R
 from scipy.ndimage import gaussian_filter
 
 from std_msgs.msg import Header
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
-
-from realsense_utils import *
-matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
-
-# Configure depth and color streams
-pipeline = rs.pipeline()
-config = rs.config()
-config.enable_stream(rs.stream.depth,
-                     rospy.get_param('obstacle_detection/realsense/img_h'),
-                     rospy.get_param('obstacle_detection/realsense/img_w'),
-                     rs.format.z16,
-                     rospy.get_param('obstacle_detection/realsense/fps'))
-config.enable_stream(rs.stream.color,
-                     rospy.get_param('obstacle_detection/realsense/img_h'),
-                     rospy.get_param('obstacle_detection/realsense/img_w'),
-                     rs.format.bgr8,
-                     rospy.get_param('obstacle_detection/realsense/fps'))
-
-# Start streaming
-pipeline.start(config)
-
-# Get stream profile and camera intrinsics
-profile = pipeline.get_active_profile()
-depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
-depth_sensor = profile.get_device().first_depth_sensor()
-depth_scale = depth_sensor.get_depth_scale()
-depth_intrinsics = depth_profile.get_intrinsics()
-w, h = depth_intrinsics.width, depth_intrinsics.height
-
-# Processing blocks
-pc = rs.pointcloud()
-decimate = rs.decimation_filter()
-decimate.set_option(rs.option.filter_magnitude, 2 ** state.decimate)
-colorizer = rs.colorizer()
+from sensor_msgs.msg import PointCloud2
+import ros_numpy.point_cloud2
+import time
 
 
 class ObstacleDetectionNode:
@@ -65,13 +31,15 @@ class ObstacleDetectionNode:
         self.tolerance = rospy.get_param('obstacle_detection/ground_tolerance')  # tolerance in meters above/below ground to ignore
         self.kernel_sigma = 0.5  # standard deviation of gaussian kernel used to smooth local grid
         self.save_imgs = True  # set to True to save local grid visualizations
-        self.save_data = True  # set to True to save testing data
+        self.save_data = False  # set to True to save testing data
         self.localization_topic = rospy.get_param('localization_name')  # filtered global localization topic
         self.viz_dir = 'obstacle_viz/'  # directory to save visualizations
-        self.viz_step = 20
+        self.viz_step = 10
         self.viz_i = 0
         self.frame_i = 0  # current frame number
         self.data_dir = 'saved_frames/'  # directory to save testing data
+
+        self.grid_pub = rospy.Publisher('local_occupancy_grid', OccupancyGrid, queue_size=1)
 
         # RealSense physical orientation in the real world.
         self.CameraPosition = {
@@ -86,6 +54,8 @@ class ObstacleDetectionNode:
         print('Booting up node...')
         rospy.init_node('obstacle_detection', anonymous=True)
 
+        self.subscribe()
+
         os.makedirs(self.viz_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.data_dir + 'color', exist_ok=True)
@@ -97,6 +67,12 @@ class ObstacleDetectionNode:
         self.clear_dir(self.data_dir + 'color')
         self.clear_dir(self.data_dir + 'localization')
         self.clear_dir(self.data_dir + 'points')
+        self.last_time = time.time()
+        rospy.spin()
+
+    def subscribe(self):
+        rospy.Subscriber('realsense_orientation', Vector3, self.realsense_callback)
+        rospy.Subscriber('realsense/depth/points', PointCloud2, self.receive_point_cloud, buff_size=9830400, queue_size=1)
 
     def clear_dir(self, dir_name):
         files = glob.glob('%s/*' % (dir_name))
@@ -105,6 +81,12 @@ class ObstacleDetectionNode:
                 os.remove(f)
             except OSError as e:
                 print(e)
+
+    def receive_point_cloud(self, msg):
+        xyz = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)
+        print("recieved valid points: ", xyz.shape[0], time.time()-self.last_time)
+        self.last_time = time.time()
+        self.detect_obstacles_from_above(xyz, None)
 
     def realsense_callback(self, msg):
         self.CameraPosition['roll'] = -(msg.x) * 57.296
@@ -141,25 +123,27 @@ class ObstacleDetectionNode:
         pt[:] += np.float_([self.CameraPosition['x'], self.CameraPosition['y'], self.CameraPosition['z']])
         return pt
 
-    def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=10, cropping=500, pcnt=0):
-        grid_size = 4500
+    def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=1, cropping=500, pcnt=0):
+        grid_size = 450
         proj = xyz_arr[..., [0, 1]]  # take only the X and Y components of point cloud
         proj_img = np.zeros((grid_size, grid_size))
-        indices = np.int32(proj * 1000)
+        indices = np.int32(proj * 100)
         try:
             indices[..., 0] += grid_size // 2
             indices = np.clip(indices, 0, grid_size - 1)
+
             proj_img[indices[..., 0], indices[..., 1]] = 255
             new_size = grid_size // resize_factor
-            proj_img = cv2.rotate(proj_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            #_, proj_img = cv2.threshold(proj_img, 127, 255, cv2.THRESH_BINARY)
-            #proj_img = cv2.dilate(proj_img, kernel=np.ones((3, 3)), iterations=1)
             proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_LINEAR)
+            # proj_img = cv2.rotate(proj_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            # #_, proj_img = cv2.threshold(proj_img, 127, 255, cv2.THRESH_BINARY)
+            #proj_img = cv2.dilate(proj_img, kernel=np.ones((3, 3)), iterations=1)
+            proj_img = np.rot90(proj_img)
         except ValueError:
             pass
         return np.uint8(proj_img)
 
-    def detect_obstacles_from_above(self, depth_frame, color_frame):
+    def detect_obstacles_from_above(self, xyz_arr, color_frame):
         '''
         Isolate the obstacles in a depth frame and publish a local occupancy grid.
         :param depth_frame: depth frame object from realsense
@@ -167,46 +151,29 @@ class ObstacleDetectionNode:
         '''
         self.viz_i += 1
         # convert frame objects to arrays
-        depth_image = np.asanyarray(depth_frame.get_data())
-        color_image = np.asanyarray(color_frame.get_data())
-        depth_colormap = np.asanyarray(
-            colorizer.colorize(depth_frame).get_data())
 
-        if state.color:
-            mapped_frame, color_source = color_frame, color_image
-        else:
-            mapped_frame, color_source = depth_frame, depth_colormap
-
-        # compute point cloud based on realsense intrinsics
-        points = pc.calculate(depth_frame)
-        pc.map_to(mapped_frame)
-
-        # pointcloud data to arrays
-        v, t = points.get_vertices(), points.get_texture_coordinates()
-        xyz_arr = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # (n x 3) XZY array
         xyz_arr[:, [1, 2]] = xyz_arr[:, [2, 1]]  # swap axes to be XYZ since realsense Z is depth
         xyz_arr = self.apply_camera_matrix_orientation(xyz_arr)  # apply height param and orientation from IMU
 
-
         if self.save_data:  # save testing data
-            np.save('%s/%d.npy' % (self.data_dir, self.frame_i), depth_image)
+            # np.save('%s/%d.npy' % (self.data_dir, self.frame_i), depth_image)
             np.save('%s/%d.npy' % (self.data_dir + 'points', self.frame_i), xyz_arr)
-            cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', self.frame_i), color_image)
+            # cv2.imwrite('%s/%d.png' % (self.data_dir + 'color', self.frame_i), color_image)
             self.frame_i += 1
 
         # rocks are points above the ground plane past the tolerance
         # holes are points below the ground plane past the tolerance
         rocks = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 2] >= self.tolerance])
         holes = self.project_point_cloud_onto_plane(xyz_arr[xyz_arr[..., 2] <= -self.tolerance])
-
+        #
         # convert rock projection and hole projection to occupancy grid
         # gridify splits the projection into cells and takes the average number of "occupied" pixels in each cell
         rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size))
         hole_grid = self.gridify(holes, (self.grid_size, self.grid_size))
         obs_grid = np.maximum(rock_grid, hole_grid)  # combine rocks and holes into single obstacle grid
 
-        occupancy_grid = gaussian_filter(obs_grid, sigma=self.kernel_sigma)  # smooth local grid using gaussian kernel
-        occupancy_grid = occupancy_grid / np.max(occupancy_grid)  # ensure values are 0-1
+        # occupancy_grid = gaussian_filter(obs_grid, sigma=self.kernel_sigma)  # smooth local grid using gaussian kernel
+        occupancy_grid = obs_grid / np.max(obs_grid)  # ensure values are 0-1
 
         header = Header()
         header.stamp = rospy.Time.now()
@@ -226,8 +193,7 @@ class ObstacleDetectionNode:
         grid_msg.data = list(np.int8(occupancy_grid.flatten() * 100))  # occupany grid message requires values 0-100
 
         try:
-            pub = rospy.Publisher('local_occupancy_grid', OccupancyGrid, queue_size=1)
-            pub.publish(grid_msg)
+            self.grid_pub.publish(grid_msg)
         except rospy.ROSInterruptException as e:
             print(e.getMessage())
             pass
@@ -238,13 +204,13 @@ class ObstacleDetectionNode:
             ax = plt.subplot(241)
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.imshow(depth_image, cmap='jet')
+            # ax.imshow(depth_image, cmap='jet')
             ax.set_title('Depth Frame')
 
             ax = plt.subplot(245)
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.imshow(color_image)
+            # ax.imshow(color_image)
             ax.set_title('Color Frame')
 
             ax = plt.subplot(242)
@@ -266,7 +232,7 @@ class ObstacleDetectionNode:
             ax.set_title('Occupancy Grid')
 
             ax = plt.subplot(246, projection='3d')
-            point_cloud = xyz_arr[::150]
+            point_cloud = xyz_arr[::300]
             point_cloud = point_cloud[point_cloud[: , 1] < 4.5, :]
             ax.scatter(point_cloud[:, 0], point_cloud[:, 1], point_cloud[:, 2], s=1)
             ax.set_xlim(-2.5, 2.5)
@@ -310,29 +276,9 @@ class ObstacleDetectionNode:
                  new_shape[1], arr.shape[1] // new_shape[1])
         return func(func(arr.reshape(shape), axis=-1), axis=1)
 
-    def listen_for_frames(self):
-        '''
-        While the node is running, wait for color and depth frames from the RealSense and publish a local occupancy
-        grid of the obstacles detected in each frame
-        '''
-        while not rospy.is_shutdown():
-            # Wait for a coherent pair of frames: depth and color
-            frames = pipeline.wait_for_frames()
-            depth_frame = frames.get_depth_frame()
-            color_frame = frames.get_color_frame()
-            if not depth_frame or not color_frame:
-                continue
-            self.detect_obstacles_from_above(depth_frame, color_frame)
-
 
 if __name__ == '__main__':
     try:
         obstacle_detection = ObstacleDetectionNode()
-        print('Listening for frames...')
-        rospy.Subscriber('realsense_orientation', Vector3, obstacle_detection.realsense_callback)
-        obstacle_detection.listen_for_frames()
     except rospy.exceptions.ROSInterruptException:
         pass
-    finally:
-        # Stop streaming
-        pipeline.stop()
