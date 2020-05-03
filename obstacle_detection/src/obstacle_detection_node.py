@@ -29,7 +29,6 @@ class ObstacleDetectionNode:
         self.resolution = rospy.get_param('obstacle_detection/grid_resolution')  # meters per grid cell
         self.grid_size = rospy.get_param('obstacle_detection/grid_size')  # number of rows/cols grid cells
         self.tolerance = rospy.get_param('obstacle_detection/ground_tolerance')  # tolerance in meters above/below ground to ignore
-        self.kernel_sigma = 0.5  # standard deviation of gaussian kernel used to smooth local grid
         self.save_imgs = True  # set to True to save local grid visualizations
         self.save_data = False  # set to True to save testing data
         self.localization_topic = rospy.get_param('localization_name')  # filtered global localization topic
@@ -43,7 +42,7 @@ class ObstacleDetectionNode:
 
         # RealSense physical orientation in the real world.
         self.CameraPosition = {
-            "x":rospy.get_param('obstacle_detection/realsense/x'),  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "x": rospy.get_param('obstacle_detection/realsense/x'),  # actual position in meters of RealSense sensor relative to the viewport's center.
             "y": rospy.get_param('obstacle_detection/realsense/y'),  # actual position in meters of RealSense sensor relative to the viewport's center.
             "z": rospy.get_param('obstacle_detection/realsense/z'),  # height in meters of actual RealSense sensor from the floor.
             "roll": 0,  # sensor's roll angle in degrees (trig function for this is commented out by default).
@@ -86,6 +85,7 @@ class ObstacleDetectionNode:
         xyz = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)
         print("recieved valid points: ", xyz.shape[0], time.time()-self.last_time)
         self.last_time = time.time()
+        xyz = xyz[::11]  # decimate to save processing power
         self.detect_obstacles_from_above(xyz, None)
 
     def realsense_callback(self, msg):
@@ -123,21 +123,19 @@ class ObstacleDetectionNode:
         pt[:] += np.float_([self.CameraPosition['x'], self.CameraPosition['y'], self.CameraPosition['z']])
         return pt
 
-    def project_point_cloud_onto_plane(self, xyz_arr, resize_factor=1, cropping=500, pcnt=0):
+    def project_point_cloud_onto_plane(self, xyz_arr, cropping=500, pcnt=0):
         grid_size = 450
+        final_grid_size = 450
         proj = xyz_arr[..., [0, 1]]  # take only the X and Y components of point cloud
         proj_img = np.zeros((grid_size, grid_size))
-        indices = np.int32(proj * 100)
+        indices = np.int32(proj * (grid_size / (self.grid_size * self.resolution)))
         try:
             indices[..., 0] += grid_size // 2
             indices = np.clip(indices, 0, grid_size - 1)
 
             proj_img[indices[..., 0], indices[..., 1]] = 255
-            new_size = grid_size // resize_factor
-            proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_LINEAR)
-            # proj_img = cv2.rotate(proj_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            # #_, proj_img = cv2.threshold(proj_img, 127, 255, cv2.THRESH_BINARY)
-            #proj_img = cv2.dilate(proj_img, kernel=np.ones((3, 3)), iterations=1)
+            # proj_img = cv2.dilate(proj_img, kernel=np.ones((3, 3)), iterations=1)
+            proj_img = cv2.resize(proj_img, (final_grid_size, final_grid_size), interpolation=cv2.INTER_AREA)
             proj_img = np.rot90(proj_img)
         except ValueError:
             pass
@@ -168,8 +166,8 @@ class ObstacleDetectionNode:
         #
         # convert rock projection and hole projection to occupancy grid
         # gridify splits the projection into cells and takes the average number of "occupied" pixels in each cell
-        rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size))
-        hole_grid = self.gridify(holes, (self.grid_size, self.grid_size))
+        rock_grid = self.gridify(rocks, (self.grid_size, self.grid_size), func=np.mean)
+        hole_grid = self.gridify(holes, (self.grid_size, self.grid_size), func=np.mean)
         obs_grid = np.maximum(rock_grid, hole_grid)  # combine rocks and holes into single obstacle grid
 
         # occupancy_grid = gaussian_filter(obs_grid, sigma=self.kernel_sigma)  # smooth local grid using gaussian kernel
@@ -232,8 +230,8 @@ class ObstacleDetectionNode:
             ax.set_title('Occupancy Grid')
 
             ax = plt.subplot(246, projection='3d')
-            point_cloud = xyz_arr[::300]
-            point_cloud = point_cloud[point_cloud[: , 1] < 4.5, :]
+            point_cloud = xyz_arr[::30]
+            point_cloud = point_cloud[point_cloud[:, 1] < 4.5, :]
             ax.scatter(point_cloud[:, 0], point_cloud[:, 1], point_cloud[:, 2], s=1)
             ax.set_xlim(-2.5, 2.5)
             ax.set_ylim(0, 5)
