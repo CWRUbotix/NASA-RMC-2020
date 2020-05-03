@@ -43,7 +43,7 @@ class Visualizer:
         self.createPlots()
 
     def subscribe(self):
-        rospy.Subscriber("glennobi_diff_drive_controller/odom", Odometry, self.receiveOdometry, queue_size=1)
+        rospy.Subscriber("odometry/filtered_map", Odometry, self.receiveOdometry, queue_size=1)
         rospy.Subscriber("uwb_nodes", PoseWithCovarianceStamped, self.recieveUwb, queue_size=1)
         rospy.Subscriber("transit_path", TransitPath, self.receivePath, queue_size=1)
         rospy.Subscriber("transit_control_data", TransitControlData, self.receiveControlData, queue_size=1)

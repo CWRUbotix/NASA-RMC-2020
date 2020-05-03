@@ -39,7 +39,6 @@ except KeyError:
     # but I don't want these to have to be class members so for now I'm using this failed variable
     failed = True
 
-print(config.G_u, config.lambda_e)
 
 class State(Enum):
     FOLLOWING = 0

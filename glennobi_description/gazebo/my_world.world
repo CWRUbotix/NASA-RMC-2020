@@ -267,10 +267,10 @@
       <static>1</static>
     </model>
     <state world_name='default'>
-      <sim_time>22 117000000</sim_time>
-      <real_time>23 906726600</real_time>
-      <wall_time>1588363957 864337500</wall_time>
-      <iterations>22117</iterations>
+      <sim_time>185 847000000</sim_time>
+      <real_time>167 219260700</real_time>
+      <wall_time>1588453508 419486900</wall_time>
+      <iterations>163730</iterations>
       <model name='ground_plane'>
         <pose frame=''>0 0 0 0 -0 0</pose>
         <scale>1 1 1</scale>
@@ -282,48 +282,48 @@
         </link>
       </model>
       <model name='moon_arena'>
-        <pose frame=''>-0.00917 1.70331 0 0 -0 0</pose>
+        <pose frame=''>1.71379 2.75223 0 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='Wall_0'>
-          <pose frame=''>0.13833 -0.971685 0 0 -0 0</pose>
+          <pose frame=''>1.86129 0.077229 0 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
         <link name='Wall_2'>
-          <pose frame=''>1.93833 1.70331 0 0 -0 1.5708</pose>
+          <pose frame=''>3.66129 2.75222 0 0 -0 1.5708</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
         <link name='Wall_7'>
-          <pose frame=''>-1.66167 1.70331 0 0 -0 1.5708</pose>
+          <pose frame=''>0.061289 2.75222 0 0 -0 1.5708</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
         <link name='Wall_8'>
-          <pose frame=''>0.13833 4.37831 0 0 -0 0</pose>
+          <pose frame=''>1.86129 5.42722 0 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='unit_sphere'>
-        <pose frame=''>0.179534 1.5204 0.001687 0 -0 0</pose>
-        <scale>0.23359 0.23359 0.23359</scale>
+        <pose frame=''>0.789463 3.37123 0.024556 0 -0 0</pose>
+        <scale>0.304074 0.304074 0.304074</scale>
         <link name='link'>
-          <pose frame=''>0.179534 1.5204 0.001687 0 -0 0</pose>
+          <pose frame=''>0.789463 3.37123 0.024556 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='unit_sphere_clone'>
-        <pose frame=''>-0.766661 2.67182 0.015874 0 -0 0</pose>
-        <scale>1 1 1</scale>
+        <pose frame=''>1.94073 2.55629 0.015874 0 -0 0</pose>
+        <scale>1.44045 1.44045 1.44045</scale>
         <link name='link'>
-          <pose frame=''>-0.766661 2.67182 0.015874 0 -0 0</pose>
+          <pose frame=''>1.94073 2.55629 0.015874 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -335,7 +335,7 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>7.26193 -3.10527 4.11563 0 0.411642 2.5442</pose>
+        <pose frame=''>7.55281 -2.00347 4.25994 -0 0.56764 2.3882</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>

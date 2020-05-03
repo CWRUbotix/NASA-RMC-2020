@@ -53,7 +53,7 @@ def update_encoders(msg):
 def subscribe():
     rospy.Subscriber("sensor_value", SensorData, update_sensors)
     rospy.Subscriber("motor_data", MotorData, update_encoders)
-    rospy.Subscriber("glennobi_diff_drive_controller/odom", Odometry, update_odometry)
+    rospy.Subscriber("odometry/filtered_map", Odometry, update_odometry)
     rospy.Subscriber("global_occupancy_grid", OccupancyGrid, update_occupancy_grid)
 
 def send_robot_state(req):
