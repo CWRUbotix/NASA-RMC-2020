@@ -11,12 +11,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial.transform import Rotation as R
-from scipy.ndimage import gaussian_filter
 
 from std_msgs.msg import Header
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointCloud2, Imu
 import ros_numpy.point_cloud2
 import time
 
@@ -45,9 +44,9 @@ class ObstacleDetectionNode:
             "x": rospy.get_param('obstacle_detection/realsense/x'),  # actual position in meters of RealSense sensor relative to the viewport's center.
             "y": rospy.get_param('obstacle_detection/realsense/y'),  # actual position in meters of RealSense sensor relative to the viewport's center.
             "z": rospy.get_param('obstacle_detection/realsense/z'),  # height in meters of actual RealSense sensor from the floor.
-            "roll": 0,  # sensor's roll angle in degrees (trig function for this is commented out by default).
-            "azimuth": 0,  # sensor's yaw angle in degrees.
-            "elevation": 20,  # sensor's pitch angle in degrees.
+            "roll": 0,  # sensor's roll angle in degrees (these values are with respect to a fixed frame)
+            "pitch": -20,  # sensor's pitch angle in degrees.
+            "yaw": 0,  # sensor's yaw angle in degrees.
         }
 
         print('Booting up node...')
@@ -70,7 +69,7 @@ class ObstacleDetectionNode:
         rospy.spin()
 
     def subscribe(self):
-        rospy.Subscriber('realsense_orientation', Vector3, self.realsense_callback)
+        rospy.Subscriber('realsense_imu_filtered', Imu, self.realsense_callback)
         rospy.Subscriber('realsense/depth/points', PointCloud2, self.receive_point_cloud, buff_size=9830400, queue_size=1)
 
     def clear_dir(self, dir_name):
@@ -89,8 +88,11 @@ class ObstacleDetectionNode:
         self.detect_obstacles_from_above(xyz, None)
 
     def realsense_callback(self, msg):
-        self.CameraPosition['roll'] = -(msg.x) * 57.296
-        self.CameraPosition['elevation'] = -(msg.z + math.pi / 2) * 57.296
+        quat = msg.orientation
+        euler_angles = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
+        print(euler_angles * 57.296)
+        self.CameraPosition['roll'] = -(euler_angles[0]) * 57.296
+        self.CameraPosition['pitch'] = (euler_angles[1]) * 57.296
 
     def apply_camera_matrix_orientation(self, pt):
         """
@@ -115,7 +117,7 @@ class ObstacleDetectionNode:
             pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
 
         rotatePoints(0, 2, self.CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
-        rotatePoints(1, 2, self.CameraPosition['elevation']) #rotate on the X&Z plane
+        rotatePoints(1, 2, self.CameraPosition['pitch']) #rotate on the X&Z plane
         #rotatePoints(0, 1, self.CameraPosition['azimuth']) #rotate on the X&Y
 
         # Apply offsets for height and linear position of the sensor (from viewport's center)

@@ -89,7 +89,7 @@
 	<link name="realsense_link">
 		<visual>
 			<geometry>
-				<box size="0.015 0.1 0.025"/>
+				<box size="0.1 0.025 0.015"/>
 			</geometry>
 		</visual>
 	</link>
@@ -97,7 +97,8 @@
 	<joint name="realsense_joint" type="fixed">
 		<parent link="base_link"/>
 		<child link="realsense_link"/>
-		<origin xyz="-0.57 0 0.33" rpy="0 ${20*pi/180} ${pi}"/>
+		<!-- transform from base_link with additional 20 degree tilt down -->
+		<origin xyz="-0.57 0 0.33" rpy="${-(20+90)*pi/180} 0 ${pi/2}"/>
 	</joint>
 
 </robot>

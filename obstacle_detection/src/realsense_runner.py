@@ -37,6 +37,10 @@ config.enable_stream(rs.stream.color,
                      rs.format.bgr8,
                      rospy.get_param('obstacle_detection/realsense/fps'))
 
+
+config.enable_stream(rs.stream.accel)
+config.enable_stream(rs.stream.gyro)
+
 # Start streaming
 pipeline.start(config)
 

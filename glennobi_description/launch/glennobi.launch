@@ -3,6 +3,8 @@
 	<arg name="use_steering" default="true"/>
 	<arg name="model" default="$(find glennobi_description)/urdf/glennobi.urdf.xacro"/>
 	<arg name="world_name" default="$(find glennobi_description)/gazebo/my_world.world"/>
+	<arg name="verbose" default="false"/>
+
 
 	<arg name="rvizconfig" default="$(find glennobi_description)/rviz/config.rviz" />
 	
@@ -18,6 +20,7 @@
 	<include file="$(find glennobi_description)/launch/gazebo.launch">
 		<arg name="model" value="$(arg model)"/>
 		<arg name="world_name" value="$(arg world_name)"/>
+		<arg name="verbose" value="$(arg verbose)"/>
 	</include>
 		
 	<node name="glennobi_controller_spawner" pkg="controller_manager" type="spawner" output="screen"
@@ -27,8 +30,4 @@
 	<node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering" if="$(arg use_steering)">
     <param name="default_topic" value="/glennobi_diff_drive_controller/cmd_vel"/>
   </node>
-	
-	<node name="kinect_depth_frame_publisher" pkg="tf" type="static_transform_publisher" args="0 0 0 
-				-1.5708 0 -1.5708 realsense_link realsense_depth_link 100"/>
-
 </launch>

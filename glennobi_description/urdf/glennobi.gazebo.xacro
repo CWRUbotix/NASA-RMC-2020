@@ -18,6 +18,7 @@
 		<sensor name="realsense_camera" type="depth">
 			<update_rate>10</update_rate>
 			<camera>
+				<pose>0 0 0 ${pi/2} ${-pi/2} 0</pose>
 				<horizontal_fov>1.5708</horizontal_fov>
 				<image>
 					<width>640</width>
@@ -33,7 +34,7 @@
 				<alwaysOn>true</alwaysOn>
 				<updateRate>0.0</updateRate>
 				<cameraName>realsense</cameraName>
-				<frameName>realsense_depth_link</frameName>
+				<frameName>realsense_link</frameName>
 				<imageTopicName>color/image_raw</imageTopicName>
 				<cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
 				<depthImageTopicName>depth/image_raw</depthImageTopicName>
@@ -68,9 +69,29 @@
 		</plugin>
 	</gazebo>
 	
+	<gazebo reference="realsense_link">
+    <gravity>true</gravity>
+    <sensor name="imu_realsense" type="imu">
+      <always_on>true</always_on>
+      <update_rate>20</update_rate>
+      <visualize>false</visualize>
+      <plugin name="imu_plugin" filename="libgazebo_ros_imu_sensor.so">
+        <topicName>imu_realsense/data_raw</topicName>
+        <bodyName>realsense_link</bodyName>
+        <updateRateHZ>100.0</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>${-20*pi/180} 0 0</rpyOffset>
+        <frameName>realsense_link</frameName>
+        <initialOrientationAsReference>false</initialOrientationAsReference>
+      </plugin>
+    </sensor>
+  </gazebo>
+	
   <!-- Gazebo plugin for ROS Control -->
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+			<legacyModeNS>true</legacyModeNS>
       <robotNamespace>/</robotNamespace>
     </plugin>
   </gazebo>
