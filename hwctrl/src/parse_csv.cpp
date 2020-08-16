@@ -28,3 +28,22 @@ std::vector<std::vector<std::string>> read_csv(std::string fpath){
 
 	return csv;
 }
+
+bool write_csv(std::string fpath, std::vector<std::vector<std::string>> data){
+	std::ofstream file;
+	file.open(fpath.c_str(), std::ofstream::out);
+	if(file.is_open()){
+		
+		for(auto line : data){
+			for(auto word : line){
+				file << word << ",";
+			}
+			file.seekp(-1, std::ios::cur); // go back one character to over-write the last comma
+			file << "\n";
+		}
+		file.close();
+		return true;
+	}else{
+		return false;
+	}
+}

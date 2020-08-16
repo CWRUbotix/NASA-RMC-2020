@@ -14,6 +14,7 @@ void canbus_thread(CanbusIf* canbus_if){
 		}
 		canbus_if->loop_rate.sleep(); //
 	}
+	canbus_if->shutdown();
 	ROS_DEBUG("Exiting canbus_thread.");
 }
 
@@ -126,4 +127,8 @@ void CanbusIf::can_tx_cb(boost::shared_ptr<hwctrl::CanFrame> frame){
 	if(this->sock_ready){
 		int n_bytes = write(this->sock, &f, sizeof(f));
 	}
+}
+
+void CanbusIf::shutdown(void){
+	close(this->sock);
 }

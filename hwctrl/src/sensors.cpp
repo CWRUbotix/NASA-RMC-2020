@@ -193,6 +193,7 @@ void sensors_thread(SensorIf* sensor_if){
 
 		sensor_if->loop_rate.sleep();
 	}
+	sensor_if->shutdown();
 
 }
 
@@ -595,6 +596,19 @@ void SensorIf::setup_spi_devices(){
 	}
 
 
+}
+
+void SensorIf::shutdown(){
+	for(int i = 0; i < this->n_sensors; i++){
+		SensorInfo * sensor = &(this->sensors[i]);
+		if(sensor->gpio_value_fd > 0){
+			close(sensor->gpio_value_fd);
+		}
+		if(sensor->if_type == IF_SPI && sensor->spi_device->gpio_value_handle > 0){
+			close(sensor->spi_device->gpio_value_handle);
+		}
+	}
+	close(this->spi_handle);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -157,6 +157,21 @@ add_executable(hwctrl
   src/uwb.cpp
   src/vesc.cpp
 )
+add_executable(hwctrl_cal
+  src/buffer.cpp
+  src/canbus.cpp
+  src/crc.cpp
+  src/gpio.cpp
+  src/hwctrl_cal.cpp
+  src/hwctrl.cpp
+  src/lsm6ds3.cpp
+  src/motors.cpp
+  src/parse_csv.cpp
+  src/sensors.cpp
+  src/spi.cpp
+  src/uwb.cpp
+  src/vesc.cpp
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -170,6 +185,7 @@ add_executable(hwctrl
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hwctrl ${catkin_LIBRARIES} )
+target_link_libraries(hwctrl_cal ${catkin_LIBRARIES} )
 add_dependencies(hwctrl ${catkin_EXPORTED_TARGETS})
 add_dependencies(hwctrl hwctrl_generate_messages_cpp)
 

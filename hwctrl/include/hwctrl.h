@@ -27,6 +27,10 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <iomanip>
+#include <boost/math/distributions/normal.hpp>
+#include <cmath>
+using boost::math::normal; // typedef provides default type is double.
 
 #include <canbus.h>
 #include <uwb.h>
@@ -72,6 +76,7 @@ const std::string vesc_log_fname 	= "hwctrl/vesc_log.csv";
 static std::string vesc_log_path 	= "";
 
 const std::string sys_gpio_base = "/sys/class/gpio/";
+const std::string cal_file_default 	= "sensor_calibration.dat"; // this should be created in the HOME directory
 const std::string adc_1_cs 			= "/sys/class/gpio/gpio67/"; 		// gpio file for ADC 1 chip select
 const std::string adc_2_cs			= "/sys/class/gpio/gpio68/";
 const std::string temp_sensor_cs= "/sys/class/gpio/gpio69/";
@@ -153,10 +158,6 @@ public:
 	std::string to_string();
 };
 
-InterfaceType get_if_type(std::string type_str);
-DeviceType get_device_type(std::string type_str);
-float get_running_mean(float* data, int size);
-
 // class to manage the interfaces to motors, be it canbus, uart, etc.
 class HwMotorIf{
 private:
@@ -206,6 +207,13 @@ typedef struct SpiDevice {
   int spi_max_speed 			= SPI_DEFAULT_SPEED;
 } SpiDevice;
 
+// sensor calibration data
+typedef struct Calibration {
+	std::string name;
+	float scale;
+	float offset;
+	float variance;
+} Calibration;
 
 // class to hold all info about a sensor
 class SensorInfo {
@@ -265,7 +273,25 @@ public:
 	void load_cell_update_cb	(const ros::TimerEvent&);
 	void imu_update_cb				(const ros::TimerEvent&);
 	int n_sensors = 0;
+	void shutdown(void);
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// HELPER FUNCTION PROTOTYPES
+////////////////////////////////////////////////////////////////////////////////
+InterfaceType get_if_type(std::string type_str);
+DeviceType get_device_type(std::string type_str);
+float get_running_mean(float* data, int size);
+bool file_exists(const char * path);
+unsigned long long int file_size(const char * path);
+Calibration read_cal(std::string path);
+void write_cal(std::string path, std::vector<Calibration>& cals);
+std::string print_cal(Calibration& cal);
+void smooth_data(float * raw_data, float * smooth_data, int size, int a);
+void decimate(float * in, float * out, int in_size, int decimation_factor);
+int fmax(float * data, int size);
+float favg(float * data, int size);
+float fstddev(float * data, int size);
 
 void maintain_motors_thread(HwMotorIf* motor_if);
 void sensors_thread(SensorIf* sensor_if);
