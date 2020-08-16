@@ -7,7 +7,6 @@ import math
 import rospy
 import math
 import matplotlib
-matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 import numpy as np
 import pandas as pd
 import pyrealsense2 as rs
@@ -18,6 +17,8 @@ from scipy.spatial.transform import Rotation as R
 from scipy.ndimage import gaussian_filter
 
 from geometry_msgs.msg import Vector3
+matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
+
 
 # Configure depth and color streams
 pipeline = rs.pipeline()

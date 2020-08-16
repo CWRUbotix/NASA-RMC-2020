@@ -3,17 +3,19 @@ import rospy
 import actionlib
 from scipy.spatial.transform import Rotation as R
 from hwctrl.msg import SetMotorMsg
-from autonomy.msg import GoToGoalAction, transitPath, transitControlData
+from autonomy.msg import GoToGoalAction, TransitPath, TransitControlData
 from autonomy.srv import RobotState
 from PathFollowing.PathFollower import PathFollower
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathPlanning.PathPlanningUtils import Position, Grid
+import PathFollowing.config as config
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import os
 import sys
 import glob
+from enum import Enum
 
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 
@@ -23,22 +25,34 @@ ARENA_WIDTH = rospy.get_param('arena_x')
 ARENA_HEIGHT = rospy.get_param('arena_y')
 ROBOT_WIDTH = rospy.get_param('robot_width')
 ROBOT_LENGTH = rospy.get_param('robot_length')
-effective_robot_width = 0.9
-reference_point_x = 0.5
 wheel_radius = rospy.get_param('wheel_radius')
+config.G_u = rospy.get_param("autonomy/G_u")
+config.lambda_e = rospy.get_param("autonomy/lambda_e")
+config.target_velocity = rospy.get_param("autonomy/target_velocity")
+config.turn_speed = rospy.get_param("autonomy/turn_speed")
+reference_point_x = rospy.get_param("autonomy/reference_point_x")
+effective_robot_width = rospy.get_param("effective_robot_width")
+
+
+class State(Enum):
+    FOLLOWING = 0
+    BLOCKED_PAUSE = 1
+    PREEMPTED = 2
 
 
 class TransitNode:
     def __init__(self, visualize=False):
         self.server = actionlib.SimpleActionServer('go_to_goal', GoToGoalAction, self.go_to_goal, auto_start=False)
 
-        self.motor_acceleration = rospy.get_param('autonomy_motor_command_accel')
+        self.motor_acceleration = rospy.get_param('/motor_command_accel')
         self.motor_pub = rospy.Publisher("motor_setpoints", SetMotorMsg, queue_size=4)
-        self.path_pub = rospy.Publisher("transitPath", transitPath, queue_size=4)
-        self.control_data_pub = rospy.Publisher("transitControlData", transitControlData, queue_size=4)
-        self.controller = PathFollower(reference_point_x, goal=(0, 0))
+        self.path_pub = rospy.Publisher("transit_path", TransitPath, queue_size=4)
+        self.control_data_pub = rospy.Publisher("transit_control_data", TransitControlData, queue_size=4)
+        self.controller = PathFollower(reference_point_x, goal=(0, 0), config=config)
         self.robot_state = dict(state=np.array([[0, 0, 0]]).T, state_dot=np.array([[0, 0, 0]]).T)
         self.controller.update_grid(Grid(ARENA_WIDTH, ARENA_HEIGHT))
+
+        self.state = State.FOLLOWING
 
         self.viz_dir = "transit_viz/"
         self.visualize = visualize
@@ -79,6 +93,7 @@ class TransitNode:
         self.receive_state(msg.odometry)
         self.receive_grid(msg.grid)
 
+        self.state = State.FOLLOWING
         self.controller.reset()
         self.controller.set_drive_backwards(True)
         self.controller.set_goal(goal)
@@ -91,24 +106,43 @@ class TransitNode:
 
         rate = 30
         r = rospy.Rate(rate)  # 'rate' Hz
-        last_time = rospy.get_rostime().nsecs
-        while not self.server.is_preempt_requested() and not self.controller.done:
+        last_time = rospy.get_time()
+        last_pause_time = 0
+        while not self.controller.done and not self.state == State.PREEMPTED:
             msg = self.get_robot_state()
             self.receive_state(msg.odometry)
 
-            if self.step % int(0.5 * rate) == 0:  # Every half second
+            time = rospy.get_time()
+
+            vel, angular_vel = 0, 0
+
+            if self.server.is_preempt_requested():
+                self.state = State.PREEMPTED
+
+            if self.step % int(0.5 * rate) == 0 and self.state != State.PREEMPTED:  # Every half second
                 self.receive_grid(msg.grid)
-                if self.controller.is_path_blocked():
-                    self.controller.calculate_path()
+                if self.controller.is_path_blocked() and self.state == State.FOLLOWING:
+                    self.state = State.BLOCKED_PAUSE
                     rospy.loginfo("Path blocked, regenerating")
+                    last_pause_time = rospy.get_time()
+
+                rospy.loginfo("Currently at: {:.2f}".format(self.controller.current_index))
+
+            if self.state == State.FOLLOWING:
+                vel, angular_vel = self.controller.get_target_vels(self.robot_state["state"],
+                                                                   self.robot_state["state_dot"], time - last_time)
+            elif self.state == State.BLOCKED_PAUSE:
+                vel = 0
+                angular_vel = 0
+                if time - last_pause_time > 2:
+                    self.controller.calculate_path()
                     self.publish_path()
-            rospy.loginfo("Currently at: {:.2f}".format(self.controller.current_index))
-
-            time = rospy.get_rostime().nsecs
-            dt = (time - last_time) * 1e-9
-
-            vel, angular_vel = self.controller.get_target_vels(self.robot_state["state"],
-                                                               self.robot_state["state_dot"], dt)
+                    self.state = State.FOLLOWING
+            elif self.state == State.PREEMPTED:
+                vel = 0
+                angular_vel = 0
+                rospy.loginfo("Preempt requested")
+                self.server.set_preempted()
 
             right_speed = (vel + angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
             left_speed = (vel - angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
@@ -130,12 +164,7 @@ class TransitNode:
             last_time = time
             r.sleep()
 
-        if self.server.is_preempt_requested():
-            self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
-            self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
-            self.server.set_preempted()
-            rospy.loginfo("Preempt requested ")
-        else:
+        if self.state != State.PREEMPTED:
             self.server.set_succeeded()
             rospy.loginfo("Path Complete")
 
@@ -167,7 +196,7 @@ class TransitNode:
     def publish_control_data(self):
         followed_segment, closest_point, reference_point = self.controller.draw_path_info()
 
-        data = transitControlData()
+        data = TransitControlData()
         data.t_vel = self.target_vels[-1]
         data.t_angular_vel = self.target_ang_vels[-1]
         data.vel = self.vels[-1]

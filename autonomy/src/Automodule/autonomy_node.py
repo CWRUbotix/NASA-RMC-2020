@@ -35,8 +35,10 @@ def main():
         if client.get_state() == GoalStatus.ACTIVE:
             rospy.loginfo("Canceling action")
             client.cancel_goal()
-        else:
-            print("result: ", client.get_state())
+        try:
+            print("result: ", GoalStatus.to_string(client.get_state()))
+        except Exception as e:
+            print(e)
 
     while not rospy.is_shutdown():
         rospy.spin()
