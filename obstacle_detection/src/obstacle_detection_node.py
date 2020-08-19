@@ -84,7 +84,7 @@ class ObstacleDetectionNode:
         }
 
         print('Booting up node...')
-        rospy.init_node('obstacleDetection', anonymous=True)
+        rospy.init_node('obstacle_detection', anonymous=True)
 
         os.makedirs(self.viz_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)

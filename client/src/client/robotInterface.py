@@ -1,18 +1,11 @@
 #!/usr/bin/env python
 import rospy
-
-#from client.srv import motorCommand
-#from client.msg import sensorValue
-from hci.msg import sensorValue
-from hci.msg import motorCommand
-from hci.msg import driveCommand
-import hwctrl.srv
+from hwctrl.msg import SensorData
 from hwctrl.msg import SetMotorMsg
 
-node_name = 'robotInterface'
+node_name = 'robot_interface'
 motorCommandTopic = 'motor_setpoints'
-driveCommandTopic = 'driveCommand'
-sensorValueTopic = 'sensorValue'
+sensorValueTopic = 'sensor_value'
 
 motorCommandPub = None
 driveCommandPub = None
@@ -97,13 +90,13 @@ def sendDriveCommand(direction, value, accel=35):
     return True
 
 def sensorValueCallback(data):
-    rospy.loginfo("Sensor %u has value %f", data.sensorID, data.value)
-    sensorValueMap[data.sensorID] = data.value;
+    rospy.loginfo("Sensor %u has value %f", data.sensor_id, data.value)
+    sensorValueMap[data.sensor_id] = data.value;
 
-def getSensorValue(sensorID):
-    return sensorValueMap(sensorID);
+def getSensorValue(sensor_id):
+    return sensorValueMap(sensor_id);
 
 def initializeRobotInterface():
     #rospy.init_node(node_name,disable_signals=True)
-    rospy.Subscriber(sensorValueTopic,sensorValue,sensorValueCallback)
+    rospy.Subscriber(sensorValueTopic,SensorData,sensorValueCallback)
     #rospy.spin()

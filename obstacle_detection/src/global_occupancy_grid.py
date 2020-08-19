@@ -31,7 +31,7 @@ class GlobalOccupancyGrid:
     def __init__(self):
 
         print('Booting up node...')
-        rospy.init_node('globalMap', anonymous=True)
+        rospy.init_node('global_map', anonymous=True)
         self.save_imgs = False
         self.save_data = False
         self.robot_x = []

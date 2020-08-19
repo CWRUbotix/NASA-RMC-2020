@@ -21,17 +21,23 @@ matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
 
 
 # Constants
-ARENA_WIDTH = rospy.get_param('arena_x')
-ARENA_HEIGHT = rospy.get_param('arena_y')
-ROBOT_WIDTH = rospy.get_param('robot_width')
-ROBOT_LENGTH = rospy.get_param('robot_length')
-wheel_radius = rospy.get_param('wheel_radius')
-config.G_u = rospy.get_param("autonomy/G_u")
-config.lambda_e = rospy.get_param("autonomy/lambda_e")
-config.target_velocity = rospy.get_param("autonomy/target_velocity")
-config.turn_speed = rospy.get_param("autonomy/turn_speed")
-reference_point_x = rospy.get_param("autonomy/reference_point_x")
-effective_robot_width = rospy.get_param("effective_robot_width")
+failed = False
+try:
+    ARENA_WIDTH = rospy.get_param('arena_x')
+    ARENA_HEIGHT = rospy.get_param('arena_y')
+    ROBOT_WIDTH = rospy.get_param('robot_width')
+    ROBOT_LENGTH = rospy.get_param('robot_length')
+    wheel_radius = rospy.get_param('wheel_radius')
+    config.G_u = rospy.get_param("autonomy/G_u")
+    config.lambda_e = rospy.get_param("autonomy/lambda_e")
+    config.target_velocity = rospy.get_param("autonomy/target_velocity")
+    config.turn_speed = rospy.get_param("autonomy/turn_speed")
+    reference_point_x = rospy.get_param("autonomy/reference_point_x")
+    effective_robot_width = rospy.get_param("effective_robot_width")
+except KeyError:
+    # I believe that the init node should go above this but then it wouldn't be in the class
+    # but I don't want these to have to be class members so for now I'm using this failed variable
+    failed = True
 
 
 class State(Enum):
@@ -42,6 +48,12 @@ class State(Enum):
 
 class TransitNode:
     def __init__(self, visualize=False):
+        rospy.init_node("transit_node", anonymous=False)
+
+        if failed:
+            rospy.logerr("Parameters could not be found, please ensure they are on the param server")
+            rospy.spin()
+
         self.server = actionlib.SimpleActionServer('go_to_goal', GoToGoalAction, self.go_to_goal, auto_start=False)
 
         self.motor_acceleration = rospy.get_param('/motor_command_accel')
@@ -74,7 +86,6 @@ class TransitNode:
         except Exception as e:
             print(e)
 
-        rospy.init_node("transit_node", anonymous=False)
         rospy.loginfo("Waiting for services...")
         rospy.wait_for_service('robot_state')
         self.get_robot_state = rospy.ServiceProxy('robot_state', RobotState)
@@ -152,7 +163,7 @@ class TransitNode:
             self.vels.append(self.robot_state["state_dot"][0, 0])
             self.ang_vels.append(self.robot_state["state_dot"][2, 0])
             self.target_wheel_speeds.append([right_speed, left_speed])
-            self.wheel_speeds.append([msg.sensors.starboardDriveEncoder, msg.sensors.portDriveEncoder])
+            self.wheel_speeds.append([msg.sensors.starboard_drive_encoder, msg.sensors.port_drive_encoder])
 
             self.motor_pub.publish(id=0, setpoint=left_speed, acceleration=self.motor_acceleration)
             self.motor_pub.publish(id=1, setpoint=right_speed, acceleration=self.motor_acceleration)

@@ -105,7 +105,7 @@ void sensors_thread(SensorIf* sensor_if){
 							int16_t raw = (rpy[0] << 8) | rpy[1];
 							sensor->value = raw * ADT7310_LSB_16_BIT; // convert to celcius
 							hwctrl::SensorData msg;
-							msg.sensorID = sensor->sys_id;
+							msg.sensor_id = sensor->sys_id;
 							msg.value = sensor->value;
 							sensor_if->sensor_data_pub.publish(msg);
 						}
