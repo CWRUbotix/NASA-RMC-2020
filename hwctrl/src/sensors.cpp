@@ -113,11 +113,10 @@ void sensors_thread(SensorIf* sensor_if){
 						int16_t raw = (spi_buf[1] << 8) | spi_buf[2];
 						sensor->value = (float)raw * ADT7310_LSB_16_BIT; // convert to celcius
 						hwctrl::SensorData msg;
-						msg.sensorID = sensor->sys_id;
+						msg.sensor_id = sensor->sys_id;
 						msg.value = sensor->value;
 						msg.name = sensor->name;
 						sensor_if->sensor_data_pub.publish(msg);
-
 						break;
 					}case DEVICE_LSM6DS3:{
 						// ROS_INFO("***** UPDATE IMU *****");

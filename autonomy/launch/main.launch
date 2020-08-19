@@ -1,5 +1,5 @@
 <launch>
-	<rosparam command="load" file="$(env HOME)/NASA-RMC-2020/src/conf/glennobi_params.yaml"/>
+	<include file="$(find config)/launch/load_params.launch">
 
 	<include file="$(find uwb_localization)/launch/ekf_template.launch"/>
 	<include file="$(find obstacle_detection)/launch/obstacle_detection.launch"/>
