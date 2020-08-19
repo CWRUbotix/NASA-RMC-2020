@@ -168,7 +168,7 @@ void sensors_thread(SensorIf* sensor_if){
 					}case DEVICE_POWER_SENSE:{
 						int val = gpio_read(sensor->gpio_value_fd);
 						hwctrl::SensorData msg;
-						msg.sensorID = sensor->sys_id;
+						msg.sensor_id = sensor->sys_id;
 						msg.name = sensor->name;
 						msg.value = (float)val;
 						sensor_if->sensor_data_pub.publish(msg);

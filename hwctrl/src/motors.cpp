@@ -59,7 +59,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 
         // publish rpm data
         hwctrl::MotorData msg;
-        msg.data_type = msg.rpm;
+        msg.data_type = msg.RPM;
         msg.id = vesc->id;
         msg.value = vesc->vesc_data.rpm / vesc->rpm_coef;
         msg.timestamp = vesc->vesc_data.timestamp;
@@ -116,7 +116,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
             // publish rpm data
     				hwctrl::MotorData msg;
-    				msg.data_type = msg.rpm;
+    				msg.data_type = msg.RPM;
     				msg.id = vesc->id;
     				msg.value = vesc->vesc_data.rpm / vesc->rpm_coef;
     				msg.timestamp = vesc->vesc_data.timestamp;
