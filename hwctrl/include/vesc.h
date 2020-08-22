@@ -2,7 +2,7 @@
 #define VESC_H_
 
 #include <ros/ros.h>
-#include <std_srvs/Empty.h>
+// #include <std_srvs/Empty.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
 #include <hwctrl/CanFrame.h>
