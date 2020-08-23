@@ -227,12 +227,15 @@ void sensors_cal_thread(SensorIf* sensor_if){
 				cal.scale = std::stof(line.at(1));
 				cal.offset = std::stof(line.at(2));
 				cal.variance = std::stof(line.at(3));
+
+				// if we have a calibration for this sensor already, erase it
+				// so we can replace it with the new one
 				for(auto c = cals.begin(); c != cals.end(); ++c){
 					if( (*c).name.compare(cal.name) == 0 ){
 						cals.erase(c);
 					}
 				}
-				cals.push_back(cal);
+				cals.push_back(cal); // place calibration into cals vector
 			}
 		}else if(line.compare("help") == 0){
 			printf("Sensor Calibration App Commands:\r\n");
@@ -242,6 +245,7 @@ void sensors_cal_thread(SensorIf* sensor_if){
 			printf("  - %s\t%s\r\n", "quit", "quit the application (maybe save first)");
 			printf("  - %s\t%s\r\n", "print", "print the existing calibration data");
 			printf("  - %s\t%s\r\n", "imu", "calibrate the IMU");
+			printf("  - %s\t%s\r\n", "loadcell", "calibrate the load cell(s)");
 		}else if(line.compare("save") == 0){
 			// write calibration to file
 			std::cout << "Saving calibration to file " << cal_file_path << "..." << endl;
@@ -260,6 +264,8 @@ void sensors_cal_thread(SensorIf* sensor_if){
 		}else if(line.compare("quit") == 0){
 			std::cout << "Quitting ..." << endl;
 			done = true;
+		}else{
+			std::cout << "Unrecognized command" << endl;
 		}
 		
         

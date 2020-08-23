@@ -254,6 +254,7 @@ private:
 public:
 	SensorIf(ros::NodeHandle);
 	UwbNode* get_uwb_by_can_id(int can_id);
+	SensorInfo* get_sensor_by_name(std::string name);
 	ros::CallbackQueue cb_queue;
 	ros::Publisher sensor_data_pub; // send data to rest of ROS system
 	ros::Publisher can_tx_pub;		// send data to canbus
@@ -261,7 +262,8 @@ public:
 	ros::Publisher uwb_data_pub; 	// publish uwb data
 	ros::Publisher imu_data_pub;	// publishe IMU data!
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
-	SensorInfo sensors[MAX_NUMBER_OF_SENSORS]; // all our SensorInfo structs
+	SensorInfo sensors[MAX_NUMBER_OF_SENSORS]; // all our SensorInfo structs, superceded by sensors_vect
+	std::vector<SensorInfo> sensors_vect; // supercedes the sensors array
 	SpiDevice spi_devices[NUMBER_OF_SPI_DEVICES]; // all our SpiDevice structs
 	ros::Duration uwb_update_period; // how long to wait before we request data from next UWB node
 	ros::Rate loop_rate; 		// 10ms sleep in every loop
@@ -272,7 +274,7 @@ public:
 	void temp_update_cb				(const ros::TimerEvent&);
 	void load_cell_update_cb	(const ros::TimerEvent&);
 	void imu_update_cb				(const ros::TimerEvent&);
-	int n_sensors = 0;
+	int n_sensors = 0; // deprecated
 	void shutdown(void);
 };
 

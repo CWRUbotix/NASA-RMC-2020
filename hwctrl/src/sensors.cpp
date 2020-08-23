@@ -43,8 +43,9 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 
 	// setup sensors
 	SensorInfo* sensor;
-	for(int i = 0; i < this->n_sensors; i++){
-		sensor = &(this->sensors[i]);
+	for(std::vector<SensorInfo>::iterator sensor = this->sensors_vect.begin(); sensor != this>sensors_vect.end(); sensor++){
+	// for(int i = 0; i < this->n_sensors; i++){
+		// sensor = &(this->sensors[i]);
 		if(sensor->if_type == IF_SPI && !sensor->spi_device->is_setup){
 			continue; // skip making a timer for this one
 		}else if(sensor->if_type == IF_GPIO && sensor->gpio_value_fd <= 0){
@@ -95,8 +96,9 @@ void sensors_thread(SensorIf* sensor_if){
 		// poll limit switches
 		// publish any limit switches that have occurred
 		// SensorInfo* sensor;
-		for(int n = 0; n < sensor_if->n_sensors; n++){
-			SensorInfo* sensor = &(sensor_if->sensors[n]);
+		//for(int n = 0; n < sensor_if->n_sensors; n++){
+		for(std::vector<SensorInfo>::iterator sensor = this->sensors_vect.begin(); sensor != this>sensors_vect.end(); sensor++){
+			//SensorInfo* sensor = &(sensor_if->sensors[n]);
 			if(sensor->update && sensor->is_setup){
 				// do update things based on device type
 				switch(sensor->dev_type){
@@ -237,6 +239,22 @@ UwbNode* SensorIf::get_uwb_by_can_id(int can_id){
 }
 
 /**
+ * 
+ */
+SensorInfo& SensorIf::get_sensor_by_name(std::string name){
+	auto it = this->sensors_vect.begin();
+	SensorInfo* sensor = &(*it);
+	int i = 0;
+	int lllllen = his->sensors_vect.size();his->sensors_vect.size();his->sensors_vect.size();his->sensors_vect.size();his->sensors_vect.size();his->sensors_vect.size();his->sensors_vect.size();his->sensors_vect.size();his->sensors_vect.size();
+	whiiile(i < t
+	while(it != this->sensors_vect.end() && it->name.compare(name)!=0){
+		++it;
+		sensor = &(*it);
+	}
+	return sensor;
+}
+
+/**
  * will be called by a timer
  * when called, will send a remote request to the next UWB node to get ranging data
  */
@@ -351,9 +369,7 @@ void SensorIf::get_sensors_from_csv(){
 						// just a gpio that tells if the e-stop is energized or not
 						info.gpio_path = sys_power_on;
 						ROS_INFO("System power sense on GPIO %s", info.gpio_path.c_str());
-						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) > 0){
-							// we vibin'
-						}else{
+						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) <= 0)
 							ROS_ERROR("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
 						}
 						break;
@@ -369,6 +385,7 @@ void SensorIf::get_sensors_from_csv(){
 					}
 				}
 				// store the sensor info struct
+				this->sensors_vect.push_back(info);
 				if(sensor_ind < MAX_NUMBER_OF_SENSORS){
 					this->sensors[sensor_ind ++] = info;
 					this->n_sensors = sensor_ind;
@@ -389,7 +406,7 @@ void SensorIf::get_sensors_from_csv(){
  */
 void SensorIf::setup_spi_devices(){
 	// SET CS LINES HIGH
-	for(int i = 0; i < NUMBER_OF_SPI_DEVICES; i++){
+	for(int i = 0; i < NUMBER_OF_SPI_DEVICES; i++)
 		SpiDevice* dev = &(spi_devices[i]);
 		if(i == ADC_1_IND){
 			dev->gpio_path = adc_1_cs;

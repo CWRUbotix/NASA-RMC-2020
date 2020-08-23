@@ -43,7 +43,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 		// ROS_INFO("VESC %d sent msg type %d", id, cmd);
 		HwMotor* vesc = this->get_vesc_from_can_id(id);
 		vesc->online = true;
-    vesc->data_t = ros::Time::now(); // update time that we heard this motor is alive
+		vesc->data_t = ros::Time::now(); // update time that we heard this motor is alive
 		switch(cmd){
 			case CAN_PACKET_STATUS:{
 				if(vesc == NULL){
@@ -265,7 +265,7 @@ void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
 	ROS_DEBUG("Setting motor %d to %f at %f", id, msg.setpoint, msg.acceleration);
 	HwMotor* motors = this->motors.data(); // pointer to our motor struct
 	motors[id].setpoint = msg.setpoint;
-  motors[id].set_t = ros::Time::now(); // used to guess if autonomy node has crashed
+	motors[id].set_t = ros::Time::now(); // used to guess if autonomy node has crashed
 	if(fabs(msg.acceleration) > motors[id].max_accel || fabs(msg.acceleration) == 0.0){
 		motors[id].accel_setpoint = motors[id].max_accel;
 	}else {
