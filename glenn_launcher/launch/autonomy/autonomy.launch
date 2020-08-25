@@ -1,10 +1,11 @@
+<?xml version="1.0"?>
 <launch>
 	<!-- "true" if this launch file is being run from on the robot -->
 	<arg name="launch_from_robot" value="$(eval '192.168.0.100' in optenv('ROS_IP'))"/>
 	
 	<machine name="robot" address="192.168.0.100" user="cwrubotix" password="cwrubotix" default="never" env-loader="/home/cwrubotix/my_env_setup.sh"/>
 
-    <rosparam command="load" file="$(find autonomy)/params/autonomy_glennobi.yaml" ns="autonomy"/>
+    <rosparam command="load" file="$(find glenn_launcher)/params/autonomy/autonomy_glennobi.yaml" ns="autonomy"/>
 
     <group if="$(arg launch_from_robot)">
         <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>

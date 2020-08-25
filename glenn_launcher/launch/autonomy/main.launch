@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+    <rosparam command="load" file="$(find glenn_launcher)/params/glennobi_params.yaml"/>
+
+	<include file="$(find glenn_launcher)/launch/uwb_localization/ekf_template.launch"/>
+	<include file="$(find glenn_launcher)/launch/obstacle_detection/obstacle_detection.launch"/>
+	<include file="$(find glenn_launcher)/launch/autonomy/autonomy.launch"/>
+</launch>

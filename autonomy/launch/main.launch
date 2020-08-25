@@ -1,7 +1,0 @@
-<launch>
-	<include file="$(find config)/launch/load_params.launch">
-
-	<include file="$(find uwb_localization)/launch/ekf_template.launch"/>
-	<include file="$(find obstacle_detection)/launch/obstacle_detection.launch"/>
-	<include file="$(find autonomy)/launch/autonomy.launch"/>
-</launch>
