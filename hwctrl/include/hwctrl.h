@@ -30,6 +30,7 @@
 #include <iomanip>
 #include <boost/math/distributions/normal.hpp>
 #include <cmath>
+#include <mutex>
 using boost::math::normal; // typedef provides default type is double.
 
 #include <canbus.h>
@@ -75,6 +76,7 @@ const std::string vesc_log_fname 	= "hwctrl/vesc_log.csv";
 
 static std::string vesc_log_path 	= "";
 
+const std::string spidev_path 	= "/dev/spidev1.0";
 const std::string sys_gpio_base = "/sys/class/gpio/";
 const std::string cal_file_default 	= "sensor_calibration.dat"; // this should be created in the HOME directory
 const std::string adc_1_cs 			= "/sys/class/gpio/gpio67/"; 		// gpio file for ADC 1 chip select
@@ -190,7 +192,7 @@ public:
 	void can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame); 	// to process received can frames
 	void sensor_data_callback(hwctrl::SensorData data);
 	void limit_sw_callback(boost::shared_ptr<hwctrl::LimitSwState> state);
-	HwMotor* get_vesc_from_can_id(int can_id);
+	HwMotor& get_vesc_from_can_id(int can_id);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -236,6 +238,7 @@ public:
 	int sample_ind 					= 0;
 	ros::Time timestamp;
 	bool update = false; // flag to indicate if it's time to update
+	std::mutex update_mtx;
 	ros::Duration update_pd; // period with which to update this sensor
 	ros::Timer update_timer; // timer for updating this sensor
 	void set_update_flag(const ros::TimerEvent&); // callback which will set the update flag
@@ -253,8 +256,8 @@ private:
 	void setup_spi_devices();
 public:
 	SensorIf(ros::NodeHandle);
-	UwbNode* get_uwb_by_can_id(int can_id);
-	SensorInfo* get_sensor_by_name(std::string name);
+	UwbNode& get_uwb_by_can_id(int can_id);
+	SensorInfo& get_sensor_by_name(std::string name);
 	ros::CallbackQueue cb_queue;
 	ros::Publisher sensor_data_pub; // send data to rest of ROS system
 	ros::Publisher can_tx_pub;		// send data to canbus
