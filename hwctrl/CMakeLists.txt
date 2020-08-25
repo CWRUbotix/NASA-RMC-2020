@@ -81,7 +81,8 @@ add_executable(hwctrl_cal
   src/vesc.cpp
 )
 
-target_link_libraries(hwctrl_cal ${catkin_LIBRARIES} )
+target_link_libraries(hwctrl ${catkin_LIBRARIES})
+target_link_libraries(hwctrl_cal ${catkin_LIBRARIES})
 
 # for hwctrl executable
 add_dependencies(hwctrl ${catkin_EXPORTED_TARGETS})
