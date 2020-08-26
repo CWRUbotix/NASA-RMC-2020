@@ -2,9 +2,9 @@
 
 import os
 import sys
-sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')  # Fix cv2 import error
+sys.path.remove('/opt/ros/melodic/lib/python2.7/dist-packages')  # Fix cv2 import error
 import cv2  # TODO Dumb fix please fix
-sys.path.append('/opt/ros/kinetic/lib/python2.7/dist-packages')  # Fix cv2 import error
+sys.path.append('/opt/ros/melodic/lib/python2.7/dist-packages')  # Fix cv2 import error
 
 import glob
 
