@@ -27,6 +27,7 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	// this step also links the spi devices to the correct SensorInfo objects
 	// also gets file descriptor handle for GPIOI based sensors
 	this->get_sensors_from_csv(); 
+	this->get_sensor_configs(); // reads from parameter server
 
 	ROS_DEBUG("Initializing SPI bus from %s...", spidev_path.c_str());
 	this->spi_handle = spi_init(spidev_path.c_str());
@@ -38,7 +39,7 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	}
 
 	// additional sensor setup, including making update timers
-	for(std::vector<SensorInfo>::iterator sensor = this->sensors_vect.begin(); sensor != this>sensors_vect.end(); sensor++){
+	for(std::vector<SensorInfo>::iterator sensor = this->sensors_vect.begin(); sensor != this->sensors_vect.end(); sensor++){
 		if(sensor->if_type == IF_SPI && !sensor->spi_device->is_setup){
 			continue; // skip making a timer for this one, setup remains false
 		}else if(sensor->if_type == IF_GPIO && sensor->gpio_value_fd <= 0){
@@ -50,7 +51,8 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 			sensor->imu = new ImuData;
 		}
 		if(sensor->update_pd.toSec() > 0.0){
-			sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, sensor);
+			sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag);
+			sensor->update_mtx = new std::mutex();
 		}
 		sensor->is_setup = true;
 		ROS_INFO("Sensor %d (%s) | Update Period: %.3fs", sensor->sys_id, sensor->name.c_str(), sensor->update_pd.toSec());
@@ -91,9 +93,9 @@ void sensors_thread(SensorIf* sensor_if){
 		// publish any limit switches that have occurred
 		// SensorInfo* sensor;
 		//for(int n = 0; n < sensor_if->n_sensors; n++){
-		for(std::vector<SensorInfo>::iterator sensor = this->sensors_vect.begin(); sensor != this->sensors_vect.end(); sensor++){
+		for(std::vector<SensorInfo>::iterator sensor = sensor_if->sensors_vect.begin(); sensor != sensor_if->sensors_vect.end(); sensor++){
 			//SensorInfo* sensor = &(sensor_if->sensors[n]);
-			if(sensor->is_setup && sensor->update_mtx.try_lock()){
+			if(sensor->is_setup && sensor->update_mtx->try_lock()){
 				// do update things based on device type
 				switch(sensor->dev_type){
 					case DEVICE_ADT7310:{
@@ -279,6 +281,18 @@ void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
 }
 
 /**
+ * @brief setup sensor configurations accessed from parameter server
+ */
+void SensorIf::get_sensor_configs(){
+	ROS_INFO("Reading sensor configs from param server...");
+	// std::vector<std::string> keys;
+	// ros::param::search(keys);
+	// for(auto key = keys.begin(); key != keys.end(); ++key){
+	// 	printf("%s", key);
+	// }
+}
+
+/**
  * process the hw_config.csv file to figure our what sensors are specified
  */
 void SensorIf::get_sensors_from_csv(){
@@ -369,7 +383,7 @@ void SensorIf::get_sensors_from_csv(){
 						// just a gpio that tells if the e-stop is energized or not
 						info.gpio_path = sys_power_on;
 						ROS_INFO("System power sense on GPIO %s", info.gpio_path.c_str());
-						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) <= 0)
+						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) <= 0){
 							ROS_WARN("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
 						}
 						break;
@@ -399,7 +413,7 @@ void SensorIf::get_sensors_from_csv(){
  */
 void SensorIf::setup_spi_devices(){
 	// SET CS LINES HIGH
-	for(int i = 0; i < NUMBER_OF_SPI_DEVICES; i++)
+	for(int i = 0; i < NUMBER_OF_SPI_DEVICES; i++){
 		SpiDevice* dev = &(spi_devices[i]);
 		if(i == ADC_1_IND){
 			dev->gpio_path = adc_1_cs;
@@ -625,6 +639,10 @@ void SensorIf::shutdown(){
 //   SENSOR INFO STUFF
 //
 ///////////////////////////////////////////////////////////////////////////////
+SensorInfo::SensorInfo(void)
+{
+
+}
 void SensorInfo::set_update_flag(const ros::TimerEvent& event){
-	this->update_mtx.unlock(); // will allow thread to lock mutex and update sensor
+	this->update_mtx->unlock(); // will allow thread to lock mutex and update sensor
 }

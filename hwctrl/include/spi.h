@@ -19,7 +19,7 @@
 #define SPI_ERR_READ_FAILED       (-5)
 
 /* get the file id for the chosen spi bus */
-int spi_init(char* fname);
+int spi_init(const char* fname);
 
 /* set max clock speed in Hz */
 int spi_set_speed(int f, uint32_t speed);

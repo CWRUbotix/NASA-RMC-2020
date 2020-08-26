@@ -1,0 +1,96 @@
+#### HARDWARE CONFIGURATIONS ####
+
+# BEGIN SENSOR CONFIGS
+/hardware/sensor/uwb_node_1/name: 'UWB NODE 1'
+/hardware/sensor/uwb_node_1/type: 'uwb'
+/hardware/sensor/uwb_node_1/interface: 'can'
+/hardware/sensor/uwb_node_1/can_id: 1
+
+/hardware/sensor/uwb_node_2/name: 'UWB NODE 2'
+/hardware/sensor/uwb_node_2/type: 'uwb'
+/hardware/sensor/uwb_node_2/interface: 'can'
+/hardware/sensor/uwb_node_2/can_id: 2
+
+/hardware/sensor/uwb_node_3/name: 'UWB NODE 3'
+/hardware/sensor/uwb_node_3/type: 'uwb'
+/hardware/sensor/uwb_node_3/interface: 'can'
+/hardware/sensor/uwb_node_3/can_id: 3
+
+/hardware/sensor/uwb_node_4/name: 'UWB NODE 4'
+/hardware/sensor/uwb_node_4/type: 'uwb'
+/hardware/sensor/uwb_node_4/interface: 'can'
+/hardware/sensor/uwb_node_4/can_id: 4
+
+/hardware/sensor/ebay_temperature/name: 'EBAY TEMPERATURE'
+/hardware/sensor/ebay_temperature/type: 'temperature'
+/hardware/sensor/ebay_temperature/interface: 'spi'
+/hardware/sensor/ebay_temperature/gpio: '/sys/class/gpio/gpio69/'
+/hardware/sensor/ebay_temperature/over_temp_gpio: '/sys/class/gpio/gpio27/'
+/hardware/sensor/ebay_temperature/critical_temp_gpio: '/sys/class/gpio/gpio61/'
+
+/hardware/sensor/imu/name: 'IMU'
+/hardware/sensor/imu/type: 'imu'
+/hardware/sensor/imu/interface: 'spi'
+/hardware/sensor/imu/gpio: '/sys/class/gpio/gpio66/'
+
+/hardware/sensor/adc_1/name: 'ADC 1'
+/hardware/sensor/adc_1/type: 'adc'
+/hardware/sensor/adc_1/interface: 'spi'
+/hardware/sensor/adc_1/gpio: '/sys/class/gpio/gpio67/'
+
+/hardware/sensor/adc_2/name: 'ADC 2'
+/hardware/sensor/adc_2/type: 'adc'
+/hardware/sensor/adc_2/interface: 'spi'
+/hardware/sensor/adc_2/gpio: '/sys/class/gpio/gpio68/'
+
+
+# BEGIN MOTOR CONFIGS
+/hardware/motor/port_drive/name: 'PORT DRIVE'
+/hardware/motor/port_drive/type: 'vesc'
+/hardware/motor/port_drive/interface: 'can'
+/hardware/motor/port_drive/can_id: 5
+/hardware/motor/port_drive/gear_reduction: 630 # gear_reduc*pole_pairs
+/hardware/motor/port_drive/max_rpm: 100
+/hardware/motor/port_drive/max_acceleration: 75
+
+/hardware/motor/starboard_drive/name: 'STARBOARD DRIVE'
+/hardware/motor/starboard_drive/type: 'vesc'
+/hardware/motor/starboard_drive/interface: 'can'
+/hardware/motor/starboard_drive/can_id: 6
+/hardware/motor/starboard_drive/gear_reduction: 630 # gear_reduc*pole_pairs
+/hardware/motor/starboard_drive/max_rpm: 100
+/hardware/motor/starboard_drive/max_acceleration: 75
+
+/hardware/motor/dep/name: 'DEPOSITION DUNKERINO'
+/hardware/motor/dep/type: 'vesc'
+/hardware/motor/dep/interface: 'can'
+/hardware/motor/dep/can_id: 7
+/hardware/motor/dep/gear_reduction: 245 # gear_reduc*pole_pairs
+/hardware/motor/dep/max_rpm: 140
+/hardware/motor/dep/max_acceleration: 50
+
+/hardware/motor/exc_belt/name: 'EXCAVATION BELT'
+/hardware/motor/exc_belt/type: 'vesc'
+/hardware/motor/exc_belt/interface: 'can'
+/hardware/motor/exc_belt/can_id: 8
+/hardware/motor/exc_belt/gear_reduction: 245 # gear_reduc*pole_pairs
+/hardware/motor/exc_belt/max_rpm: 140
+/hardware/motor/exc_belt/max_acceleration: 50
+
+/hardware/motor/exc_translation/name: 'EXCAVATION TRANSLATION'
+/hardware/motor/exc_translation/type: 'vesc'
+/hardware/motor/exc_translation/interface: 'can'
+/hardware/motor/exc_translation/can_id: 9
+/hardware/motor/exc_translation/gear_reduction: 245 # gear_reduc*pole_pairs
+/hardware/motor/exc_translation/max_rpm: 140
+/hardware/motor/exc_translation/max_acceleration: 50
+
+/hardware/motor/exc_port_act/name: 'EXCAVATION PORT ACTUATOR'
+/hardware/motor/exc_port_act/type: 'custom'
+/hardware/motor/exc_port_act/interface: 'can'
+/hardware/motor/exc_port_act/can_id: 10
+
+/hardware/motor/exc_starboard_act/name: 'EXCAVATION STARBOARD ACTUATOR'
+/hardware/motor/exc_starboard_act/type: 'custom'
+/hardware/motor/exc_starboard_act/interface: 'can'
+/hardware/motor/exc_starboard_act/can_id: 11

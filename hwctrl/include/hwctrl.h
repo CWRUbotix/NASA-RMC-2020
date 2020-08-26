@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <ros/spinner.h>
 #include <ros/callback_queue.h>
+#include <ros/param.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
@@ -220,6 +221,7 @@ typedef struct Calibration {
 // class to hold all info about a sensor
 class SensorInfo {
 public:
+	SensorInfo(void); 
 	int sys_id = -1; // system-wide ID to use
 	int dev_id = -1;
 	uint32_t seq = 0;
@@ -238,7 +240,7 @@ public:
 	int sample_ind 					= 0;
 	ros::Time timestamp;
 	bool update = false; // flag to indicate if it's time to update
-	std::mutex update_mtx;
+	std::mutex * update_mtx;
 	ros::Duration update_pd; // period with which to update this sensor
 	ros::Timer update_timer; // timer for updating this sensor
 	void set_update_flag(const ros::TimerEvent&); // callback which will set the update flag
@@ -253,6 +255,7 @@ private:
 	int uwb_ind = 0;
 //	QuadEncoder quad_encoder; 		// object for our quadrature encoder
 	void get_sensors_from_csv();
+	void get_sensor_configs(); 		// from parameter server
 	void setup_spi_devices();
 public:
 	SensorIf(ros::NodeHandle);
