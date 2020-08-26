@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
 
   <!-- these are the arguments you can pass this launch file, for example paused:=true -->
@@ -6,7 +7,7 @@
   <arg name="gui" default="true"/>
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
-  <arg name="model" default=""/>
+  <arg name="model" default="none"/>
 	<arg name="world_name" default="worlds/empty.world"/>
 	<arg name="verbose" default="false"/>
 
@@ -21,7 +22,7 @@
 		<arg name="verbose" value="$(arg verbose)"/>
   </include>
 
-  <param name="robot_description" command="rosrun xacro xacro --inorder $(arg model)"/>
+  <param name="robot_description" command="rosrun xacro xacro $(arg model)"/>
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
