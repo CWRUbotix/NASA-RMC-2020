@@ -16,7 +16,7 @@ catkin_package(
 #  LIBRARIES client
 #  CATKIN_DEPENDS rospy std_msgs
 #  DEPENDS system_lib
-   CATKIN_DEPENDS message_runtime message_generation
+   CATKIN_DEPENDS message_runtime
 )
 
 include_directories(

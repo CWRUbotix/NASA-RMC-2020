@@ -2,7 +2,7 @@
 import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
-from autonomy.msg import GoToGoalAction, GoToGoalGoal
+from glenn_msgs.msg import GoToGoalAction, GoToGoalGoal
 
 
 def main():

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from autonomy.msg import TransitPath, TransitControlData
+from glenn_msgs.msg import TransitPath, TransitControlData
 from nav_msgs.msg import Odometry, OccupancyGrid
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from scipy.spatial.transform import Rotation as R

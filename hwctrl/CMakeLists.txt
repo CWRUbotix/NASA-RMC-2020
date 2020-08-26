@@ -10,31 +10,20 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   rospy
   message_generation
+  message_runtime
 )
 
 catkin_python_setup()
 
-add_message_files(
-  FILES
-  CanFrame.msg
-  LimitSwState.msg
-  MotorData.msg
-  SensorData.msg
-  UwbData.msg
-  VescData.msg
-  SetMotorMsg.msg
-)
+add_message_files(DIRECTORY msg)
 
-add_service_files(
-  FILES
-  SetMotor.srv
-)
+add_service_files(DIRECTORY srv)
 
 generate_messages(
   DEPENDENCIES
-  std_msgs
-  sensor_msgs
-  geometry_msgs
+    std_msgs
+    sensor_msgs
+    geometry_msgs
 )
 
 catkin_package(
