@@ -4,8 +4,8 @@ import rospy
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import OccupancyGrid
 from hwctrl.msg import MotorData, SensorData
-from autonomy.msg import ExtraSensorValues
-from autonomy.srv import RobotState, RobotStateResponse
+from glenn_msgs.msg import ExtraSensorValues
+from glenn_msgs.srv import RobotState, RobotStateResponse
 
 odometry = None
 occupancy_grid = None

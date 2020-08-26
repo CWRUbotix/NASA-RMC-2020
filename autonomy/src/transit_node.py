@@ -3,8 +3,8 @@ import rospy
 import actionlib
 from scipy.spatial.transform import Rotation as R
 from geometry_msgs.msg import Twist
-from autonomy.msg import GoToGoalAction, TransitPath, TransitControlData
-from autonomy.srv import RobotState
+from glenn_msgs.msg import GoToGoalAction, TransitPath, TransitControlData
+from glenn_msgs.srv import RobotState
 from PathFollowing.PathFollower import PathFollower
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathPlanning.PathPlanningUtils import Position, Grid
