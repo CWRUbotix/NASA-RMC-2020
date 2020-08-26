@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
   <node pkg="uwb_localization" type="imu_listener.py" name="imu_node" cwd="node"/>
 
@@ -5,7 +6,7 @@
 
   <node pkg="uwb_localization" type="kalman_filter_listener.py" name="kalman_filter_node" output="screen" cwd="node"/>
 
-  <rosparam command="load" file="$(find uwb_localization)/params/ekf_dual.yaml" />
+  <rosparam command="load" file="$(find glenn_launcher)/params/uwb_localization/ekf_dual.yaml" />
 
   <!-- node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true"/ -->
 

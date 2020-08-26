@@ -23,18 +23,19 @@
 /* from the datasheet, RMS noise in g's for FS = +/-2g */
 #define LSM6DS3_XL_RMS_NOISE 	0.0017
 
+#define DEG_TO_RAD(a) 	(a*0.0174533)
+
 /* variance due to noise */
 /* assuming the std-dev of our gaussian white noise is ~= RMS noise */
 /* not sure if that's a good assumption */
-#define LSM6DS3_G_VAR  ((double)LSM6DS3_G_FS * LSM6DS3_G_RMS_NOISE * LSM6DS3_G_RMS_NOISE)
-#define LSM6DS3_XL_VAR  ((double)LSM6DS3_XL_FS * LSM6DS3_XL_RMS_NOISE * LSM6DS3_XL_RMS_NOISE)
+#define LSM6DS3_G_VAR  (double)(DEG_TO_RAD(LSM6DS3_G_RMS_NOISE) * DEG_TO_RAD(LSM6DS3_G_RMS_NOISE))
+#define LSM6DS3_XL_VAR  ((double)(LSM6DS3_XL_FS * LSM6DS3_XL_RMS_NOISE) * (LSM6DS3_XL_FS * LSM6DS3_XL_RMS_NOISE))
 
 #define LSM6DS3_SPI_SPEED 			5000000
 #define LSM6DS3_SPI_MODE 			SPI_MODE_3
 #define LSM6DS3_WHO_AM_I_ID 		0x69
 #define LSM6DS3_SET_READ_MODE(b) 	b |= (1 << 7)
 #define LSM6DS3_SET_WRITE_MODE(b) 	b &= ~(1 << 7)
-#define DEG_TO_RAD(a) 	(a*0.0174533)
 
 //#define GYRO_PWR_DOWN_MODE
 //#define GYRO_LOW_PWR_MODE
@@ -61,7 +62,12 @@
 #define LSM6DS3_FS_G_2000_DPS 	(0x03 << 2)
 
 /* CTRL3_C */
-#define LSM6DS3_SW_RESET
+#define LSM6DS3_BOOT 			(1 << 7)
+#define LSM6DS3_SW_RESET 	0x01
+
+
+/* CTRL9_XL */
+#define LSM6DS3_XL_Z_EN
 
 typedef enum {
 	FUNC_CFG_ACCESS 	= 0x01,
@@ -183,5 +189,6 @@ void lsm6ds3_g_power_on(int spi_fd, int gpio_fd, uint8_t config_byte);
 float read_accel(int spi_fd, int gpio_fd, int axis, float fs);
 float read_gyro(int spi_fd, int gpio_fd, int axis, float fs);
 void lsm6ds3_read_all_data(int spi_fd, int gpio_fd, double* xl_data, double* gyro_data);
+void lsm6ds3_soft_reset(int spi_fd, int gpio_fd);
 
 #endif

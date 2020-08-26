@@ -57,108 +57,148 @@ float get_running_mean(float* data, int size){
 	return retval;
 }
 
-/*
-// OBSOLTETE
-void can_rx_sub_callback(const boost::shared_ptr<hwctrl::CanFrame>& frame){
-	uint32_t rx_id = (uint32_t)frame->can_id;
-
-	if((rx_id & ~0xFF) != 0){
-		// we can assume this is a VESC message
-		uint8_t cmd = (uint8_t)(rx_id >> 8);
-		int8_t id 	= (int8_t)(rx_id & 0xFF);
-		uint8_t* frame_data = frame->data.data(); // get the back-buffer of the vector
-		ROS_INFO("VESC %d sent msg type %d", id, cmd);
-		HwMotor* vesc = this->get_vesc_from_can_id(id);
-		switch(cmd){
-			case CAN_PACKET_STATUS:{
-				if(vesc == NULL){
-					break;
-				}
-				VescData* vesc_data = &(vesc->vesc_data);
-
-				// store a ROS timestamp
-				vesc_data->timestamp = ros::Time::now();
-
-				// store data with the correct vesc object
-				fill_data_from_status_packet(frame_data, vesc_data);
-				break;
-			}
-			case CAN_PACKET_FILL_RX_BUFFER:{
-				if(id != 0x00){
-						// this is not intended for us (our canID is 0)
-					break;
-				}
-				// copy the CAN data into the corresponding vesc rx buffer
-				memcpy(vesc->vesc_data.vesc_rx_buf + frame_data[0], frame_data + 1, frame->can_dlc - 1);
-				break;
-			}
-			case CAN_PACKET_PROCESS_RX_BUFFER:{
-				if(id != 0x00){
-					// not intended for us
-					break;
-				}
-				if(vesc == NULL){
-					// we know of no VESC with the given CAN ID
-					break;
-				}
-				int ind = 0;
-				uint16_t packet_len;
-				uint16_t crc;
-				int vesc_id = frame_data[ind++]; // which vesc sent the data
-				int n_cmds 	= frame_data[ind++]; // how many commands
-				packet_len 	= (frame_data[ind++] << 8);
-				packet_len 	|= frame_data[ind++];
-				crc 		= (frame_data[ind++] << 8);
-				crc 		|= frame_data[ind++];
-
-				uint16_t chk_crc = crc16(vesc->vesc_data.vesc_rx_buf, packet_len);
-				// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
-
-				if(crc != chk_crc){
-					ROS_INFO("Error: Checksum doesn't match");
-					// error in transmission
-					break;
-				}
-
-				ind = 0;
-				int comm_cmd = vesc->vesc_data.vesc_rx_buf[ind++];
-				switch(comm_cmd){
-					case COMM_GET_VALUES:{
-						vesc->vesc_data.timestamp 	= ros::Time::now();
-						vesc->vesc_data.motor_type 	= "vesc";
-						vesc->vesc_data.can_id 		  = vesc_id;
-
-						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
-
-						break;}
-					}
-
-				break;
-			}
-				// indicates the end of the cmd buffer
-		}
+/**
+ * basic check to see if a file exists
+ */
+bool file_exists(const char * path){
+	FILE * file;
+	if(file = fopen(path, "r")){
+		fclose(file);
+		return true;
 	}else{
-		// we can assume this is either UWB message or Quad Encoder message
-		rx_id = rx_id & CAN_SFF_MASK;
-		uint8_t type = frame->data[0];
-		if(type == 0 || type == 0xFF){
-			// yes this is an UWB msg
-			hwctrl::UwbData uwb_msg;
-			anchor_frames++;
-			float distance;
-			int16_t confidence;
-			memcpy(&distance, frame->data+2, 4);
-			memcpy(&confidence, frame->data+6, 2);
-			// ROS_INFO("Distance from node %d to anchor %d: %.3f m", rx_id, dist_data.anchor_id, dist_data.distance);
-			uwb_msg.timestamp 	= ros::Time::now();
-			uwb_msg.node_id 	= rx_id;
-			uwb_msg.anchor_id 	= frame->data[1];
-			uwb_msg.distance 	= distance;
-			uwb_msg.confidence = confidence;
+		return false;
+	}
+}
 
-			uwb_pub.publish(uwb_msg);
-		}else{
-			// quad encoder msg
+/**
+ * returns file size. If the file doesn't exist, returns -1
+ */
+unsigned long long int file_size(const char * path){
+	if(!file_exists(path)){
+		return -1;
+	}
+	FILE* file = fopen(path, "rb");
+	fseek(file, 0, SEEK_END);
+	unsigned long long int size = ftell(file);
+	fclose(file);
+	return size;
+}
+
+/**
+ * write a std::vector of Calibration structs to the specified file path
+ */
+void write_cal(std::string path, std::vector<Calibration>& cals){
+	std::vector<std::vector<std::string>> data;
+	char word[256];
+	for(auto cal : cals){
+		std::vector<std::string> line;
+		printf("Writing calibration for %s\r\n", cal.name.c_str());
+		line.push_back(cal.name);
+		sprintf(word, "%.6f",cal.scale);
+		line.push_back(std::string(word));
+		sprintf(word, "%.6f",cal.offset);
+		line.push_back(std::string(word));
+		sprintf(word, "%.6g",cal.variance);
+		line.push_back(std::string(word));
+		data.push_back(line); // add the line finally
+	}
+	write_csv(path, data);
+}
+
+
+std::string print_cal(Calibration& cal){
+	char buf[256];
+	sprintf(buf, "=== Name: %s ===\r\nScale:\t%.4g\r\nOffset:\t%.4g\r\nVariance:\t%.4g\r\n", 
+		cal.name.c_str(),
+		cal.scale,
+		cal.offset,
+		cal.variance
+		);
+	return std::string(buf);
+}
+
+/**
+ * @param raw_data array of size "size" holding input data
+ * @param smooth_data array of size "size" where smoothed data will be written
+ * @param size the size of raw_data and smooth_data
+ * @param a kernel size
+ */
+void smooth_data(float * raw_data, float * smooth_data, int size, int a){
+	if(a >= size){
+		a = size - 1;
+	}
+	// make "a" odd
+	if(a % 2 == 0){
+		a ++;
+	}
+	
+	float kernel[a]; //
+	double range = 2.5; // min and max z = -range to +range.
+	double step = ((double)a-1.0)/(2.0 * range);
+	double x = -range; // start at the negative of the range
+	normal std_norm; // (default mean = zero, and standard deviation = unity)
+	for (int i = 0; i < a; i++){
+		kernel[i] = pdf(std_norm, x); // get's the probability at this point in the std normal distribution
+		x += step;
+	}
+	int i;
+	int offset = a/2; // get start index
+	for(i = 0; i < size - offset; i++){
+		for(int j = 0; j < a; j++){ // for each point in the kernel
+			smooth_data[i] += kernel[j] * raw_data[abs((i - offset) + j)];
 		}
 	}
-} */
+	for(i = size - offset; i < size; i++){ // copy end over, we'll do better later
+		smooth_data[i] = raw_data[i];
+	}
+}
+
+/**
+ * @return index of maximum value in the given array
+ */
+int fmax(float * data, int size){
+	int index = 0;
+	float val = data[index];
+	for(int i = 1; i < size; i++){
+		if(data[i] > val){
+			index = i;
+			val = data[index];
+		}
+	}
+	return index;
+}
+
+/**
+ * @return average of data over size samples
+ */
+float favg(float * data, int size){
+	float weight = 1.0/size;
+	float retval = 0.0;
+	for(int i = 0; i < size; i++){
+		retval += weight * data[i];
+	}
+	return retval;
+}
+
+/**
+ * @return stadnard deviation of data array
+ */
+float fstddev(float * data, int size){
+	float m = favg(data, size);
+	float sum = 0.0;
+	for(int i = 0; i < size; i++){
+		sum += pow(data[i] - m, 2.0);
+	}
+
+	return sum/(size - 1.0);
+}
+
+/**
+ * 
+ */
+void decimate(float * in, float * out, int in_size, int decimation_factor){
+	int j = 0;
+	for(int i = 0; i < in_size - decimation_factor; i+= decimation_factor){
+		out[j++] = favg(in + i, decimation_factor);
+	}
+}

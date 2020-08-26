@@ -24,6 +24,10 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n)
 	this->set_motor_sub 	= this->nh.subscribe("motor_setpoints", 128, &HwMotorIf::set_motor_cb_alt, this);
 }
 
+void HwMotorIf::init_motors(){
+  // do motor initialization things
+}
+
 // ===== SUBSCRIBER CALLBACKS =====
 /**
  * any CAN data of interest is from VESC's
@@ -55,7 +59,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 
         // publish rpm data
         hwctrl::MotorData msg;
-        msg.data_type = msg.rpm;
+        msg.data_type = msg.RPM;
         msg.id = vesc->id;
         msg.value = vesc->vesc_data.rpm / vesc->rpm_coef;
         msg.timestamp = vesc->vesc_data.timestamp;
@@ -112,7 +116,7 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
             // publish rpm data
     				hwctrl::MotorData msg;
-    				msg.data_type = msg.rpm;
+    				msg.data_type = msg.RPM;
     				msg.id = vesc->id;
     				msg.value = vesc->vesc_data.rpm / vesc->rpm_coef;
     				msg.timestamp = vesc->vesc_data.timestamp;
@@ -130,8 +134,21 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 	}
 }
 
+/**
+ * callback that handles data from sensors
+ */
 void HwMotorIf::sensor_data_callback(hwctrl::SensorData data){
 	// determine if this sensor is useful to us;
+  if(data.name.compare("SYSTEM 24V STATE") == 0){
+    if(data.value == 1.0){
+      if(!this->sys_power_on){
+        this->init_motors(); // sys power has just come on, so initialize motors
+      }
+      this->sys_power_on = true;
+    }else{
+      this->sys_power_on = false;
+    }
+  }
 }
 
 void HwMotorIf::limit_sw_callback(boost::shared_ptr<hwctrl::LimitSwState> state){
@@ -158,7 +175,9 @@ HwMotor* HwMotorIf::get_vesc_from_can_id(int can_id){
 	}
 }
 
-
+/**
+ * intended to be passed as an arugment to a std::thread instance
+ */
 void maintain_motors_thread(HwMotorIf* motor_if){
 	ROS_DEBUG("Starting maintain_motors_thread");
 	ros::AsyncSpinner spinner(1, &(motor_if->cb_queue));
@@ -170,6 +189,9 @@ void maintain_motors_thread(HwMotorIf* motor_if){
 }
 
 void HwMotorIf::maintain_next_motor(){
+  if(!this->sys_power_on){
+    return; // nothing to do until power is on
+  }
 	HwMotor* motors = this->motors.data();
 	HwMotor* motor = &(motors[this->motor_ind]);
 

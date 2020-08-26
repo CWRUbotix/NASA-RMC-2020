@@ -67,6 +67,7 @@ public:
 	ros::Rate loop_rate; 		// 10ms sleep in each loop
 	int read_can_frames(); 			// publish received frames with can_rx_pub
 	void can_tx_cb(boost::shared_ptr<hwctrl::CanFrame> frame);
+	void shutdown(void);
 };
 
 void canbus_thread(CanbusIf* canbus_if);

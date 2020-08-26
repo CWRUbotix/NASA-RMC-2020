@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>config</name>
+  <name>glenn_launcher</name>
   <version>0.0.0</version>
-  <description>The config package</description>
+  <description>The glenn_launcher package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

@@ -1,9 +1,9 @@
+<?xml version="1.0"?>
 <launch>
     <!-- "true" if running roscore from the robot -->
 	<arg name="on_robot" value="$(eval '192.168.0.100' in optenv('ROS_MASTER_URI'))"/>
 
-    <rosparam command="load" file = "$(find config)/params/glennobi_params.yaml"/>
-    <rosparam command="load" file = "$(find obstacle_detection)/params/obstacle_detection_params.yaml" ns="obstacle_detection"/>
+    <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
 
     <!-- only run if not using simulator -->
     <group if="$(arg on_robot)">

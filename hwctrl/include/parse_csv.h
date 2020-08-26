@@ -11,5 +11,6 @@
 #include <vector>
 
 std::vector<std::vector<std::string>> read_csv(std::string fpath);
+bool write_csv(std::string fpath, std::vector<std::vector<std::string>> data);
 
 #endif
