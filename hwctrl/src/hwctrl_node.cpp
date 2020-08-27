@@ -16,7 +16,7 @@ int main(int argc, char** argv){
 
 	ROS_INFO("ROS init success");
 
-	ROS_DEBUG(motor_if.list_motors().c_str());
+	ROS_INFO(motor_if.list_motors().c_str());
 
 	// start threads, each thread creates it's own spinner
 	std::thread sensor_thread_obj(sensors_thread, &sensor_if);

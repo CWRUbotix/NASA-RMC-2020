@@ -1,6 +1,6 @@
 #include <spi.h>
 
-int spi_init(char* fname){
+int spi_init(const char* fname){
 	int file;
 	ROS_INFO("Trying SPI on %s", fname);
     if ((file = open(fname,O_RDWR)) < 0){

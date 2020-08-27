@@ -23,42 +23,68 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	this->uwb_data_pub = this->nh.advertise<hwctrl::UwbData>("localization_data", 1024);
 	this->imu_data_pub = this->nh.advertise<sensor_msgs::Imu>("imu_data", 128);
 
-	this->get_sensors_from_csv(); // create all our sensor info objects and whatever
+	// create all our sensor info objects and whatever
+	// this step also links the spi devices to the correct SensorInfo objects
+	// also gets file descriptor handle for GPIOI based sensors
+	// this->get_sensors_from_csv(); 
+	this->get_sensor_configs(); // reads from parameter server
 
-	int gpio_state = this->setup_gpio();
-	if(gpio_state != 0){
-		ROS_ERROR("GPIO setup failed :(");
-	}else{
-		ROS_DEBUG("GPIO setup succeeded!");
+	// ==== read in sensor calibrations ====
+	// construct the calibration file path
+	std::istringstream path_stream(std::string(std::getenv("HOME")));
+
+	std::string cal_file_path;
+	std::getline(path_stream, cal_file_path, ':'); // get the first path
+	if(*(cal_file_path.end()) != '/'){
+		cal_file_path.push_back('/');
+	}
+	cal_file_path.append(cal_file_default.c_str());
+
+	if(file_exists(cal_file_path.c_str())){
+		ROS_INFO("Loading sensor calibrations from %s...", cal_file_path.c_str());
+		std::vector<Calibration> cals;
+		read_cal(cal_file_path, cals);
+
+		for(auto cal : cals){
+			std::vector<SensorInfo>::iterator sensor = this->sensors_vect.begin();
+			int pos = std::string::npos;
+			// if sensor name exists within calibration name
+			while( (pos = cal.name.find(sensor->name)) == std::string::npos && sensor != this->sensors_vect.end()){
+				sensor++;
+			}
+			if(pos != std::string::npos){
+				sensor->calibrations.push_back(cal);
+			}
+		}
 	}
 
-	ROS_DEBUG("SPI init time!!");
-	this->spi_handle = spi_init("/dev/spidev2.0");
+	// ==== initialize SPI bus ====
+	ROS_DEBUG("Initializing SPI bus from %s...", spidev_path.c_str());
+	this->spi_handle = spi_init(spidev_path.c_str());
 	if(this->spi_handle < 0){
 		ROS_ERROR("SPI init failed :(");
 	}else{
-		ROS_INFO("SPI init presumed successful: %d", this->spi_handle);
+		ROS_INFO("SPI bus initialization on %s presumed successful: %d", spidev_path.c_str(), this->spi_handle);
 		this->setup_spi_devices();
 	}
 
-	// setup sensors
-	SensorInfo* sensor;
-	for(int i = 0; i < this->n_sensors; i++){
-		sensor = &(this->sensors[i]);
+	// additional sensor setup, including making update timers
+	for(std::vector<SensorInfo>::iterator sensor = this->sensors_vect.begin(); sensor != this->sensors_vect.end(); sensor++){
 		if(sensor->if_type == IF_SPI && !sensor->spi_device->is_setup){
-			continue; // skip making a timer for this one
+			continue; // skip making a timer for this one, setup remains false
 		}else if(sensor->if_type == IF_GPIO && sensor->gpio_value_fd <= 0){
 			sensor->is_setup = false;
+			ROS_WARN("Sensor %s not setup.", sensor->name.c_str());
 			continue; // not good-to-go
 		}
 		if(sensor->dev_type == DEVICE_LSM6DS3){
 			sensor->imu = new ImuData;
 		}
 		if(sensor->update_pd.toSec() > 0.0){
-			sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, sensor);
+			sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, &(*sensor));
 		}
 		sensor->is_setup = true;
-		ROS_INFO("Sensor %d (%s) | Update Period: %.3fs", sensor->sys_id, sensor->name.c_str(), sensor->update_pd.toSec());
+		ROS_INFO("Sensor %s | Update Period: %.3fs", sensor->name.c_str(), sensor->update_pd.toSec());
 	}
 
 	// create the timer that will request data from the next UWB node
@@ -77,7 +103,7 @@ int SensorIf::setup_gpio(){
  * thread to do sensor things
  */
 void sensors_thread(SensorIf* sensor_if){
-	ROS_DEBUG("Starting sensors_thread");
+	ROS_INFO("Starting sensors_thread");
 	ros::AsyncSpinner spinner(1, &(sensor_if->cb_queue));
 	spinner.start();
 	while(ros::ok()){
@@ -95,9 +121,10 @@ void sensors_thread(SensorIf* sensor_if){
 		// poll limit switches
 		// publish any limit switches that have occurred
 		// SensorInfo* sensor;
-		for(int n = 0; n < sensor_if->n_sensors; n++){
-			SensorInfo* sensor = &(sensor_if->sensors[n]);
-			if(sensor->update && sensor->is_setup){
+		//for(int n = 0; n < sensor_if->n_sensors; n++){
+		for(std::vector<SensorInfo>::iterator sensor = sensor_if->sensors_vect.begin(); sensor != sensor_if->sensors_vect.end(); sensor++){
+			//SensorInfo* sensor = &(sensor_if->sensors[n]);
+			if(sensor->is_setup && sensor->update){
 				// do update things based on device type
 				switch(sensor->dev_type){
 					case DEVICE_ADT7310:{
@@ -134,13 +161,29 @@ void sensors_thread(SensorIf* sensor_if){
 						msg.header.stamp = ros::Time::now();
 						msg.header.frame_id = sensor->name;
 						msg.orientation_covariance[0] = -1.0; // indicates that we don't provide orientation data (yet)
-						msg.linear_acceleration.x = xl_data[0];
-						msg.linear_acceleration.y = xl_data[1];
-						msg.linear_acceleration.z = xl_data[2];
+						if(sensor->calibrations.size() >= 6){
+							Calibration& cal_xl_x = get_cal_by_name("IMU_XL_X", sensor->calibrations);
+							Calibration& cal_xl_y = get_cal_by_name("IMU_XL_Y", sensor->calibrations);
+							Calibration& cal_xl_z = get_cal_by_name("IMU_XL_Z", sensor->calibrations);
+							Calibration& cal_g_x = get_cal_by_name("IMU_G_X", sensor->calibrations);
+							Calibration& cal_g_y = get_cal_by_name("IMU_G_Y", sensor->calibrations);
+							Calibration& cal_g_z = get_cal_by_name("IMU_G_Z", sensor->calibrations);
+							msg.linear_acceleration.x = cal_xl_x.scale*xl_data[0] + cal_xl_x.offset;
+							msg.linear_acceleration.y = cal_xl_y.scale*xl_data[1] + cal_xl_y.offset;
+							msg.linear_acceleration.z = cal_xl_z.scale*xl_data[2] + cal_xl_z.offset;
+							msg.angular_velocity.x = cal_g_x.scale*gyro_data[0] + cal_g_x.offset;
+							msg.angular_velocity.y = cal_g_y.scale*gyro_data[1] + cal_g_y.offset;
+							msg.angular_velocity.z = cal_g_z.scale*gyro_data[2] + cal_g_z.offset;
+						}else{
+							msg.linear_acceleration.x = xl_data[0];
+							msg.linear_acceleration.y = xl_data[1];
+							msg.linear_acceleration.z = xl_data[2];
+							msg.angular_velocity.x = gyro_data[0];
+							msg.angular_velocity.y = gyro_data[1];
+							msg.angular_velocity.z = gyro_data[2];
+						}
+						
 						msg.linear_acceleration_covariance = sensor->imu->cov_xl;
-						msg.angular_velocity.x = gyro_data[0];
-						msg.angular_velocity.y = gyro_data[1];
-						msg.angular_velocity.z = gyro_data[2];
 						msg.angular_velocity_covariance  = sensor->imu->cov_g;
 
 						sensor->imu->sample_buf_1[sensor->imu->sample_ind] = (float)xl_data[0];
@@ -184,11 +227,10 @@ void sensors_thread(SensorIf* sensor_if){
 					}default:{
 						break;
 					}
-				}
-
-				sensor->update = false; // reset this flag
-			}
-		}
+				} // end switch
+				sensor->update = false;
+			} // end if is_setup and mtx.try_lock()
+		} // end for each sensor
 
 		sensor_if->loop_rate.sleep();
 	}
@@ -201,39 +243,60 @@ void sensors_thread(SensorIf* sensor_if){
  */
 void SensorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 	uint32_t rx_id = (uint32_t)frame->can_id;
-	uint32_t can_id = 0;
-	if((can_id = (rx_id & ~0xFF)) == 0){
-		// was NOT a VESC frame
-		// UWB frame or quad encoder frame
-		UwbNode* uwb_node = this->get_uwb_by_can_id(rx_id);
-		if(uwb_node != NULL){
-			ROS_DEBUG("UWB frame (node id %d)", rx_id);
-			// uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
-			hwctrl::UwbData msg;
-			msg.anchor_id = frame->data[1];
-			float temp = 0.0;
-			memcpy(&temp, frame->data.data() + 2, 4);
-			msg.distance = temp;
-			msg.node_id = rx_id;
-			this->uwb_data_pub.publish(msg);
-		}else{
-			// no UWB node matching this CAN ID, so must be our quadrature encoder
-			//this->quad_encoder.add_can_data(frame->data.data(), frame->can_dlc);
-		}
+	uint32_t can_id = (rx_id & 0xFF);
+	UwbNode& uwb_node = this->get_uwb_by_can_id(can_id);
+	if(uwb_node.id == can_id){
+		ROS_DEBUG("UWB frame (node id %d)", can_id);
+		// uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
+		hwctrl::UwbData msg;
+		msg.anchor_id = frame->data[1];
+		float temp = 0.0;
+		memcpy(&temp, frame->data.data() + 2, 4);
+		msg.distance = temp;
+		msg.node_id = can_id;
+		this->uwb_data_pub.publish(msg);
+	}else{
+		// no UWB node matching this CAN ID, so could our quadrature encoder
+		//this->quad_encoder.add_can_data(frame->data.data(), frame->can_dlc);
+	}
+	
+}
+
+/**
+ * returns a reference to the UWB node object that has the given CAN ID
+ * if not found, returns last element by default
+ */
+UwbNode& SensorIf::get_uwb_by_can_id(int can_id){
+	int i = 0;
+	int len = this->uwb_nodes.size();
+	while(i < len && this->uwb_nodes.at(i).id != can_id){
+		i++; // increment to next UWB Node
+	}
+	if(i < len){
+		return this->uwb_nodes.at(i);
+	}else{
+		// we hit the end with no luck
+		return this->uwb_nodes.at(len-1);
 	}
 }
 
 /**
- * returns a pointer to the UWB node object that has the given CAN ID
+ * returns a reference to the SensorInfo object with the given name
+ * returns last element by default if not found
  */
-UwbNode* SensorIf::get_uwb_by_can_id(int can_id){
-	auto i = this->uwb_nodes.begin();
-	UwbNode* node = &(*i);
-	while(i != this->uwb_nodes.end() && i->id != can_id){
-		++i; // increment to next UWB Node
-		node = &(*i);
+SensorInfo& SensorIf::get_sensor_by_name(std::string name){
+	int i = 0;
+	int len = this->sensors_vect.size();
+	while(i < len && this->sensors_vect.at(i).name.compare(name) != 0){
+		i++;
 	}
-	return node;
+	if(i < len){
+		return this->sensors_vect.at(i);
+	}else{
+		// we hit the end with no luck, default to returning last element
+		return this->sensors_vect.at(len-1);
+	}
+	
 }
 
 /**
@@ -248,7 +311,7 @@ void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
 	}
 	//UwbNode* nodes = this->uwb_nodes.data();
 	//UwbNode* uwb_node = &(nodes[this->uwb_ind]);
-	UwbNode node = this->uwb_nodes.at(this->uwb_ind);
+	UwbNode& node = this->uwb_nodes.at(this->uwb_ind);
 	boost::shared_ptr<hwctrl::CanFrame> can_msg(new hwctrl::CanFrame()); // empty can frame msg built as a shared pointer
 	can_msg->can_id  = node.id | CAN_RTR_FLAG; // can ID + remote request & std ID flags
 	can_msg->can_dlc = 8; // I think it needs to be 8 for the legacy fw? UWB_CAN_HDDR_SIZE + 4; // this won't really be used but whatever
@@ -257,6 +320,102 @@ void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
 	this->uwb_ind++;
 	if(this->uwb_ind >= this->uwb_nodes.size()){
 		this->uwb_ind = 0;
+	}
+}
+
+/**
+ * @brief setup sensor configurations accessed from parameter server
+ */
+void SensorIf::get_sensor_configs(){
+	ROS_INFO("Reading sensor configs from param server...");
+	std::string base = param_base + "/sensor";
+	for(auto name = sensor_param_names.begin(); name != sensor_param_names.end(); ++name){
+		std::string full_name = base + "/" + *name;
+		ROS_INFO("Checking for parameters under %s/...", full_name.c_str());
+		std::string name_param = full_name + "/name";
+		std::string type_param = full_name + "/type";
+		std::string can_id_param = full_name + "/can_id";
+		std::string interface_param = full_name + "/interface";
+		std::string period_param = full_name + "/update_period";
+		std::string gpio_param = full_name + "/gpio";
+
+		SensorInfo sensor;
+		if(this->nh.hasParam(name_param)){
+			this->nh.getParam(name_param, sensor.name);
+			ROS_INFO(" - Found sensor name: %s", sensor.name.c_str());
+		}
+		if(this->nh.hasParam(type_param)){
+			std::string type_str;
+			this->nh.getParam(type_param, type_str);
+			ROS_INFO(" - Found sensor type: %s", type_str.c_str());
+			sensor.dev_type = get_device_type(type_str);
+		}
+		if(this->nh.hasParam(interface_param)){
+			std::string if_str;
+			this->nh.getParam(interface_param, if_str);
+			ROS_INFO(" - Found sensor interface: %s", if_str.c_str());
+			sensor.if_type = get_if_type(if_str);
+		}
+		if(this->nh.hasParam(period_param)){
+			double update_pd;
+			this->nh.getParam(period_param, update_pd);
+			ROS_INFO(" - Found sensor update period: %.3fs", update_pd);
+			sensor.update_pd = ros::Duration(update_pd);
+		}
+		if(this->nh.hasParam(can_id_param)){
+			this->nh.getParam(can_id_param, sensor.dev_id);
+			ROS_INFO(" - Found CAN id: %d", sensor.dev_id);
+		}
+		if(this->nh.hasParam(gpio_param)){
+			this->nh.getParam(gpio_param, sensor.gpio_path);
+			ROS_INFO(" - Found gpio file path: %s", sensor.gpio_path.c_str());
+		}
+
+		switch(sensor.dev_type){
+			case DEVICE_UWB:{
+				// this sensor is an UWB node
+				ROS_DEBUG("An UWB node, id: %d!", sensor.dev_id);
+				UwbNode uwb_node((uint32_t)sensor.dev_id);
+				this->uwb_nodes.push_back(uwb_node);
+				break;
+			}
+			case DEVICE_LSM6DS3:{
+				sensor.spi_device = &(this->spi_devices[IMU_IND]); // store the pointer to the spi device
+				break;
+			}
+			case DEVICE_ADT7310:{
+				// this line is for the ebay temperature sensor
+				sensor.spi_device = &(this->spi_devices[TEMP_SENSOR_IND]); // store the pointer to the spi device
+				break;
+			}
+			case DEVICE_POT:{
+				sensor.spi_device = &(this->spi_devices[ADC_1_IND]);
+				break;
+			}
+			case DEVICE_LOAD_CELL:{
+				sensor.spi_device = &(this->spi_devices[ADC_2_IND]);
+				break;
+			}
+			case DEVICE_POWER_SENSE:{
+				// 24V Present input
+				// just a gpio that tells if the e-stop is energized or not
+				ROS_INFO("System power sense on GPIO %s", sensor.gpio_path.c_str());
+				if((sensor.gpio_value_fd = gpio_init(sensor.gpio_path, GPIO_INPUT, 0)) <= 0){
+					ROS_WARN("Failed to get file descriptor for %svalue", sensor.gpio_path.c_str());
+				}
+				break;
+			}
+			case DEVICE_LIMIT_SW:{
+				// a limit switch, high if activated
+				ROS_INFO("Limit switch on GPIO %s", sensor.gpio_path.c_str());
+				if((sensor.gpio_value_fd = gpio_init(sensor.gpio_path, GPIO_INPUT, 0)) <= 0){
+					ROS_WARN("Failed to get file descriptor for %svalue", sensor.gpio_path.c_str());
+				}
+				break;
+			}
+		}
+
+		this->sensors_vect.push_back(sensor);
 	}
 }
 
@@ -351,10 +510,8 @@ void SensorIf::get_sensors_from_csv(){
 						// just a gpio that tells if the e-stop is energized or not
 						info.gpio_path = sys_power_on;
 						ROS_INFO("System power sense on GPIO %s", info.gpio_path.c_str());
-						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) > 0){
-							// we vibin'
-						}else{
-							ROS_ERROR("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
+						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) <= 0){
+							ROS_WARN("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
 						}
 						break;
 					}
@@ -363,19 +520,13 @@ void SensorIf::get_sensors_from_csv(){
 						info.gpio_path = sys_gpio_base + (*line)[device_id_ind];
 						ROS_INFO("Limit switch on GPIO %s", info.gpio_path.c_str());
 						if((info.gpio_value_fd = gpio_init(info.gpio_path, GPIO_INPUT, 0)) <= 0){
-							ROS_ERROR("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
+							ROS_WARN("Failed to get file descriptor for %svalue", info.gpio_path.c_str());
 						}
 						break;
 					}
 				}
 				// store the sensor info struct
-				if(sensor_ind < MAX_NUMBER_OF_SENSORS){
-					this->sensors[sensor_ind ++] = info;
-					this->n_sensors = sensor_ind;
-				}
-				else{
-					ROS_WARN("Too many sensors, can't add any more");
-				}
+				this->sensors_vect.push_back(info);
 			}
 
 		}
@@ -615,7 +766,11 @@ void SensorIf::shutdown(){
 //   SENSOR INFO STUFF
 //
 ///////////////////////////////////////////////////////////////////////////////
+SensorInfo::SensorInfo(void)
+{
+
+}
 void SensorInfo::set_update_flag(const ros::TimerEvent& event){
-	// ROS_INFO("==== SETTING UPDATE FLAG ====");
 	this->update = true;
+	// this->update_mtx->unlock(); // will allow thread to lock mutex and update sensor
 }

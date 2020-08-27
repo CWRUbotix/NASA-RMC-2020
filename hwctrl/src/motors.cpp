@@ -4,11 +4,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 HwMotorIf::HwMotorIf(ros::NodeHandle n)
  : loop_rate(1000) {
-	this->nh 				= n; 	// store a copy of the node handle passed by value
+	this->nh = n; 	// store a copy of the node handle passed by value
 
 	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
 
-	this->get_motors_from_csv(); //config_file_fname
+	// this->get_motors_from_csv(); //config_file_fname
+	this->get_motor_configs(); // read from parameter server
+
+	for(auto motor : this->motors){
+		if( motor.update_pd.toSec() > 0.0){
+			motor.update_timer = this->nh.createTimer(motor.update_pd, &HwMotor::update_cb, &motor);
+		}
+	}
 
 	// PUBLISHERS
 	this->can_tx_pub 		= this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
@@ -34,22 +41,24 @@ void HwMotorIf::init_motors(){
  */
 void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 	uint32_t rx_id = (uint32_t)frame->can_id;
+	int8_t id 	   = (int8_t)(rx_id & 0xFF); // extract only the id
 
-	if((rx_id & ~0xFF) != 0){
-		// we can assume this is a VESC message
+	if( (rx_id & ~0xFF) != 0 ){
+		// this message could have been from a VESC and of interest to us
+		// the only CAN cmd type that is 0 is setting duty cycle
+
 		uint8_t cmd = (uint8_t)(rx_id >> 8);
-		int8_t id 	= (int8_t)(rx_id & 0xFF);
 		uint8_t* frame_data = frame->data.data(); // get the back-buffer of the vector
-		// ROS_INFO("VESC %d sent msg type %d", id, cmd);
-		HwMotor* vesc = this->get_vesc_from_can_id(id);
-		vesc->online = true;
-    vesc->data_t = ros::Time::now(); // update time that we heard this motor is alive
+		
 		switch(cmd){
 			case CAN_PACKET_STATUS:{
-				if(vesc == NULL){
+				HwMotor& vesc  = this->get_vesc_from_can_id(id); // id equals the VESC's CAN ID
+				if(vesc.device_id != id){
+					// we don't have a matching VESC in our memory
 					break;
 				}
-				VescData* vesc_data = &(vesc->vesc_data);
+				vesc.online = true;
+				VescData* vesc_data = &(vesc.vesc_data);
 
 				// store a ROS timestamp
 				vesc_data->timestamp = ros::Time::now();
@@ -57,24 +66,24 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 				// store data with the correct vesc object
 				fill_data_from_status_packet(frame_data, vesc_data);
 
-        // publish rpm data
-        hwctrl::MotorData msg;
-        msg.data_type = msg.RPM;
-        msg.id = vesc->id;
-        msg.value = vesc->vesc_data.rpm / vesc->rpm_coef;
-        msg.timestamp = vesc->vesc_data.timestamp;
-        // ROS_INFO("Publish to motor_data");
-        this->motor_data_pub.publish(msg);
+				// publish rpm data
+				hwctrl::MotorData msg;
+				msg.data_type = msg.RPM;
+				msg.id = vesc.id;
+				msg.value = vesc.vesc_data.rpm / vesc.rpm_coef;
+				msg.timestamp = vesc.vesc_data.timestamp;
+				// ROS_INFO("Publish to motor_data");
+				this->motor_data_pub.publish(msg);
 
 				break;
 			}
 			case CAN_PACKET_FILL_RX_BUFFER:{
 				if(id != 0x00){
-						// this is not intended for us (our canID is 0)
+					// this is not intended for us (our canID is 0)
 					break;
 				}
 				// copy the CAN data into the corresponding vesc rx buffer
-				memcpy(vesc->vesc_data.vesc_rx_buf + frame_data[0], frame_data + 1, frame->can_dlc - 1);
+				memcpy(this->vesc_rx_buf + frame_data[0], frame_data + 1, frame->can_dlc - 1);
 				break;
 			}
 			case CAN_PACKET_PROCESS_RX_BUFFER:{
@@ -82,21 +91,24 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 					// not intended for us
 					break;
 				}
-				if(vesc == NULL){
-					// we know of no VESC with the given CAN ID
-					break;
-				}
 				int ind = 0;
 				uint16_t packet_len;
 				uint16_t crc;
 				int vesc_id = frame_data[ind++]; // which vesc sent the data
+
+				HwMotor& vesc  = this->get_vesc_from_can_id(vesc_id); // 
+				if(vesc.device_id != vesc_id){
+					// we don't have a matching VESC in our memory. No need to continue.
+					break;
+				}
+
 				int n_cmds 	= frame_data[ind++]; // how many commands
 				packet_len 	= (frame_data[ind++] << 8);
 				packet_len 	|= frame_data[ind++];
 				crc 		= (frame_data[ind++] << 8);
 				crc 		|= frame_data[ind++];
 
-				uint16_t chk_crc = crc16(vesc->vesc_data.vesc_rx_buf, packet_len);
+				uint16_t chk_crc = crc16(this->vesc_rx_buf, packet_len);
 				// ROS_INFO("PROCESSING RX BUFFER\nPacket Len:\t%d\nRcvd CRC:\t%x\nComputed CRC:\t%x", packet_len, crc, chk_crc);
 
 				if(crc != chk_crc){
@@ -104,26 +116,30 @@ void HwMotorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 					// error in transmission
 					break;
 				}
+				
+				vesc.online = true;
 
 				ind = 0;
-				int comm_cmd = vesc->vesc_data.vesc_rx_buf[ind++];
+				int comm_cmd = this->vesc_rx_buf[ind++];
 				switch(comm_cmd){
 					case COMM_GET_VALUES:{
-						vesc->vesc_data.timestamp 	= ros::Time::now();
-						vesc->vesc_data.motor_type 	= "vesc";
-						vesc->vesc_data.can_id 		  = vesc_id;
+						vesc.vesc_data.timestamp 	= ros::Time::now();
+						vesc.vesc_data.motor_type 	= "vesc";
+						vesc.vesc_data.can_id 		= vesc_id;
 
-						fill_data_from_buffer(vesc->vesc_data.vesc_rx_buf, &(vesc->vesc_data));
-            // publish rpm data
-    				hwctrl::MotorData msg;
-    				msg.data_type = msg.RPM;
-    				msg.id = vesc->id;
-    				msg.value = vesc->vesc_data.rpm / vesc->rpm_coef;
-    				msg.timestamp = vesc->vesc_data.timestamp;
-    				// ROS_INFO("Publish to motor_data");
-    				this->motor_data_pub.publish(msg);
-						break;}
+						fill_data_from_buffer(this->vesc_rx_buf, &(vesc.vesc_data));
+						// publish rpm data
+						hwctrl::MotorData msg;
+						msg.data_type = msg.RPM;
+						msg.id = vesc.id;
+						msg.value = vesc.vesc_data.rpm / vesc.rpm_coef;
+						msg.timestamp = vesc.vesc_data.timestamp;
+						// ROS_INFO("Publish to motor_data");
+						this->motor_data_pub.publish(msg);
+						this->vesc_update_pending = false; // assuming only one VESC was requested from
+						break;
 					}
+				}
 
 				break;
 			}
@@ -159,27 +175,27 @@ void HwMotorIf::limit_sw_callback(boost::shared_ptr<hwctrl::LimitSwState> state)
  * @param can_id the can id of the VESC we're looking for
  * @return a pointer to the VESC with this CAN ID (null if not found)
  */
-HwMotor* HwMotorIf::get_vesc_from_can_id(int can_id){
-	HwMotor* motor_arr = this->motors.data();
+HwMotor& HwMotorIf::get_vesc_from_can_id(int can_id){
 	int size = this->motors.size();
 	int i = 0;
 	bool found = false;
-	while(!found && i < size){
-		found = (motor_arr[i].motor_type == DEVICE_VESC) && (motor_arr[i].device_id == can_id);
+	while(i < size && !found){
+		found = (this->motors[i].motor_type == DEVICE_VESC) && (this->motors[i].device_id == can_id);
 		i++;
 	}
 	if(found){
-		return &(motor_arr[i-1]);
+		return this->motors.at(i-1);
 	}else{
-		return NULL;
+		return this->motors.at(size-1);
 	}
+	
 }
 
 /**
  * intended to be passed as an arugment to a std::thread instance
  */
 void maintain_motors_thread(HwMotorIf* motor_if){
-	ROS_DEBUG("Starting maintain_motors_thread");
+	ROS_INFO("Starting maintain_motors_thread");
 	ros::AsyncSpinner spinner(1, &(motor_if->cb_queue));
 	spinner.start();
 	while(ros::ok()){
@@ -189,15 +205,15 @@ void maintain_motors_thread(HwMotorIf* motor_if){
 }
 
 void HwMotorIf::maintain_next_motor(){
-  if(!this->sys_power_on){
-    return; // nothing to do until power is on
-  }
+	if(!this->sys_power_on){
+		return; // nothing to do until power is on
+	}
 	HwMotor* motors = this->motors.data();
 	HwMotor* motor = &(motors[this->motor_ind]);
 
-  if((ros::Time::now().toSec() - motor->data_t.toSec()) > motor->timeout){
-    motor->online = false; // assume we are offline
-  }
+	if((ros::Time::now().toSec() - motor->data_t.toSec()) > motor->timeout){
+		motor->online = false; // assume we are offline
+	}
 
 	switch(motor->motor_type){
 		case(DEVICE_NONE):break;
@@ -221,25 +237,38 @@ void HwMotorIf::maintain_next_motor(){
 				}
 				motor->last_setpoint = motor->last_setpoint + delta; // the new setpoint based on delta
 
-        if((ros::Time::now().toSec() - motor->set_t.toSec()) > motor->timeout){
-          motor->last_setpoint = 0.0; // shut it down
-        }
+				if((ros::Time::now().toSec() - motor->set_t.toSec()) > motor->timeout){
+				motor->last_setpoint = 0.0; // shut it down
+				}
 
-        float eRPM = motor->rpm_coef * motor->last_setpoint;
-  			boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
+				float eRPM = motor->rpm_coef * motor->last_setpoint;
+				boost::shared_ptr<hwctrl::CanFrame> frame_msg(new hwctrl::CanFrame());
 
-  			if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
-  				// presumed success
-  				// ROS_INFO("ID, eRPM: %d, %f",motor->device_id, eRPM);
-  				this->can_tx_pub.publish(frame_msg);
-  				motor->update_t = ros::Time::now();
-  			}else{
-  				ROS_WARN("I didn't think this could happen ...");
-  				motor->online = false;
-  			}
-
+				if(set_rpm_frame(motor->device_id, eRPM, frame_msg) == 0){ // device_id should be the can_id
+					// presumed success
+					// ROS_INFO("ID, eRPM: %d, %f",motor->device_id, eRPM);
+					this->can_tx_pub.publish(frame_msg);
+					motor->update_t = ros::Time::now();
+				}else{
+					ROS_WARN("I didn't think this could happen ...");
+					motor->online = false;
+				}
+				if(motor->update && !this->vesc_update_pending){
+					// send a COMM_GET_VALUES command to this VESC
+					boost::shared_ptr<hwctrl::CanFrame> can_msg(new hwctrl::CanFrame()); // empty can frame msg built as a shared pointer
+					can_msg->can_id = motor->device_id | (CAN_PACKET_PROCESS_SHORT_BUFFER << 8) | CAN_EFF_FLAG;
+					int ind = 0;
+					can_msg->data[ind++] = 0; // our id
+					can_msg->data[ind++] = 0x00;
+					can_msg->data[ind++] = COMM_GET_VALUES;
+					can_msg->can_dlc = ind;
+					this->can_tx_pub.publish(can_msg);
+					motor->update = false;
+					this->vesc_update_pending = true; // will get de-asserted by the can_rx_callback when we receive a full packet
+					break;	
+				}
 			}else{
-        ROS_WARN("%s (Motor %d) offline", motor->name.c_str(), motor->id);
+				ROS_WARN("%s (Motor %d) offline", motor->name.c_str(), motor->id);
 			}
 
 			break;}
@@ -265,7 +294,7 @@ void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
 	ROS_DEBUG("Setting motor %d to %f at %f", id, msg.setpoint, msg.acceleration);
 	HwMotor* motors = this->motors.data(); // pointer to our motor struct
 	motors[id].setpoint = msg.setpoint;
-  motors[id].set_t = ros::Time::now(); // used to guess if autonomy node has crashed
+	motors[id].set_t = ros::Time::now(); // used to guess if autonomy node has crashed
 	if(fabs(msg.acceleration) > motors[id].max_accel || fabs(msg.acceleration) == 0.0){
 		motors[id].accel_setpoint = motors[id].max_accel;
 	}else {
@@ -298,6 +327,92 @@ bool HwMotorIf::set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::S
 
 void HwMotorIf::add_motor(HwMotor mtr){
 	this->motors.push_back(mtr);
+}
+
+void HwMotorIf::get_motor_configs(){
+	ROS_INFO("Reading motor configs from param server...");
+	std::string base = param_base + "/motor";
+	for(auto name = motor_param_names.begin(); name != motor_param_names.end(); ++name){
+		std::string full_name = base + "/" + *name;
+		ROS_INFO("Checking for parameters under %s/...", full_name.c_str());
+		std::string name_param = full_name + "/name";
+		std::string type_param = full_name + "/type";
+		std::string can_id_param = full_name + "/can_id";
+		std::string interface_param = full_name + "/interface";
+		std::string gear_reduc_param = full_name + "/gear_reduction";
+		std::string max_rpm_param = full_name + "/max_rpm";
+		std::string max_accel_param = full_name + "/max_acceleration";
+		std::string period_param = full_name + "/update_period";
+
+		HwMotor motor;
+		int found = 0;
+		if(this->nh.hasParam(name_param)){
+			this->nh.getParam(name_param, motor.name);
+			ROS_INFO(" - Found motor name: %s", motor.name.c_str());
+			found++;
+		}
+		if(this->nh.hasParam(type_param)){
+			std::string type_str;
+			this->nh.getParam(type_param, type_str);
+			ROS_INFO(" - Found motor type: %s", type_str.c_str());
+			motor.motor_type = get_device_type(type_str);
+			found++;
+		}
+		if(this->nh.hasParam(interface_param)){
+			std::string if_str;
+			this->nh.getParam(interface_param, if_str);
+			ROS_INFO(" - Found motor interface: %s", if_str.c_str());
+			motor.if_type = get_if_type(if_str);
+			found++;
+		}
+		if(this->nh.hasParam(can_id_param)){
+			this->nh.getParam(can_id_param, motor.device_id);
+			ROS_INFO(" - Found CAN id: %d", motor.device_id);
+			found++;
+		}
+		if(this->nh.hasParam(gear_reduc_param)){
+			double gearing;
+			this->nh.getParam(gear_reduc_param, gearing);
+			motor.rpm_coef = (float)gearing;
+			ROS_INFO(" - Found gear reduction: %.2f", motor.rpm_coef);
+			found++;
+		}
+		if(this->nh.hasParam(max_rpm_param)){
+			double max_rpm;
+			this->nh.getParam(max_rpm_param, max_rpm);
+			motor.max_rpm = (float)max_rpm;
+			ROS_INFO(" - Found max RPM: %.2f", motor.max_rpm);
+			found++;
+		}
+		if(this->nh.hasParam(max_accel_param)){
+			double max_acc;
+			this->nh.getParam(max_accel_param, max_acc);
+			motor.max_accel = (float)max_acc;
+			ROS_INFO(" - Found max acceleration: %.2f", motor.max_accel);
+			found++;
+		}
+		if(this->nh.hasParam(period_param)){
+			double update_pd;
+			this->nh.getParam(period_param, update_pd);
+			motor.update_pd = ros::Duration(update_pd);
+			ROS_INFO(" - Found motor update period: %.3fs", update_pd);
+		}
+
+		switch(motor.motor_type){
+			case DEVICE_VESC:{
+				motor.ctrl_type = CTRL_RPM;
+			}
+			case DEVICE_BRUSHED_MOTOR:{
+				motor.ctrl_type = CTRL_POSITION;
+			}
+			case DEVICE_SABERTOOTH:{
+				motor.ctrl_type = CTRL_POSITION;
+			}
+		}
+		if(found > 0){
+			this->motors.push_back(motor);
+		}
+	}
 }
 
 void HwMotorIf::get_motors_from_csv(){
@@ -380,10 +495,21 @@ std::string HwMotorIf::list_motors(){
 	return retval;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// 		HwMotor things
+//
+////////////////////////////////////////////////////////////////////////////////
 std::string HwMotor::to_string(){
-	sprintf(this->scratch_buf,
-		"\n==========\nMotor\t: %s\n\rID\t: %d\n",
-		this->name.c_str(), this->id
-		);
+	snprintf(this->scratch_buf, sizeof(this->scratch_buf), "\n==========\nMotor\t: %s\n\rID\t: %d\n",
+		this->name.c_str(), 
+		this->id);
 	return std::string(this->scratch_buf);
+}
+
+/**
+ * called by a timer to update relevant parameters of the motor
+ */
+void HwMotor::update_cb(const ros::TimerEvent& event){
+	this->update = true;
 }
