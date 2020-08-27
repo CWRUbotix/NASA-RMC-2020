@@ -79,6 +79,7 @@
 /hardware/motor/port_drive/gear_reduction: 630 # gear_reduc*pole_pairs
 /hardware/motor/port_drive/max_rpm: 100
 /hardware/motor/port_drive/max_acceleration: 75
+/hardware/motor/port_drive/update_period: 0.25
 
 /hardware/motor/starboard_drive/name: 'STARBOARD DRIVE'
 /hardware/motor/starboard_drive/type: 'vesc'
@@ -87,6 +88,7 @@
 /hardware/motor/starboard_drive/gear_reduction: 630 # gear_reduc*pole_pairs
 /hardware/motor/starboard_drive/max_rpm: 100
 /hardware/motor/starboard_drive/max_acceleration: 75
+/hardware/motor/starboard_drive/update_period: 0.25
 
 /hardware/motor/dep/name: 'DEPOSITION DUNKERINO'
 /hardware/motor/dep/type: 'vesc'
@@ -95,6 +97,7 @@
 /hardware/motor/dep/gear_reduction: 245 # gear_reduc*pole_pairs
 /hardware/motor/dep/max_rpm: 140
 /hardware/motor/dep/max_acceleration: 50
+/hardware/motor/dep/update_period: 0.25
 
 /hardware/motor/exc_belt/name: 'EXCAVATION BELT'
 /hardware/motor/exc_belt/type: 'vesc'
@@ -103,6 +106,7 @@
 /hardware/motor/exc_belt/gear_reduction: 245 # gear_reduc*pole_pairs
 /hardware/motor/exc_belt/max_rpm: 140
 /hardware/motor/exc_belt/max_acceleration: 50
+/hardware/motor/exc_belt/update_period: 0.25
 
 /hardware/motor/exc_translation/name: 'EXCAVATION TRANSLATION'
 /hardware/motor/exc_translation/type: 'vesc'
@@ -111,6 +115,7 @@
 /hardware/motor/exc_translation/gear_reduction: 245 # gear_reduc*pole_pairs
 /hardware/motor/exc_translation/max_rpm: 140
 /hardware/motor/exc_translation/max_acceleration: 50
+/hardware/motor/exc_translation/update_period: 0.25
 
 /hardware/motor/exc_port_act/name: 'EXCAVATION PORT ACTUATOR'
 /hardware/motor/exc_port_act/type: 'brushed_motor'

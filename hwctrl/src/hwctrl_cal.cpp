@@ -58,16 +58,12 @@ void sensors_cal_thread(SensorIf* sensor_if){
 			getchar();
 			
 			// locate the imu object
-			SensorInfo* imu = NULL;
 			bool imu_found = false;
-			for(int i = 0; i < sensor_if->n_sensors; i++){
-				imu = &(sensor_if->sensors[i]);
-				if(imu->name.compare("IMU") == 0){
-					// we got it, break
-					imu_found = true;
-					break;
-				}
+			auto imu = sensor_if->sensors_vect.begin();
+			while(!(imu_found = (imu->name.compare("IMU") == 0)) && imu != sensor_if->sensors_vect.end()){
+				imu++;
 			}
+			
 			if(imu_found){
 				int spi_fd = sensor_if->spi_handle;
 				int cs_fd = imu->spi_device->gpio_value_handle;
@@ -217,6 +213,10 @@ void sensors_cal_thread(SensorIf* sensor_if){
 				std::cout << "Couldn't find the IMU object." << endl;
 			}
 			
+		}else if(line.compare("loadcell") == 0){
+			std::cout << "Empty the basket and press ENTER...";
+			getchar();
+			
 		}else if(line.compare("load") == 0){
 			//time to load the calibration from file
 			printf("Reading calibration from file %s\r\n", cal_file_path);
@@ -244,7 +244,7 @@ void sensors_cal_thread(SensorIf* sensor_if){
 			printf("  - %s\t%s\r\n", "load", "load calibrations from file");
 			printf("  - %s\t%s\r\n", "quit", "quit the application (maybe save first)");
 			printf("  - %s\t%s\r\n", "print", "print the existing calibration data");
-			printf("  - %s\t%s\r\n", "imu", "calibrate the IMU");
+			printf("  - %s\t%s\r\n", "imu ", "calibrate the IMU");
 			printf("  - %s\t%s\r\n", "loadcell", "calibrate the load cell(s)");
 		}else if(line.compare("save") == 0){
 			// write calibration to file

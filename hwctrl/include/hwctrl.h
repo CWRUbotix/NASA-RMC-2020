@@ -184,14 +184,18 @@ public:
 	float accel_setpoint = DEFAULT_MAX_ACCEL;
 	float max_rpm 	= DEFAULT_MAX_RPM;
 	float max_accel = DEFAULT_MAX_ACCEL;
+	ros::Timer update_timer; // timer for updating this motor
+	bool update = false;
+	ros::Duration update_pd;
 	std::string if_name;
 	std::string to_string();
+	void update_cb(const ros::TimerEvent& event);
 };
 
 // class to manage the interfaces to motors, be it canbus, uart, etc.
 class HwMotorIf{
 private:
-	uint8_t vesc_rx_buf[1024]; // deprecated do not use
+	uint8_t vesc_rx_buf[1024]; // 
 	std::vector<HwMotor>::iterator motor_it;
 	ros::NodeHandle nh;
 	ros::Publisher can_tx_pub; 			// publisher to publish CAN frames to send out
@@ -209,6 +213,7 @@ public:
 	std::vector<HwMotor> motors;
 	int motor_ind = 0;
 	bool sys_power_on = false; // to track current system power state
+	bool vesc_update_pending = false;
 	bool set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response);
 	void set_motor_cb_alt(hwctrl::SetMotorMsg msg);
 	void add_motor(HwMotor mtr);
@@ -261,9 +266,11 @@ public:
 	std::string gpio_path   = "";
 	int gpio_value_fd 			= -1;
 	SpiDevice * spi_device;
+	std::vector<Calibration> calibrations; // vector array of calibrations for this sensor
 	float value 						= 0.0;
 	float scale 						= 1.0;
 	float offset 						= 0.0;
+	float variance 						= 0.0;
 	ImuData * imu;
 	int sample_ind 					= 0;
 	ros::Time timestamp;
@@ -320,8 +327,9 @@ DeviceType get_device_type(std::string type_str);
 float get_running_mean(float* data, int size);
 bool file_exists(const char * path);
 unsigned long long int file_size(const char * path);
-Calibration read_cal(std::string path);
+void read_cal(std::string path, std::vector<Calibration>& cals);
 void write_cal(std::string path, std::vector<Calibration>& cals);
+Calibration& get_cal_by_name(std::string name, std::vector<Calibration>& cals);
 std::string print_cal(Calibration& cal);
 void smooth_data(float * raw_data, float * smooth_data, int size, int a);
 void decimate(float * in, float * out, int in_size, int decimation_factor);

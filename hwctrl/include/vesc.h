@@ -25,7 +25,7 @@
 #include <buffer.h>
 
 typedef struct VescData {
-	uint8_t vesc_rx_buf[256]; // should be enough to hold some data
+	// uint8_t vesc_rx_buf[256]; // should be enough to hold some data
 	ros::Time timestamp;
 	std::string motor_type;
 	int8_t sys_id;

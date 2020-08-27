@@ -107,6 +107,30 @@ void write_cal(std::string path, std::vector<Calibration>& cals){
 	write_csv(path, data);
 }
 
+/**
+ * reads from file at path and populates cals with Calibration objects
+ */
+void read_cal(std::string path, std::vector<Calibration>& cals){
+	std::vector<std::vector<std::string>> data = read_csv(path);
+	for(auto line : data){
+		Calibration cal;
+		cal.name = line.at(0);
+		cal.scale = std::stof(line.at(1));
+		cal.offset = std::stof(line.at(2));
+		cal.variance = std::stof(line.at(3));
+		cals.push_back(cal);
+	}
+}
+
+Calibration& get_cal_by_name(std::string name, std::vector<Calibration>& cals){
+	int i;
+	for(i = 0; i < cals.size(); i++){
+		if(cals.at(i).name.compare(name) == 0){
+			break;
+		}
+	}
+	return cals.at(i);
+}
 
 std::string print_cal(Calibration& cal){
 	char buf[256];

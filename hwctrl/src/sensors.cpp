@@ -29,6 +29,36 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	// this->get_sensors_from_csv(); 
 	this->get_sensor_configs(); // reads from parameter server
 
+	// ==== read in sensor calibrations ====
+	// construct the calibration file path
+	std::istringstream path_stream(std::string(std::getenv("HOME")));
+
+	std::string cal_file_path;
+	std::getline(path_stream, cal_file_path, ':'); // get the first path
+	if(*(cal_file_path.end()) != '/'){
+		cal_file_path.push_back('/');
+	}
+	cal_file_path.append(cal_file_default.c_str());
+
+	if(file_exists(cal_file_path.c_str())){
+		ROS_INFO("Loading sensor calibrations from %s...", cal_file_path.c_str());
+		std::vector<Calibration> cals;
+		read_cal(cal_file_path, cals);
+
+		for(auto cal : cals){
+			std::vector<SensorInfo>::iterator sensor = this->sensors_vect.begin();
+			int pos = std::string::npos;
+			// if sensor name exists within calibration name
+			while( (pos = cal.name.find(sensor->name)) == std::string::npos && sensor != this->sensors_vect.end()){
+				sensor++;
+			}
+			if(pos != std::string::npos){
+				sensor->calibrations.push_back(cal);
+			}
+		}
+	}
+
+	// ==== initialize SPI bus ====
 	ROS_DEBUG("Initializing SPI bus from %s...", spidev_path.c_str());
 	this->spi_handle = spi_init(spidev_path.c_str());
 	if(this->spi_handle < 0){
@@ -51,7 +81,6 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 			sensor->imu = new ImuData;
 		}
 		if(sensor->update_pd.toSec() > 0.0){
-			sensor->update_mtx = new std::mutex();
 			sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, &(*sensor));
 		}
 		sensor->is_setup = true;
@@ -132,13 +161,29 @@ void sensors_thread(SensorIf* sensor_if){
 						msg.header.stamp = ros::Time::now();
 						msg.header.frame_id = sensor->name;
 						msg.orientation_covariance[0] = -1.0; // indicates that we don't provide orientation data (yet)
-						msg.linear_acceleration.x = xl_data[0];
-						msg.linear_acceleration.y = xl_data[1];
-						msg.linear_acceleration.z = xl_data[2];
+						if(sensor->calibrations.size() >= 6){
+							Calibration& cal_xl_x = get_cal_by_name("IMU_XL_X", sensor->calibrations);
+							Calibration& cal_xl_y = get_cal_by_name("IMU_XL_Y", sensor->calibrations);
+							Calibration& cal_xl_z = get_cal_by_name("IMU_XL_Z", sensor->calibrations);
+							Calibration& cal_g_x = get_cal_by_name("IMU_G_X", sensor->calibrations);
+							Calibration& cal_g_y = get_cal_by_name("IMU_G_Y", sensor->calibrations);
+							Calibration& cal_g_z = get_cal_by_name("IMU_G_Z", sensor->calibrations);
+							msg.linear_acceleration.x = cal_xl_x.scale*xl_data[0] + cal_xl_x.offset;
+							msg.linear_acceleration.y = cal_xl_y.scale*xl_data[1] + cal_xl_y.offset;
+							msg.linear_acceleration.z = cal_xl_z.scale*xl_data[2] + cal_xl_z.offset;
+							msg.angular_velocity.x = cal_g_x.scale*gyro_data[0] + cal_g_x.offset;
+							msg.angular_velocity.y = cal_g_y.scale*gyro_data[1] + cal_g_y.offset;
+							msg.angular_velocity.z = cal_g_z.scale*gyro_data[2] + cal_g_z.offset;
+						}else{
+							msg.linear_acceleration.x = xl_data[0];
+							msg.linear_acceleration.y = xl_data[1];
+							msg.linear_acceleration.z = xl_data[2];
+							msg.angular_velocity.x = gyro_data[0];
+							msg.angular_velocity.y = gyro_data[1];
+							msg.angular_velocity.z = gyro_data[2];
+						}
+						
 						msg.linear_acceleration_covariance = sensor->imu->cov_xl;
-						msg.angular_velocity.x = gyro_data[0];
-						msg.angular_velocity.y = gyro_data[1];
-						msg.angular_velocity.z = gyro_data[2];
 						msg.angular_velocity_covariance  = sensor->imu->cov_g;
 
 						sensor->imu->sample_buf_1[sensor->imu->sample_ind] = (float)xl_data[0];
@@ -198,26 +243,23 @@ void sensors_thread(SensorIf* sensor_if){
  */
 void SensorIf::can_rx_callback(boost::shared_ptr<hwctrl::CanFrame> frame){
 	uint32_t rx_id = (uint32_t)frame->can_id;
-	uint32_t can_id = 0;
-	if((can_id = (rx_id & ~0xFF)) == 0){
-		// was NOT a VESC frame
-		// UWB frame or quad encoder frame
-		UwbNode& uwb_node = this->get_uwb_by_can_id(rx_id);
-		if(uwb_node.id == rx_id){
-			ROS_DEBUG("UWB frame (node id %d)", rx_id);
-			// uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
-			hwctrl::UwbData msg;
-			msg.anchor_id = frame->data[1];
-			float temp = 0.0;
-			memcpy(&temp, frame->data.data() + 2, 4);
-			msg.distance = temp;
-			msg.node_id = rx_id;
-			this->uwb_data_pub.publish(msg);
-		}else{
-			// no UWB node matching this CAN ID, so must be our quadrature encoder
-			//this->quad_encoder.add_can_data(frame->data.data(), frame->can_dlc);
-		}
+	uint32_t can_id = (rx_id & 0xFF);
+	UwbNode& uwb_node = this->get_uwb_by_can_id(can_id);
+	if(uwb_node.id == can_id){
+		ROS_DEBUG("UWB frame (node id %d)", can_id);
+		// uwb_node->add_can_data(frame->data.data(), frame->can_dlc);
+		hwctrl::UwbData msg;
+		msg.anchor_id = frame->data[1];
+		float temp = 0.0;
+		memcpy(&temp, frame->data.data() + 2, 4);
+		msg.distance = temp;
+		msg.node_id = can_id;
+		this->uwb_data_pub.publish(msg);
+	}else{
+		// no UWB node matching this CAN ID, so could our quadrature encoder
+		//this->quad_encoder.add_can_data(frame->data.data(), frame->can_dlc);
 	}
+	
 }
 
 /**
