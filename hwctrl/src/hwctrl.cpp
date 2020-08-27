@@ -40,6 +40,8 @@ DeviceType get_device_type(std::string type_str){
 		return DEVICE_LOAD_CELL;
 	}else if(type_str.compare("power_sense") 	== 0){
 		return DEVICE_POWER_SENSE;
+	}else if(type_str.compare("brushed_motor") 	== 0){
+		return DEVICE_BRUSHED_MOTOR;
 	}else{
 		return DEVICE_NONE;
 	}

@@ -95,6 +95,32 @@ const std::string limit_6_gpio 	= "/sys/class/gpio/gpio20/";
 const std::string over_temp_gpio= "/sys/class/gpio/gpio27/";
 const std::string crit_temp_gpio= "/sys/class/gpio/gpio61/";
 
+const std::string param_base = "/hardware";
+
+const std::vector<std::string> sensor_param_names{
+	"uwb_node_1",
+	"uwb_node_2",
+	"uwb_node_3",
+	"uwb_node_4",
+	"ebay_temperature",
+	"imu",
+	"adc_1",
+	"adc_2",
+	"limit_1",
+	"limit_2",
+	"limit_3",
+	"limit_4"
+};
+const std::vector<std::string> motor_param_names{
+	"port_drive",
+	"starboard_drive",
+	"dep",
+	"exc_belt",
+	"exc_translation",
+	"exc_port_act",
+	"exc_starboard_act"
+};
+
 typedef enum MotorType {
 	MOTOR_NONE,
 	MOTOR_VESC,
@@ -113,7 +139,8 @@ typedef enum DeviceType {
 	DEVICE_ADS1120,
 	DEVICE_ADT7310,
 	DEVICE_LSM6DS3,
-	DEVICE_POWER_SENSE
+	DEVICE_POWER_SENSE,
+	DEVICE_BRUSHED_MOTOR
 }DeviceType;
 
 typedef enum InterfaceType {
@@ -137,7 +164,7 @@ typedef enum ControlType {
 // class to hold info about a motor
 class HwMotor{
 private:
-	char scratch_buf[1024];
+	char scratch_buf[256];
 public:
 	bool online = false;
 	int id;
@@ -167,14 +194,14 @@ private:
 	uint8_t vesc_rx_buf[1024]; // deprecated do not use
 	std::vector<HwMotor>::iterator motor_it;
 	ros::NodeHandle nh;
-	ros::Publisher can_tx_pub; 		// publisher to publish CAN frames to send out
-	ros::Publisher motor_data_pub;	// to publish motor data
-	ros::Subscriber can_rx_sub; 	// to get vesc data frames
-	ros::Subscriber sensor_data_sub;// to get sensor data
-	ros::Subscriber limit_sw_sub; 	// listen for limit switch interrupts
-	ros::ServiceServer set_motor_srv; // to provide the set_motor service
-	ros::Subscriber set_motor_sub; // set motors
-	void init_motors(); 						// called when power sense turns on
+	ros::Publisher can_tx_pub; 			// publisher to publish CAN frames to send out
+	ros::Publisher motor_data_pub;		// to publish motor data
+	ros::Subscriber can_rx_sub; 		// to get vesc data frames
+	ros::Subscriber sensor_data_sub;	// to get sensor data
+	ros::Subscriber limit_sw_sub; 		// listen for limit switch interrupts
+	ros::ServiceServer set_motor_srv; 	// to provide the set_motor service
+	ros::Subscriber set_motor_sub; 		// set motors
+	void init_motors(); 				// called when power sense turns on
 public:
 	HwMotorIf(ros::NodeHandle);
 	ros::CallbackQueue cb_queue;
@@ -186,6 +213,7 @@ public:
 	void set_motor_cb_alt(hwctrl::SetMotorMsg msg);
 	void add_motor(HwMotor mtr);
 	void get_motors_from_csv();
+	void get_motor_configs();
 	std::string list_motors();
 	void maintain_next_motor();
 	int get_num_motors();

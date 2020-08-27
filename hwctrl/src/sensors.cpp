@@ -26,7 +26,7 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	// create all our sensor info objects and whatever
 	// this step also links the spi devices to the correct SensorInfo objects
 	// also gets file descriptor handle for GPIOI based sensors
-	this->get_sensors_from_csv(); 
+	// this->get_sensors_from_csv(); 
 	this->get_sensor_configs(); // reads from parameter server
 
 	ROS_DEBUG("Initializing SPI bus from %s...", spidev_path.c_str());
@@ -51,11 +51,11 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 			sensor->imu = new ImuData;
 		}
 		if(sensor->update_pd.toSec() > 0.0){
-			sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag);
 			sensor->update_mtx = new std::mutex();
+			sensor->update_timer = this->nh.createTimer(sensor->update_pd, &SensorInfo::set_update_flag, &(*sensor));
 		}
 		sensor->is_setup = true;
-		ROS_INFO("Sensor %d (%s) | Update Period: %.3fs", sensor->sys_id, sensor->name.c_str(), sensor->update_pd.toSec());
+		ROS_INFO("Sensor %s | Update Period: %.3fs", sensor->name.c_str(), sensor->update_pd.toSec());
 	}
 
 	// create the timer that will request data from the next UWB node
@@ -74,7 +74,7 @@ int SensorIf::setup_gpio(){
  * thread to do sensor things
  */
 void sensors_thread(SensorIf* sensor_if){
-	ROS_DEBUG("Starting sensors_thread");
+	ROS_INFO("Starting sensors_thread");
 	ros::AsyncSpinner spinner(1, &(sensor_if->cb_queue));
 	spinner.start();
 	while(ros::ok()){
@@ -95,7 +95,7 @@ void sensors_thread(SensorIf* sensor_if){
 		//for(int n = 0; n < sensor_if->n_sensors; n++){
 		for(std::vector<SensorInfo>::iterator sensor = sensor_if->sensors_vect.begin(); sensor != sensor_if->sensors_vect.end(); sensor++){
 			//SensorInfo* sensor = &(sensor_if->sensors[n]);
-			if(sensor->is_setup && sensor->update_mtx->try_lock()){
+			if(sensor->is_setup && sensor->update){
 				// do update things based on device type
 				switch(sensor->dev_type){
 					case DEVICE_ADT7310:{
@@ -183,6 +183,7 @@ void sensors_thread(SensorIf* sensor_if){
 						break;
 					}
 				} // end switch
+				sensor->update = false;
 			} // end if is_setup and mtx.try_lock()
 		} // end for each sensor
 
@@ -285,11 +286,95 @@ void SensorIf::uwb_update_callback(const ros::TimerEvent& tim_event){
  */
 void SensorIf::get_sensor_configs(){
 	ROS_INFO("Reading sensor configs from param server...");
-	// std::vector<std::string> keys;
-	// ros::param::search(keys);
-	// for(auto key = keys.begin(); key != keys.end(); ++key){
-	// 	printf("%s", key);
-	// }
+	std::string base = param_base + "/sensor";
+	for(auto name = sensor_param_names.begin(); name != sensor_param_names.end(); ++name){
+		std::string full_name = base + "/" + *name;
+		ROS_INFO("Checking for parameters under %s/...", full_name.c_str());
+		std::string name_param = full_name + "/name";
+		std::string type_param = full_name + "/type";
+		std::string can_id_param = full_name + "/can_id";
+		std::string interface_param = full_name + "/interface";
+		std::string period_param = full_name + "/update_period";
+		std::string gpio_param = full_name + "/gpio";
+
+		SensorInfo sensor;
+		if(this->nh.hasParam(name_param)){
+			this->nh.getParam(name_param, sensor.name);
+			ROS_INFO(" - Found sensor name: %s", sensor.name.c_str());
+		}
+		if(this->nh.hasParam(type_param)){
+			std::string type_str;
+			this->nh.getParam(type_param, type_str);
+			ROS_INFO(" - Found sensor type: %s", type_str.c_str());
+			sensor.dev_type = get_device_type(type_str);
+		}
+		if(this->nh.hasParam(interface_param)){
+			std::string if_str;
+			this->nh.getParam(interface_param, if_str);
+			ROS_INFO(" - Found sensor interface: %s", if_str.c_str());
+			sensor.if_type = get_if_type(if_str);
+		}
+		if(this->nh.hasParam(period_param)){
+			double update_pd;
+			this->nh.getParam(period_param, update_pd);
+			ROS_INFO(" - Found sensor update period: %.3fs", update_pd);
+			sensor.update_pd = ros::Duration(update_pd);
+		}
+		if(this->nh.hasParam(can_id_param)){
+			this->nh.getParam(can_id_param, sensor.dev_id);
+			ROS_INFO(" - Found CAN id: %d", sensor.dev_id);
+		}
+		if(this->nh.hasParam(gpio_param)){
+			this->nh.getParam(gpio_param, sensor.gpio_path);
+			ROS_INFO(" - Found gpio file path: %s", sensor.gpio_path.c_str());
+		}
+
+		switch(sensor.dev_type){
+			case DEVICE_UWB:{
+				// this sensor is an UWB node
+				ROS_DEBUG("An UWB node, id: %d!", sensor.dev_id);
+				UwbNode uwb_node((uint32_t)sensor.dev_id);
+				this->uwb_nodes.push_back(uwb_node);
+				break;
+			}
+			case DEVICE_LSM6DS3:{
+				sensor.spi_device = &(this->spi_devices[IMU_IND]); // store the pointer to the spi device
+				break;
+			}
+			case DEVICE_ADT7310:{
+				// this line is for the ebay temperature sensor
+				sensor.spi_device = &(this->spi_devices[TEMP_SENSOR_IND]); // store the pointer to the spi device
+				break;
+			}
+			case DEVICE_POT:{
+				sensor.spi_device = &(this->spi_devices[ADC_1_IND]);
+				break;
+			}
+			case DEVICE_LOAD_CELL:{
+				sensor.spi_device = &(this->spi_devices[ADC_2_IND]);
+				break;
+			}
+			case DEVICE_POWER_SENSE:{
+				// 24V Present input
+				// just a gpio that tells if the e-stop is energized or not
+				ROS_INFO("System power sense on GPIO %s", sensor.gpio_path.c_str());
+				if((sensor.gpio_value_fd = gpio_init(sensor.gpio_path, GPIO_INPUT, 0)) <= 0){
+					ROS_WARN("Failed to get file descriptor for %svalue", sensor.gpio_path.c_str());
+				}
+				break;
+			}
+			case DEVICE_LIMIT_SW:{
+				// a limit switch, high if activated
+				ROS_INFO("Limit switch on GPIO %s", sensor.gpio_path.c_str());
+				if((sensor.gpio_value_fd = gpio_init(sensor.gpio_path, GPIO_INPUT, 0)) <= 0){
+					ROS_WARN("Failed to get file descriptor for %svalue", sensor.gpio_path.c_str());
+				}
+				break;
+			}
+		}
+
+		this->sensors_vect.push_back(sensor);
+	}
 }
 
 /**
@@ -644,5 +729,6 @@ SensorInfo::SensorInfo(void)
 
 }
 void SensorInfo::set_update_flag(const ros::TimerEvent& event){
-	this->update_mtx->unlock(); // will allow thread to lock mutex and update sensor
+	this->update = true;
+	// this->update_mtx->unlock(); // will allow thread to lock mutex and update sensor
 }

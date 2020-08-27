@@ -8,7 +8,8 @@ HwMotorIf::HwMotorIf(ros::NodeHandle n)
 
 	this->nh.setCallbackQueue(&(this->cb_queue)); // have this copy use this callback queue
 
-	this->get_motors_from_csv(); //config_file_fname
+	// this->get_motors_from_csv(); //config_file_fname
+	this->get_motor_configs(); // read from parameter server
 
 	// PUBLISHERS
 	this->can_tx_pub 		= this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
@@ -181,7 +182,7 @@ HwMotor& HwMotorIf::get_vesc_from_can_id(int can_id){
  * intended to be passed as an arugment to a std::thread instance
  */
 void maintain_motors_thread(HwMotorIf* motor_if){
-	ROS_DEBUG("Starting maintain_motors_thread");
+	ROS_INFO("Starting maintain_motors_thread");
 	ros::AsyncSpinner spinner(1, &(motor_if->cb_queue));
 	spinner.start();
 	while(ros::ok()){
@@ -302,6 +303,85 @@ void HwMotorIf::add_motor(HwMotor mtr){
 	this->motors.push_back(mtr);
 }
 
+void HwMotorIf::get_motor_configs(){
+	ROS_INFO("Reading motor configs from param server...");
+	std::string base = param_base + "/motor";
+	for(auto name = motor_param_names.begin(); name != motor_param_names.end(); ++name){
+		std::string full_name = base + "/" + *name;
+		ROS_INFO("Checking for parameters under %s/...", full_name.c_str());
+		std::string name_param = full_name + "/name";
+		std::string type_param = full_name + "/type";
+		std::string can_id_param = full_name + "/can_id";
+		std::string interface_param = full_name + "/interface";
+		std::string gear_reduc_param = full_name + "/gear_reduction";
+		std::string max_rpm_param = full_name + "/max_rpm";
+		std::string max_accel_param = full_name + "/max_acceleration";
+
+		HwMotor motor;
+		int found = 0;
+		if(this->nh.hasParam(name_param)){
+			this->nh.getParam(name_param, motor.name);
+			ROS_INFO(" - Found motor name: %s", motor.name.c_str());
+			found++;
+		}
+		if(this->nh.hasParam(type_param)){
+			std::string type_str;
+			this->nh.getParam(type_param, type_str);
+			ROS_INFO(" - Found motor type: %s", type_str.c_str());
+			motor.motor_type = get_device_type(type_str);
+			found++;
+		}
+		if(this->nh.hasParam(interface_param)){
+			std::string if_str;
+			this->nh.getParam(interface_param, if_str);
+			ROS_INFO(" - Found motor interface: %s", if_str.c_str());
+			motor.if_type = get_if_type(if_str);
+			found++;
+		}
+		if(this->nh.hasParam(can_id_param)){
+			this->nh.getParam(can_id_param, motor.device_id);
+			ROS_INFO(" - Found CAN id: %d", motor.device_id);
+			found++;
+		}
+		if(this->nh.hasParam(gear_reduc_param)){
+			double gearing;
+			this->nh.getParam(gear_reduc_param, gearing);
+			motor.rpm_coef = (float)gearing;
+			ROS_INFO(" - Found gear reduction: %.2f", motor.rpm_coef);
+			found++;
+		}
+		if(this->nh.hasParam(max_rpm_param)){
+			double max_rpm;
+			this->nh.getParam(max_rpm_param, max_rpm);
+			motor.max_rpm = (float)max_rpm;
+			ROS_INFO(" - Found max RPM: %.2f", motor.max_rpm);
+			found++;
+		}
+		if(this->nh.hasParam(max_accel_param)){
+			double max_acc;
+			this->nh.getParam(max_accel_param, max_acc);
+			motor.max_accel = (float)max_acc;
+			ROS_INFO(" - Found max acceleration: %.2f", motor.max_accel);
+			found++;
+		}
+
+		switch(motor.motor_type){
+			case DEVICE_VESC:{
+				motor.ctrl_type = CTRL_RPM;
+			}
+			case DEVICE_BRUSHED_MOTOR:{
+				motor.ctrl_type = CTRL_POSITION;
+			}
+			case DEVICE_SABERTOOTH:{
+				motor.ctrl_type = CTRL_POSITION;
+			}
+		}
+		if(found > 0){
+			this->motors.push_back(motor);
+		}
+	}
+}
+
 void HwMotorIf::get_motors_from_csv(){
 	std::string ros_package_path(std::getenv("ROS_PACKAGE_PATH"));
 	std::istringstream path_stream(ros_package_path);
@@ -383,9 +463,8 @@ std::string HwMotorIf::list_motors(){
 }
 
 std::string HwMotor::to_string(){
-	sprintf(this->scratch_buf,
-		"\n==========\nMotor\t: %s\n\rID\t: %d\n",
-		this->name.c_str(), this->id
-		);
+	snprintf(this->scratch_buf, sizeof(this->scratch_buf), "\n==========\nMotor\t: %s\n\rID\t: %d\n",
+		this->name.c_str(), 
+		this->id);
 	return std::string(this->scratch_buf);
 }
