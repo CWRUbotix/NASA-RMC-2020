@@ -2,5 +2,5 @@
 <launch>
     <machine name="beaglebone" address="beaglebone.local" user="ros" password="cwrubotix" timeout="10.0" />
     <rosparam command="load" file="$(find glenn_launcher)/params/hardware/hwctrl_params.yaml"/>
-    <node machine="beaglebone" name="hwctrl_node" pkg="hwctrl" type="hwctrl" launch-prefix="sudo" output="screen" />
+    <node machine="beaglebone" name="hwctrl_node" pkg="hwctrl" type="hwctrl" output="screen" />
 </launch>
