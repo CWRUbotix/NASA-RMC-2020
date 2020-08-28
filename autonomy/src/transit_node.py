@@ -56,7 +56,6 @@ class TransitNode:
 
         self.server = actionlib.SimpleActionServer('go_to_goal', GoToGoalAction, self.go_to_goal, auto_start=False)
 
-        self.motor_acceleration = rospy.get_param('/motor_command_accel')
         self.command_vel_pub = rospy.Publisher("/glennobi_diff_drive_controller/cmd_vel", Twist, queue_size=4)
         self.path_pub = rospy.Publisher("transit_path", TransitPath, queue_size=4)
         self.control_data_pub = rospy.Publisher("transit_control_data", TransitControlData, queue_size=4)
@@ -167,9 +166,6 @@ class TransitNode:
             self.wheel_speeds.append([msg.sensors.starboard_drive_encoder, msg.sensors.port_drive_encoder])
 
             self.publish_command_vel(vel, angular_vel)
-            # self.motor_pub.publish(id=0, setpoint=left_speed, acceleration=self.motor_acceleration)
-            # self.motor_pub.publish(id=1, setpoint=right_speed, acceleration=self.motor_acceleration)
-
             self.publish_control_data()
 
             self.draw()
@@ -233,9 +229,6 @@ class TransitNode:
 
     def shutdown(self):
         self.command_vel_pub.publish(Twist())  # publish all 0s
-
-        # self.motor_pub.publish(id=0, setpoint=0, acceleration=self.motor_acceleration)
-        # self.motor_pub.publish(id=1, setpoint=0, acceleration=self.motor_acceleration)
 
     def draw(self):
         if self.visualize and self.step % self.viz_step == 0:
