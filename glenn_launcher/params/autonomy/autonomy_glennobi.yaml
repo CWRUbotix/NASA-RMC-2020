@@ -3,5 +3,5 @@ target_velocity: 0.15  # (m/s) Path following speed
 lambda_e: 0.85 # larger values make robot turn towards path faster
 G_u: 3  # Overall robot turning speed multiplier
 reference_point_x: 0.5  # (m) x position of point on robot that controller is trying to drive towards the path
-turn_speed: 0.2  # (rad/s) speed at which robot turns in place
+turn_speed: 0.4  # (rad/s) speed at which robot turns in place
 

@@ -1,43 +1,28 @@
 #!/usr/bin/env python3
-import os
-import sys
-import glob
-import cv2
-import math
 import rospy
-import math
 import matplotlib
-import numpy as np
-import pandas as pd
-import pyrealsense2 as rs
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from scipy import signal
-from scipy.spatial.transform import Rotation as R
-from scipy.ndimage import gaussian_filter
-
-from geometry_msgs.msg import Vector3
 matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
+import matplotlib.pyplot as plt
+import math
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial.transform import Rotation as R
 
-
-# Configure depth and color streams
-pipeline = rs.pipeline()
-config = rs.config()
-config.enable_stream(rs.stream.accel)
-config.enable_stream(rs.stream.gyro)
-
-# Start streaming
-pipeline.start(config)
+from sensor_msgs.msg import Imu
 
 
 class RealSenseIMU:
-
     def __init__(self):
-        self.first_frame = True # initial IMU reference frame
-        self.alpha = 0.5
-        self.motion_topic = 'realsense_angle'
+        self.gyro_weight = 20
         self.visualize = False
+        self.step = 0
         self.window = 20
+
+        self.last_time = 0
+        self.last_estimate = np.array([0.01, -1, 0.01])
+        self.last_gyro = np.array([0, 0, 0])
+
+        self.imu_pub = rospy.Publisher('realsense_imu_filtered', Imu, queue_size=1)
 
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
@@ -62,110 +47,103 @@ class RealSenseIMU:
 
         print('Booting up node...')
         rospy.init_node('realsense_motion', anonymous=True)
+        self.subscribe()
+        rospy.spin()
 
-    def listen_for_frames(self):
-        xs = []
-        ys = []
-        zs = []
-        while not rospy.is_shutdown():
-            # Wait for a coherent pair of frames: depth and color
-            frames = pipeline.wait_for_frames()
-            #gather IMU data
-            # integration of IMU data referenced from https://github.com/IntelRealSense/librealsense/issues/4391
-            accel = frames[0].as_motion_frame().get_motion_data()
-            gyro = frames[1].as_motion_frame().get_motion_data()
-            ts = frames.get_timestamp()
+    def subscribe(self):
+        rospy.Subscriber("imu_realsense/data_raw", Imu, self.receive_imu_msg)
 
-            #calculation for the first frame
-            if (self.first_frame):
-                self.first_frame = False
-                last_ts_gyro = ts
-                # accelerometer calculation
-                accel_angle_z = math.atan2(accel.y, accel.z)
-                accel_angle_x = math.atan2(accel.x, math.sqrt(accel.y * accel.y + accel.z * accel.z))
-                accel_angle_y = math.pi
-                continue
+    def receive_imu_msg(self, msg):
+        # integration of IMU data referenced from https://github.com/IntelRealSense/librealsense/issues/4391
+        # and http://www.starlino.com/imu_guide.html
+        time = msg.header.stamp.to_sec()
+        # accel = np.array([msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z])
+        # gyro = np.array([msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z])
 
-            #calculation for the second frame onwards
-            # gyrometer calculations
-            dt_gyro = (ts - last_ts_gyro) / 1000
-            last_ts_gyro = ts
+        # different reference frame prevent errors with noise?
+        accel = np.array([-msg.linear_acceleration.z, msg.linear_acceleration.x, -msg.linear_acceleration.y])
+        gyro = np.array([msg.angular_velocity.z, -msg.angular_velocity.x, msg.angular_velocity.y])
 
-            gyro_angle_x = gyro.x * dt_gyro
-            gyro_angle_y = gyro.y * dt_gyro
-            gyro_angle_z = gyro.z * dt_gyro
+        accel_mag = np.sqrt(accel[0] * accel[0] + accel[1] * accel[1] + accel[2] * accel[2])
+        accel = accel / accel_mag
 
-            totalgyroangleX = accel_angle_x + gyro_angle_x
-            totalgyroangleY = accel_angle_y + gyro_angle_y
-            totalgyroangleZ = accel_angle_z + gyro_angle_z
+        accel_angle_x = np.arctan2(self.last_estimate[1], self.last_estimate[2])
+        accel_angle_y = np.arctan2(self.last_estimate[0], self.last_estimate[2])
 
-            #accelerometer calculation
-            accel_angle_z = math.atan2(accel.y, accel.z)
-            accel_angle_x = math.atan2(accel.x, math.sqrt(accel.y * accel.y + accel.z * accel.z))
-            accel_angle_y = math.pi
+        new_angle_x = accel_angle_x + 0.5 * (gyro[0] + self.last_gyro[0]) * (time - self.last_time)
+        new_angle_y = accel_angle_y - 0.5 * (gyro[1] + self.last_gyro[1]) * (time - self.last_time)
 
+        gyro_dirs = np.array([0.0, 0.0, 0.0])
+        gyro_dirs[0] = np.sign(new_angle_y) / np.sqrt(1 + 1 / (np.tan(new_angle_y) ** 2 * np.cos(new_angle_x) ** 2))
+        gyro_dirs[1] = np.sign(new_angle_x) / np.sqrt(1 + 1 / (np.tan(new_angle_x) ** 2 * np.cos(new_angle_y) ** 2))
+        gyro_dirs[2] = np.sign(accel[2]) * np.sqrt(1 - gyro_dirs[0] ** 2 - gyro_dirs[1] ** 2)
 
-            #combining gyrometer and accelerometer angles
-            combinedangleX = totalgyroangleX * self.alpha + accel_angle_x * (1 - self.alpha)
-            combinedangleZ = totalgyroangleZ * self.alpha + accel_angle_z * (1 - self.alpha)
-            combinedangleY = totalgyroangleY
+        estimate = (accel + gyro_dirs * self.gyro_weight) / (1 + self.gyro_weight)
+        estimate_mag = np.sqrt(estimate[0] * estimate[0] + estimate[1] * estimate[1] + estimate[2] * estimate[2])
+        estimate = estimate / estimate_mag
 
-            xs.append(combinedangleX)
-            ys.append(combinedangleY)
-            zs.append(combinedangleZ)
+        angles = [np.arctan2(estimate[1], estimate[2]), np.arctan2(estimate[0], estimate[2]), 0]
+        # print()
+        # print("{:.3f} {:.3f} {:.3f}".format(accel[0], accel[1], accel[2]))
+        # print("{:.3f} {:.3f} {:.3f}".format(accel_angle_x, accel_angle_y, 0))
+        # print("{:.3f} {:.3f} {:.3f}".format(gyro[0], gyro[0], gyro[0]))
+        # print("{:.3f} {:.3f} {:.3f}".format(new_angle_x, new_angle_y, 0))
+        # print("{:.3f} {:.3f} {:.3f}".format(gyro_dirs[0], gyro_dirs[1], gyro_dirs[2]))
+        # print("{:.3f} {:.3f} {:.3f}".format(estimate[0], estimate[1], estimate[2]))
 
-            if len(xs) >= self.window:
-                combinedangleX = np.mean(xs)
-                combinedangleY = np.mean(ys)
-                combinedangleZ = np.mean(zs)
+        self.last_estimate = estimate
+        self.last_gyro = gyro
+        self.last_time = time
+        self.step += 1
 
-                try:
-                    pub = rospy.Publisher('realsense_orientation', Vector3, queue_size=1)
-                    pub.publish(Vector3(combinedangleX, combinedangleY, combinedangleZ))
-                except rospy.ROSInterruptException as e:
-                    print(e.getMessage())
-                    pass
+        try:
+            imu_msg = Imu()
+            imu_msg.header.stamp = rospy.Time.now()
+            imu_msg.header.frame_id = "realsense_link"
+            quat = R.from_euler('xyz', angles).as_quat()
+            imu_msg.orientation.x = quat[0]
+            imu_msg.orientation.y = quat[1]
+            imu_msg.orientation.z = quat[2]
+            imu_msg.orientation.w = quat[3]
+            self.imu_pub.publish(imu_msg)
+        except rospy.ROSInterruptException as e:
+            print(e.getMessage())
+            pass
 
-                xs = []
-                ys = []
-                zs = []
+        if self.step % self.window == 0:
+            print("Angles: R {:.3f} P {:.3f} Y {:.3f}".format(angles[0], angles[1], angles[2]))
+            if self.visualize :
+                r = R.from_euler('zyx', angles)
+                x_new = r.apply(np.array([1, 0, 0]))
+                y_new = r.apply(np.array([0, 1, 0]))
+                z_new = r.apply(np.array([0, 0, 1]))
 
-                print("Angle -  X: " + (str(round(combinedangleX,2))) + "   Y: " + (str(round(combinedangleY,2))) + "   Z: " + (str(round(combinedangleZ,2))))
-                if self.visualize:
-                    r = R.from_euler('zyx', [combinedangleX, combinedangleY, combinedangleZ])
-                    x_new = r.apply(np.array([1, 0, 0]))
-                    y_new = r.apply(np.array([0, 1, 0]))
-                    z_new = r.apply(np.array([0, 0, 1]))
+                # restore background
+                self.fig.canvas.restore_region(self.background)
 
-                    # restore background
-                    self.fig.canvas.restore_region(self.background)
+                # redraw just the points
+                self.x_line.set_xdata([0, x_new[0]])
+                self.x_line.set_ydata([0, x_new[1]])
+                self.x_line.set_3d_properties([0, x_new[2]])
+                #self.ax.draw_artist(self.x_line)
+                self.y_line.set_xdata([0, y_new[0]])
+                self.y_line.set_ydata([0, y_new[1]])
+                self.y_line.set_3d_properties([0, y_new[2]])
+                #self.ax.draw_artist(self.y_line)
+                self.z_line.set_xdata([0, z_new[0]])
+                self.z_line.set_ydata([0, z_new[1]])
+                self.z_line.set_3d_properties([0, z_new[2]])
+                #self.ax.draw_artist(self.z_line)
 
-                    # redraw just the points
-                    self.x_line.set_xdata([0, x_new[0]])
-                    self.x_line.set_ydata([0, x_new[1]])
-                    self.x_line.set_3d_properties([0, x_new[2]])
-                    #self.ax.draw_artist(self.x_line)
-                    self.y_line.set_xdata([0, y_new[0]])
-                    self.y_line.set_ydata([0, y_new[1]])
-                    self.y_line.set_3d_properties([0, y_new[2]])
-                    #self.ax.draw_artist(self.y_line)
-                    self.z_line.set_xdata([0, z_new[0]])
-                    self.z_line.set_ydata([0, z_new[1]])
-                    self.z_line.set_3d_properties([0, z_new[2]])
-                    #self.ax.draw_artist(self.z_line)
+                # fill in the axes rectangle
+                self.fig.canvas.blit(self.ax.bbox)
+                plt.draw()
+                plt.show(block=False)
 
-                    # fill in the axes rectangle
-                    self.fig.canvas.blit(self.ax.bbox)
-                    plt.draw()
-                    plt.show(block=False)
 
 if __name__ == '__main__':
     try:
         imu_node = RealSenseIMU()
         print('Listening for frames...')
-        imu_node.listen_for_frames()
     except rospy.exceptions.ROSInterruptException:
         pass
-    finally:
-        # Stop streaming
-        pipeline.stop()

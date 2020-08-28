@@ -9,11 +9,16 @@
 
     <group if="$(arg launch_from_robot)">
         <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
+        <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
         <node name="robot_state_node" pkg="autonomy" type="robot_state.py" output="screen"/>
     </group>
     <group unless="$(arg launch_from_robot)">
-        <node machine="robot" name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
-        <node machine="robot" name="robot_state_node" pkg="autonomy" type="robot_state.py" output="screen"/>
+        <!-- Commented out for now until we figure out how to switch between launching on robot and launching on computer -->
+<!--         <node machine="robot" name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
+        <node machine="robot" name="robot_state_node" pkg="autonomy" type="robot_state.py" output="screen"/> -->
+        <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
+        <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
+        <node name="robot_state_node" pkg="autonomy" type="robot_state.py" output="screen"/>
 
         <node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/>
 	    <node name="visualizer_node" pkg="autonomy" type="visualizer.py"/>
