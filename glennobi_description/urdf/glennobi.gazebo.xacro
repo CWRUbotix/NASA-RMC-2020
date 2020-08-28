@@ -5,8 +5,8 @@
 	<xacro:macro name="wheel_gazebo" params="prefix">
 		<gazebo reference="${prefix}_wheel_link">
 			<material>Gazebo/Grey</material>
-			<mu1>4</mu1>
-			<mu2>4</mu2>
+			<mu1>3</mu1>
+			<mu2>3</mu2>
 		</gazebo>
 	</xacro:macro>
 	
