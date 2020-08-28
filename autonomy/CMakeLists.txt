@@ -15,6 +15,5 @@ CATKIN_DEPENDS rospy std_msgs
 )
 
 include_directories(
-# include
   ${catkin_INCLUDE_DIRS}
 )
