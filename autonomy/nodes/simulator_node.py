@@ -5,7 +5,7 @@ from hwctrl.msg import MotorData, SetMotorMsg
 from nav_msgs.msg import Odometry, OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseWithCovariance, Pose, Point, Quaternion, Twist, TwistWithCovariance
-from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
+from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 

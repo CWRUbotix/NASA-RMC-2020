@@ -1,6 +1,6 @@
 import numpy as np
-from PathPlanning.ThetaStar import create_path, checkBlocked
-from PathPlanning.PathPlanningUtils import Position, constrain_angle
+from autonomy.path_planning.theta_star import create_path, checkBlocked
+from autonomy.path_planning.path_planning_utils import Position, constrain_angle
 
 
 class PathFollower:

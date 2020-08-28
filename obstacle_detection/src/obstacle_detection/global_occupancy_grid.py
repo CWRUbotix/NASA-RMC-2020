@@ -210,13 +210,3 @@ class GlobalOccupancyGrid:
 
                 fig.savefig('%s/%d' % (self.viz_dir, len(os.listdir(self.viz_dir))))
                 plt.close()
-
-
-if __name__ == '__main__':
-    try:
-        global_grid = GlobalOccupancyGrid()
-        rospy.Subscriber(global_grid.local_grid_topic, OccupancyGrid, global_grid.local_grid_callback, queue_size=1)
-        rospy.Subscriber(global_grid.localization_topic, Odometry, global_grid.localization_listener, queue_size=1)
-        rospy.spin()
-    except rospy.exceptions.ROSInterruptException:
-        pass

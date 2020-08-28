@@ -14,7 +14,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from hwctrl.msg import UwbData
-from triangulation import UltraWideBandNode
+from uwb_localization.triangulation import UltraWideBandNode
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import Quaternion, PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point

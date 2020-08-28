@@ -6,8 +6,8 @@ from hwctrl.msg import SetMotorMsg
 from glenn_msgs.msg import GoToGoalAction, TransitPath, TransitControlData
 from glenn_msgs.srv import RobotState
 from PathFollowing.PathFollower import PathFollower
-from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
-from PathPlanning.PathPlanningUtils import Position, Grid
+from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
+from autonomy.path_planning.path_planning_utils import Position, Grid
 import PathFollowing.config as config
 import numpy as np
 import matplotlib
