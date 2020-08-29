@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<robot name="glennobi" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+	<xacro:include filename="$(find glennobi_description)/urdf/glennobi.gazebo.xacro"/>
+	<xacro:include filename="$(find glennobi_description)/urdf/glennobi.transmission.xacro"/>
+
+
+	<xacro:property name="bodylength" value="1.3"/>
+	<xacro:property name="bodywidth" value="0.43"/>
+	<xacro:property name="bodyheight" value="0.35"/>
+	<xacro:property name="wheelradius" value="0.232"/>
+	<xacro:property name="wheelwidth" value="0.12"/>
+	<xacro:property name="wheelsepx" value="0.28"/>
+	<xacro:property name="wheelsepy" value="0.4"/>
+	<xacro:property name="wheeloffsetx" value="0.13"/>
+	<xacro:property name="bodyx" value="0.51"/>
+	<xacro:property name="bodyz" value="-0.05"/>
+
+	
+	 <xacro:macro name="default_inertial" params="mass">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
+    </inertial>
+  </xacro:macro>
+	
+	<xacro:macro name="wheel" params="prefix side reflect">
+		<link name="${prefix}_wheel_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+				<geometry>
+					<cylinder radius="${wheelradius}" length="${wheelwidth}"/>
+				</geometry>
+			</visual>
+			<collision>
+				<!-- cylinder origin different than mesh origin -->
+				<origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+				<geometry>
+					<cylinder radius="${wheelradius}" length="${wheelwidth}"/>
+				</geometry>
+			</collision>
+			<inertial>
+				<mass value="1.6"/>
+				<inertia ixx="0.035" ixy="0.0" ixz="0.0" iyy="0.035" iyz="0.0" izz="0.06" />
+			</inertial>
+		</link>
+		
+		<!-- set gazebo wheel properties -->
+		<xacro:wheel_gazebo prefix="${prefix}"/>
+
+		<joint name="${prefix}_wheel_joint" type="continuous">
+			<parent link="base_link"/>
+			<child link="${prefix}_wheel_link"/>
+			<origin xyz="${side*wheelsepx + wheeloffsetx} ${reflect*(wheelsepy/2 + wheelwidth/2)} 0"/>
+			<axis xyz="0 1 0"/>
+			<dynamics damping="0.8" friction="2.0"/>
+		</joint>
+		
+		<!-- set wheel transmission properties -->
+		<xacro:wheel_transmission prefix="${prefix}"/>
+		
+	</xacro:macro>
+	
+	<link name="base_link">
+		<visual>
+			<origin xyz="${bodyx} 0 ${bodyz}" rpy="${pi/2} 0 ${pi/2}"/>
+			<geometry>
+					<mesh filename="package://glennobi_description/meshes/chassis.dae"/>
+			</geometry>
+		</visual>
+		<collision>
+			<origin xyz="${bodyx} 0 ${bodyz}" rpy="${pi/2} 0 ${pi/2}"/>
+			<geometry>
+				<mesh filename="package://glennobi_description/meshes/chassis.dae"/>
+				<!-- box size="${bodylength} ${bodywidth} ${bodyheight}"/-->
+			</geometry>
+		</collision>
+		<inertial>
+			<mass value="16"/>
+			<inertia ixx="4.5" ixy="0.0" ixz="0.0" iyy="4.5" iyz="0.0" izz="0.8" />
+		</inertial>
+	</link>
+	
+	<xacro:wheel prefix="front_right" side="1" reflect="-1"/>
+	<xacro:wheel prefix="front_left" side="1" reflect="1"/>
+	<xacro:wheel prefix="back_right" side="-1" reflect="-1"/>
+	<xacro:wheel prefix="back_left" side="-1" reflect="1"/>
+	
+	<link name="realsense_link">
+		<visual>
+			<geometry>
+				<box size="0.1 0.025 0.015"/>
+			</geometry>
+		</visual>
+	</link>
+	
+	<joint name="realsense_joint" type="fixed">
+		<parent link="base_link"/>
+		<child link="realsense_link"/>
+		<!-- transform from base_link with additional 20 degree tilt down -->
+		<origin xyz="-0.57 0 0.33" rpy="${-(20+90)*pi/180} 0 ${pi/2}"/>
+	</joint>
+
+</robot>

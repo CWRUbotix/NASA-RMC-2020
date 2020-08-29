@@ -2,9 +2,9 @@
 
 import os
 import sys
-sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')  # Fix cv2 import error
+sys.path.remove('/opt/ros/melodic/lib/python2.7/dist-packages')  # Fix cv2 import error
 import cv2  # TODO Dumb fix please fix
-sys.path.append('/opt/ros/kinetic/lib/python2.7/dist-packages')  # Fix cv2 import error
+sys.path.append('/opt/ros/melodic/lib/python2.7/dist-packages')  # Fix cv2 import error
 
 import glob
 
@@ -42,16 +42,16 @@ class GlobalOccupancyGrid:
         self.arena_width = rospy.get_param('arena_x')
         self.resolution = rospy.get_param('obstacle_detection/grid_resolution')
         self.camera_offset = [rospy.get_param('obstacle_detection/realsense/x'),
-                              rospy.get_param('obstacle_detection/realsense/y'), rospy.get_param('obstacle_detection/realsense/yaw')]
+                              rospy.get_param('obstacle_detection/realsense/y'),
+                              rospy.get_param('obstacle_detection/realsense/yaw')]
         self.global_grid_shape = (int(self.arena_length / self.resolution), int(self.arena_width / self.resolution))
         self.global_grid = np.zeros(self.global_grid_shape)
         self.global_counts = np.zeros_like(self.global_grid)  # keeps track of number of measurements for each cell
         self.global_totals = np.zeros_like(self.global_grid)  # keeps track of sum of measurements for each cell
-        self.localization_topic = rospy.get_param('localization_name')
-        self.local_grid_topic = 'local_occupancy_grid'
+        
         self.viz_dir = 'global_map/'
         self.data_dir = 'occupancy_grid_data/'
-
+        
         os.makedirs(self.viz_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.data_dir + 'localization', exist_ok=True)
@@ -59,6 +59,9 @@ class GlobalOccupancyGrid:
         self.clear_dir(self.viz_dir)
         self.clear_dir(self.data_dir)
         self.clear_dir(self.data_dir + 'localization')
+
+        rospy.Subscriber("local_occupancy_grid", OccupancyGrid, global_grid.local_grid_callback, queue_size=1)
+        rospy.Subscriber("/odometry/filtered_map", Odometry, global_grid.localization_listener, queue_size=1)
 
     @staticmethod
     def clear_dir(dir_name):
@@ -210,3 +213,5 @@ class GlobalOccupancyGrid:
 
                 fig.savefig('%s/%d' % (self.viz_dir, len(os.listdir(self.viz_dir))))
                 plt.close()
+        else:
+            print("No localization data, can not form global grid")
