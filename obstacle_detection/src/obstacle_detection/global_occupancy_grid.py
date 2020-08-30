@@ -51,7 +51,7 @@ class GlobalOccupancyGrid:
         
         self.viz_dir = 'global_map/'
         self.data_dir = 'occupancy_grid_data/'
-        
+
         os.makedirs(self.viz_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.data_dir + 'localization', exist_ok=True)
