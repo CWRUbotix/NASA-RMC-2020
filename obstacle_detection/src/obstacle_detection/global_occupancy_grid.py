@@ -60,8 +60,8 @@ class GlobalOccupancyGrid:
         self.clear_dir(self.data_dir)
         self.clear_dir(self.data_dir + 'localization')
 
-        rospy.Subscriber("local_occupancy_grid", OccupancyGrid, global_grid.local_grid_callback, queue_size=1)
-        rospy.Subscriber("/odometry/filtered_map", Odometry, global_grid.localization_listener, queue_size=1)
+        rospy.Subscriber("local_occupancy_grid", OccupancyGrid, self.local_grid_callback, queue_size=1)
+        rospy.Subscriber("/odometry/filtered_map", Odometry, self.localization_listener, queue_size=1)
 
     @staticmethod
     def clear_dir(dir_name):
