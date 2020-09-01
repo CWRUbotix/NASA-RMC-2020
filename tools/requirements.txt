@@ -1,3 +1,4 @@
+# Install with `pip3 install -r requirements.txt`
 rospkg
 catkin_pkg
 matplotlib
