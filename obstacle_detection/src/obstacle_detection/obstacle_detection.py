@@ -21,7 +21,6 @@ import time
 
 
 class ObstacleDetectionNode:
-
     def __init__(self):
         self.h, self.w = rospy.get_param('obstacle_detection/realsense/img_h'), \
                          rospy.get_param('obstacle_detection/realsense/img_w')  # realsense depth image size
@@ -275,10 +274,3 @@ class ObstacleDetectionNode:
         shape = (new_shape[0], arr.shape[0] // new_shape[0],
                  new_shape[1], arr.shape[1] // new_shape[1])
         return func(func(arr.reshape(shape), axis=-1), axis=1)
-
-
-if __name__ == '__main__':
-    try:
-        obstacle_detection = ObstacleDetectionNode()
-    except rospy.exceptions.ROSInterruptException:
-        pass

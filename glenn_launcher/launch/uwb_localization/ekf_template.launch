@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-  <node pkg="uwb_localization" type="imu_listener.py" name="imu_node" cwd="node"/>
+  <node pkg="uwb_localization" type="imu_listener_node.py" name="imu_node" cwd="node"/>
 
-  <node pkg="uwb_localization" type="localization_listener.py" name="uwb_node" cwd="node"/>
+  <node pkg="uwb_localization" type="localization_listener_node.py" name="uwb_node" cwd="node"/>
 
-  <node pkg="uwb_localization" type="kalman_filter_listener.py" name="kalman_filter_node" output="screen" cwd="node"/>
+  <node pkg="uwb_localization" type="kalman_filter_listener_node.py" name="kalman_filter_node" output="screen" cwd="node"/>
 
   <rosparam command="load" file="$(find glenn_launcher)/params/uwb_localization/ekf_dual.yaml" />
 

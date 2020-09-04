@@ -1,5 +1,5 @@
 import numpy as np
-from PathFollowing.FuzzyLogic import FuzzyLogic, FuzzySet
+from autonomy.path_following.fuzzy_logic import FuzzyLogic, FuzzySet
 
 s_set = [[1e99, -0.4, 0.2], [0.2, -0.2, 0.2], [0.2, 0, 0.2], [0.2, 0.2, 0.2], [0.2, 0.4, 1e99]]
 s_dot_set = s_set

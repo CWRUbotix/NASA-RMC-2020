@@ -1,8 +1,8 @@
 from graphics import *
 from collections import deque
-from PathPlanningUtils import Position, Grid
-from PathFollower import PathFollower
-from SkidSteerSimulator import SkidSteerSimulator
+from autonomy.path_planning.path_planning_utils import Position, Grid
+from autonomy.path_following.path_follower import PathFollower
+from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
 from numpy import sign
 
 

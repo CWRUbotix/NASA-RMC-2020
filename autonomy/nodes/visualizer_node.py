@@ -5,7 +5,7 @@ from glenn_msgs.msg import TransitPath, TransitControlData
 from nav_msgs.msg import Odometry, OccupancyGrid
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from scipy.spatial.transform import Rotation as R
-from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
+from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation

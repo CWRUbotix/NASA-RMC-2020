@@ -7,6 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
 )
 
+catkin_python_setup()
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES autonomy
@@ -15,6 +17,5 @@ CATKIN_DEPENDS rospy std_msgs
 )
 
 include_directories(
-# include
   ${catkin_INCLUDE_DIRS}
 )

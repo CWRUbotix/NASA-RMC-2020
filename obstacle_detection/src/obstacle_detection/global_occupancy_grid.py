@@ -42,12 +42,13 @@ class GlobalOccupancyGrid:
         self.arena_width = rospy.get_param('arena_x')
         self.resolution = rospy.get_param('obstacle_detection/grid_resolution')
         self.camera_offset = [rospy.get_param('obstacle_detection/realsense/x'),
-                              rospy.get_param('obstacle_detection/realsense/y'), rospy.get_param('obstacle_detection/realsense/yaw')]
+                              rospy.get_param('obstacle_detection/realsense/y'),
+                              rospy.get_param('obstacle_detection/realsense/yaw')]
         self.global_grid_shape = (int(self.arena_length / self.resolution), int(self.arena_width / self.resolution))
         self.global_grid = np.zeros(self.global_grid_shape)
         self.global_counts = np.zeros_like(self.global_grid)  # keeps track of number of measurements for each cell
         self.global_totals = np.zeros_like(self.global_grid)  # keeps track of sum of measurements for each cell
-        self.local_grid_topic = 'local_occupancy_grid'
+        
         self.viz_dir = 'global_map/'
         self.data_dir = 'occupancy_grid_data/'
 
@@ -58,6 +59,9 @@ class GlobalOccupancyGrid:
         self.clear_dir(self.viz_dir)
         self.clear_dir(self.data_dir)
         self.clear_dir(self.data_dir + 'localization')
+
+        rospy.Subscriber("local_occupancy_grid", OccupancyGrid, self.local_grid_callback, queue_size=1)
+        rospy.Subscriber("/odometry/filtered_map", Odometry, self.localization_listener, queue_size=1)
 
     @staticmethod
     def clear_dir(dir_name):
@@ -211,13 +215,3 @@ class GlobalOccupancyGrid:
                 plt.close()
         else:
             print("No localization data, can not form global grid")
-
-
-if __name__ == '__main__':
-    try:
-        global_grid = GlobalOccupancyGrid()
-        rospy.Subscriber(global_grid.local_grid_topic, OccupancyGrid, global_grid.local_grid_callback, queue_size=1)
-        rospy.Subscriber("/odometry/filtered_map", Odometry, global_grid.localization_listener, queue_size=1)
-        rospy.spin()
-    except rospy.exceptions.ROSInterruptException:
-        pass

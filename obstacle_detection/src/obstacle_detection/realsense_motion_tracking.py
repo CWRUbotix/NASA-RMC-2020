@@ -139,11 +139,3 @@ class RealSenseIMU:
                 self.fig.canvas.blit(self.ax.bbox)
                 plt.draw()
                 plt.show(block=False)
-
-
-if __name__ == '__main__':
-    try:
-        imu_node = RealSenseIMU()
-        print('Listening for frames...')
-    except rospy.exceptions.ROSInterruptException:
-        pass

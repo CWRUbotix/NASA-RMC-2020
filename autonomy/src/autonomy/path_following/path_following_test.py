@@ -1,6 +1,6 @@
-from SkidSteerSimulator import SkidSteerSimulator
-from PathFollower import PathFollower
-from PathPlanningUtils import Grid
+from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
+from autonomy.path_following.path_follower import PathFollower
+from autonomy.path_planning.path_planning_utils import Grid
 import matplotlib.pyplot as plt
 import numpy as np
 import os

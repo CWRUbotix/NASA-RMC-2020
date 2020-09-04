@@ -5,12 +5,10 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   geometry_msgs
-  message_generation
 )
 
 catkin_python_setup()
 
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
 )

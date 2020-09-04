@@ -5,10 +5,11 @@ from scipy.spatial.transform import Rotation as R
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, OccupancyGrid
 from glenn_msgs.msg import GoToGoalAction, TransitPath, TransitControlData
-from PathFollowing.PathFollower import PathFollower
-from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
-from PathPlanning.PathPlanningUtils import Position, Grid
-import PathFollowing.config as config
+from glenn_msgs.srv import RobotState
+from autonomy.path_following.path_follower import PathFollower
+from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
+from autonomy.path_planning.path_planning_utils import Position, Grid
+import autonomy.path_following.config as config
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
