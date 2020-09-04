@@ -3,8 +3,8 @@ import rospy
 import actionlib
 from scipy.spatial.transform import Rotation as R
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry, OccupancyGrid
 from glenn_msgs.msg import GoToGoalAction, TransitPath, TransitControlData
-from glenn_msgs.srv import RobotState
 from PathFollowing.PathFollower import PathFollower
 from PathFollowing.SkidSteerSimulator import SkidSteerSimulator
 from PathPlanning.PathPlanningUtils import Position, Grid
@@ -61,7 +61,8 @@ class TransitNode:
         self.control_data_pub = rospy.Publisher("transit_control_data", TransitControlData, queue_size=4)
         self.controller = PathFollower(reference_point_x, goal=(0, 0), config=config)
         self.robot_state = dict(state=np.array([[0, 0, 0]]).T, state_dot=np.array([[0, 0, 0]]).T)
-        self.controller.update_grid(Grid(ARENA_WIDTH, ARENA_HEIGHT))
+        self.grid = Grid(ARENA_WIDTH, ARENA_HEIGHT)
+        self.controller.update_grid(self.grid)
 
         self.state = State.FOLLOWING
 
@@ -75,6 +76,7 @@ class TransitNode:
         self.ang_vels = []
         self.target_wheel_speeds = []
         self.wheel_speeds = []
+        self.encoder_values = [0, 0]
 
         print("Creating directory: " + os.path.abspath(self.viz_dir))
         os.makedirs(self.viz_dir, exist_ok=True)
@@ -85,10 +87,6 @@ class TransitNode:
         except Exception as e:
             print(e)
 
-        rospy.loginfo("Waiting for services...")
-        rospy.wait_for_service('robot_state')
-        self.get_robot_state = rospy.ServiceProxy('robot_state', RobotState)
-        rospy.loginfo("Services acquired")
         self.server.start()
         self.subscribe()
         rospy.on_shutdown(self.shutdown)
@@ -97,11 +95,6 @@ class TransitNode:
     def go_to_goal(self, goal_msg):
         goal = Position(goal_msg.x, goal_msg.y)
         rospy.loginfo("Received ({}, {})".format(goal.x, goal.y))
-
-        msg = self.get_robot_state()
-
-        self.receive_state(msg.odometry)
-        self.receive_grid(msg.grid)
 
         self.state = State.FOLLOWING
         self.controller.reset()
@@ -119,9 +112,6 @@ class TransitNode:
         last_time = rospy.get_time()
         last_pause_time = 0
         while not self.controller.done and not self.state == State.PREEMPTED:
-            msg = self.get_robot_state()
-            self.receive_state(msg.odometry)
-
             time = rospy.get_time()
 
             vel, angular_vel = 0, 0
@@ -130,7 +120,7 @@ class TransitNode:
                 self.state = State.PREEMPTED
 
             if self.step % int(0.5 * rate) == 0 and self.state != State.PREEMPTED:  # Every half second
-                self.receive_grid(msg.grid)
+                self.controller.update_grid(self.grid)
                 if self.controller.is_path_blocked() and self.state == State.FOLLOWING:
                     self.state = State.BLOCKED_PAUSE
                     rospy.loginfo("Path blocked, regenerating")
@@ -163,7 +153,7 @@ class TransitNode:
             self.vels.append(self.robot_state["state_dot"][0, 0])
             self.ang_vels.append(self.robot_state["state_dot"][2, 0])
             self.target_wheel_speeds.append([right_speed, left_speed])
-            self.wheel_speeds.append([msg.sensors.starboard_drive_encoder, msg.sensors.port_drive_encoder])
+            self.wheel_speeds.append(self.encoder_values)
 
             self.publish_command_vel(vel, angular_vel)
             self.publish_control_data()
@@ -190,13 +180,17 @@ class TransitNode:
 
     def receive_grid(self, msg):
         if msg.header.frame_id:  # Verify that the grid was received by checking non-empty
-            grid = Grid(ARENA_WIDTH, ARENA_HEIGHT, occupancies=msg)  # Create a grid and add the obstacles to it
-            self.controller.update_grid(grid)
+            self.grid = Grid(ARENA_WIDTH, ARENA_HEIGHT, occupancies=msg)  # Create a grid and add the obstacles to it
+
+    def recieve_motor_data(self, msg):
+        if msg.id == 0 and msg.data_type == 0:  # port message and RPM value
+            self.encoder_values[1] = msg.value
+        if msg.id == 1 and msg.data_type == 0:  # starboard message and RPM value
+            self.encoder_values[0] = msg.value
 
     def subscribe(self):
-        # rospy.Subscriber("robot_state", robotState, self.receive_state)
-        # rospy.Subscriber("occupancy_grid", OccupancyGrid, self.receive_grid)
-        pass
+        rospy.Subscriber("odometry/filtered_map", Odometry, self.receive_state)
+        rospy.Subscriber("global_occupancy_grid", OccupancyGrid, self.receive_grid)
 
     def publish_path(self):
         path = self.controller.get_path()

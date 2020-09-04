@@ -1,6 +1,0 @@
-# service providing up to date robot state
----
-time stamp
-nav_msgs/Odometry odometry
-nav_msgs/OccupancyGrid grid
-glenn_msgs/ExtraSensorValues sensors
