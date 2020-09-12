@@ -1,0 +1,27 @@
+topics: [
+  "/accel/filtered",
+  "/diagnostics",
+  "/glennobi_diff_drive_controller/cmd_vel",
+  "/global_occupancy_grid",
+  "/go_to_goal/cancel",
+  "/go_to_goal/feedback",
+  "/go_to_goal/goal",
+  "/go_to_goal/result",
+  "/go_to_goal/status",
+  "/imu",
+  "/local_occupancy_grid",
+  "/motor_data",
+  "/motor_setpoints",
+  "/odometry/filtered_map",
+  "/realsense_imu_filtered",
+  "/rosout",
+  "/sensor_value",
+  "/tf",
+  "/tf_static",
+  "/transit_control_data",
+  "/transit_path",
+  "/uwb_nodes",
+  "/wheel"
+]
+
+#/realsense/depth/points # too much data?
