@@ -12,6 +12,5 @@
     <node name="transit_node" pkg="autonomy" type="transit_node.py" respawn="true" launch-prefix="xterm -e"/>
     <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
     <node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/>
-    <node name="robot_state_node" pkg="autonomy" type="robot_state_node.py" output="screen"/>
     <node name="visualizer_node" pkg="autonomy" type="visualizer.py"/>
 </launch>
