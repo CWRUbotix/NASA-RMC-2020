@@ -1,21 +1,18 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="gui" default="true"/>
-    <arg name="use_rviz" default="true"/>
+    <arg name="rviz" default="true"/>
     <arg name="use_steering" default="true"/>
     <arg name="model" default="$(find glennobi_description)/urdf/glennobi.urdf.xacro"/>
     <arg name="world_name" default="$(find glennobi_description)/gazebo/my_world.world"/>
     <arg name="verbose" default="false"/>
-
-
-    <arg name="rvizconfig" default="$(find glennobi_description)/rviz/config.rviz" />
 
     <rosparam command="load" file="$(find glennobi_description)/config/diff_drive.yaml"
               ns="glennobi_diff_drive_controller" />
     <rosparam command="load" file="$(find glennobi_description)/config/joints.yaml"
               ns="glennobi_joint_state_controller" />
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" if="$(arg use_rviz)"/>
+    <include file="$(find glenn_launcher)/launch/rviz/rviz.launch" if="$(arg rviz)"/>
 
     <include file="$(find glennobi_description)/launch/gazebo.launch">
         <arg name="gui" value="$(arg gui)"/>

@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="rviz_config" default="default"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find glenn_launcher)/params/rviz/$(arg rviz_config).rviz"/>
+</launch>
