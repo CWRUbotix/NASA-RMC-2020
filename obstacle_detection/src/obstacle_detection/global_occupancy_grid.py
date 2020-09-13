@@ -109,7 +109,7 @@ class GlobalOccupancyGrid:
 
     def local_grid_callback(self, msg):
         grid_size = msg.info.width
-        self.local_grid = np.reshape(msg.data, (grid_size, grid_size))
+        self.local_grid = np.flipud(np.reshape(msg.data, (grid_size, grid_size)))
 
         if self.has_localization_data():
             if self.save_data:
@@ -187,7 +187,7 @@ class GlobalOccupancyGrid:
             grid_msg = OccupancyGrid()
             grid_msg.header = header
             grid_msg.info = map_meta_data
-            grid_msg.data = list(np.int8(self.global_grid.flatten()))
+            grid_msg.data = list((np.int8(np.flipud(self.global_grid).flatten())))
 
             try:
                 pub = rospy.Publisher(rospy.get_param('obstacle_detection_name'), OccupancyGrid, queue_size=1)

@@ -39,6 +39,7 @@ class KalmanFilterNode:
         self.node_yaw = []
         self.viz_dir = 'robot_localization_viz'
         self.viz_step = 40
+        self.vizualize = False
 
         os.makedirs(self.viz_dir, exist_ok=True)
 
@@ -129,7 +130,7 @@ class KalmanFilterNode:
         self.robot_yaw.append(euler[2])  # rotation about vertical z-axis
         # print('X: %.4f \tY: %.4f \tyaw: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_yaw[-1]))
 
-        if len(self.robot_x) % self.viz_step == 0:
+        if len(self.robot_x) % self.viz_step == 0 and self.vizualize:
             fig, ax = plt.subplots(figsize=(6, 9))
             if len(self.unfiltered_x) > 0 and len(self.unfiltered_y) > 0:
                 length = len(self.unfiltered_x)

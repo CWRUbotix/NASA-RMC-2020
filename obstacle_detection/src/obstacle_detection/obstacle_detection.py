@@ -6,7 +6,7 @@ sys.path.remove('/opt/ros/melodic/lib/python2.7/dist-packages')  # Fix cv2 impor
 import cv2  # TODO Dumb fix please fix
 sys.path.append('/opt/ros/melodic/lib/python2.7/dist-packages')  # Fix cv2 import error
 import rospy
-import math
+from math import sqrt
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -27,7 +27,7 @@ class ObstacleDetectionNode:
         self.resolution = rospy.get_param('obstacle_detection/grid_resolution')  # meters per grid cell
         self.grid_size = rospy.get_param('obstacle_detection/grid_size')  # number of rows/cols grid cells
         self.tolerance = rospy.get_param('obstacle_detection/ground_tolerance')  # tolerance in meters above/below ground to ignore
-        self.save_imgs = True  # set to True to save local grid visualizations
+        self.save_imgs = False  # set to True to save local grid visualizations
         self.save_data = False  # set to True to save testing data
         self.localization_topic = rospy.get_param('localization_name')  # filtered global localization topic
         self.viz_dir = 'obstacle_viz/'  # directory to save visualizations
@@ -173,18 +173,19 @@ class ObstacleDetectionNode:
 
         # occupancy_grid = gaussian_filter(obs_grid, sigma=self.kernel_sigma)  # smooth local grid using gaussian kernel
         occupancy_grid = obs_grid / np.max(obs_grid)  # ensure values are 0-1
+        occupancy_grid = np.flipud(occupancy_grid)
 
         header = Header()
         header.stamp = rospy.Time.now()
-        header.frame_id = 'odom'  # local grid is in odom frame
+        header.frame_id = 'base_link'  # local grid is in base_link frame
 
         map_meta_data = MapMetaData()
-        map_meta_data.map_load_time = rospy.Time.now()
+        map_meta_data.map_load_time = header.stamp
         map_meta_data.resolution = self.resolution
         map_meta_data.width = self.grid_size
         map_meta_data.height = self.grid_size
-        map_meta_data.origin = Pose(Point(0, 0, 0),
-                                    Quaternion(0, 0, 0, 1))
+        map_meta_data.origin = Pose(Point(self.CameraPosition['x'], -self.grid_size * self.resolution / 2, 0),
+                                    Quaternion(0, 0, sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
 
         grid_msg = OccupancyGrid()
         grid_msg.header = header
