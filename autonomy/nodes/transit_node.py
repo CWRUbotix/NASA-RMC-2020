@@ -2,9 +2,9 @@
 import rospy
 import actionlib
 from scipy.spatial.transform import Rotation as R
-from geometry_msgs.msg import Twist
-from nav_msgs.msg import Odometry, OccupancyGrid
-from glenn_msgs.msg import GoToGoalAction, TransitPath, TransitControlData
+from geometry_msgs.msg import Twist, PoseStamped
+from nav_msgs.msg import Odometry, OccupancyGrid, Path
+from glenn_msgs.msg import GoToGoalAction, TransitControlData
 from autonomy.path_following.path_follower import PathFollower
 from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
 from autonomy.path_planning.path_planning_utils import Position, Grid
@@ -57,7 +57,7 @@ class TransitNode:
         self.server = actionlib.SimpleActionServer('go_to_goal', GoToGoalAction, self.go_to_goal, auto_start=False)
 
         self.command_vel_pub = rospy.Publisher("/glennobi_diff_drive_controller/cmd_vel", Twist, queue_size=4)
-        self.path_pub = rospy.Publisher("transit_path", TransitPath, queue_size=4)
+        self.path_pub = rospy.Publisher("transit_path", Path, queue_size=4)
         self.control_data_pub = rospy.Publisher("transit_control_data", TransitControlData, queue_size=4)
         self.controller = PathFollower(reference_point_x, goal=(0, 0), config=config)
         self.robot_state = dict(state=np.array([[0, 0, 0]]).T, state_dot=np.array([[0, 0, 0]]).T)
@@ -194,7 +194,19 @@ class TransitNode:
 
     def publish_path(self):
         path = self.controller.get_path()
-        self.path_pub.publish(path=path.ravel())
+        path_msg = Path()
+        path_msg.header.stamp = rospy.Time.now()
+        path_msg.header.frame_id = "map"
+
+        for i, point in enumerate(path):
+            pose = PoseStamped()
+            pose.header.frame_id = "map"
+            pose.header.seq = i
+            pose.pose.position.x = point[0]
+            pose.pose.position.y = point[1]
+            path_msg.poses.append(pose)
+
+        self.path_pub.publish(path_msg)
 
     def publish_control_data(self):
         followed_segment, closest_point, reference_point = self.controller.draw_path_info()

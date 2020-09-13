@@ -5,7 +5,7 @@ grid_size: 30 # (cells) width and height of local occupancy grid
 
 # realsense params
 realsense/z: 0.56  # (m) height of the realsense from the ground
-realsense/x: -0.41  # (m) x offset of realsense from center of robot
+realsense/x: -0.57  # (m) x offset of realsense from center of robot
 realsense/y: 0  # (m) y offset of realsense from center of robot
 realsense/yaw: 90  # (degrees) angle from robot coordinate to camera coordinate system
 realsense/img_h: 640  # (px) height of realsense depth image

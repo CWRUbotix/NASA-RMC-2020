@@ -126,7 +126,7 @@ class Grid(object):
                 if occupancies:
                     x = occupancies.info.origin.position.x
                     y = occupancies.info.origin.position.y
-                    prob = occupancies.data[(self.num_rows - i - 1) * self.num_cols + j] / 100
+                    prob = occupancies.data[i * self.num_cols + j] / 100
                 vertex = Vertex(x + (j + 0.5) * grid_width, y + (i + 0.5) * grid_width, i, j, prob_blocked=prob)
                 row.append(vertex)
             self.vertices.append(row)
