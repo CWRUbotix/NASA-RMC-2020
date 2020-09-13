@@ -127,7 +127,7 @@ class KalmanFilterNode:
         quat = pose.orientation
         euler = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
         self.robot_yaw.append(euler[2])  # rotation about vertical z-axis
-        print('X: %.4f \tY: %.4f \tyaw: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_yaw[-1]))
+        # print('X: %.4f \tY: %.4f \tyaw: %.4f' % (self.robot_x[-1], self.robot_y[-1], self.robot_yaw[-1]))
 
         if len(self.robot_x) % self.viz_step == 0:
             fig, ax = plt.subplots(figsize=(6, 9))

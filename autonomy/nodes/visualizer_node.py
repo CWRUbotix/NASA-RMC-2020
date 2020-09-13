@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import rospy
-from glenn_msgs.msg import TransitPath, TransitControlData
-from nav_msgs.msg import Odometry, OccupancyGrid
+from glenn_msgs.msg import TransitControlData
+from nav_msgs.msg import Odometry, OccupancyGrid, Path
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from scipy.spatial.transform import Rotation as R
 from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
@@ -45,7 +45,7 @@ class Visualizer:
     def subscribe(self):
         rospy.Subscriber("odometry/filtered_map", Odometry, self.receiveOdometry, queue_size=1)
         rospy.Subscriber("uwb_nodes", PoseWithCovarianceStamped, self.recieveUwb, queue_size=1)
-        rospy.Subscriber("transit_path", TransitPath, self.receivePath, queue_size=1)
+        rospy.Subscriber("transit_path", Path, self.receivePath, queue_size=1)
         rospy.Subscriber("transit_control_data", TransitControlData, self.receiveControlData, queue_size=1)
         rospy.Subscriber("global_occupancy_grid", OccupancyGrid, self.recieveOccupancyGrid, queue_size=1)
 
@@ -60,7 +60,9 @@ class Visualizer:
         self.uwb_pose = [pose.position.x, pose.position.y]
 
     def receivePath(self, msg):
-        self.path = np.array(list(msg.path)).reshape((-1, 2))
+        self.path = np.empty((0, 2))
+        for pose in msg.poses:
+            self.path = np.concatenate((self.path, [[pose.pose.position.x, pose.pose.position.y]]))
 
     def receiveControlData(self, msg):
         self.target_vels.append(msg.t_vel)
