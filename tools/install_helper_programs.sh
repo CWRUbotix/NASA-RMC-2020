@@ -3,6 +3,9 @@
 set -e # Exit if any command fails
 
 PACKAGES=(
+    #Allows Use of catkin Build and other catkin tools
+    python-catkin-tools
+
     # Tells you cpu temps (run `sensors`)
     lm-sensors
 
