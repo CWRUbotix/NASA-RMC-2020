@@ -6,6 +6,9 @@ PACKAGES=(
     # Allows use of catkin build and other catkin tools
     python-catkin-tools
 
+    # Pip
+    python3-pip
+
     # Tells you cpu temps (run `sensors`)
     lm-sensors
 
