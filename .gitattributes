@@ -1,2 +1,4 @@
 # normalizes all text based files to use lf line endings
-*text=auto
+#*text=auto
+
+*.sh text
