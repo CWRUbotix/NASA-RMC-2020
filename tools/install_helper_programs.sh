@@ -15,13 +15,12 @@ PACKAGES=(
     # Cool cpu usage monitor
     htop
 
-    # Display for Gazebo
+    # Terminal for automodule
     xterm
 )
 
 sudo apt update # Make sure package list is up to date
 sudo apt install ${PACKAGES[@]} # Install all packages
 
- pip3 install --user --upgrade pip # Updates Pip
- pip3 install -r requirements.txt # Installs require python packages
-
+pip3 install --user --upgrade pip # Updates Pip
+pip3 install -r requirements.txt # Installs required python packages
