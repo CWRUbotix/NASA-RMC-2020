@@ -14,6 +14,9 @@ PACKAGES=(
 
     # Cool cpu usage monitor
     htop
+
+    # Display for Gazebo
+    xterm
 )
 
 sudo apt update # Make sure package list is up to date

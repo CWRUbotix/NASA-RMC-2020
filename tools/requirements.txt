@@ -7,3 +7,6 @@ pandas
 localization
 scipy
 filterpy
+shapely
+scikit-build
+opencv-python 
