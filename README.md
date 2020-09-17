@@ -7,7 +7,7 @@ Taken from http://wiki.ros.org/ROS/Patterns/Conventions
 
 ### Naming
 
-In general all names should be descriptive. The following are examples of the casing for different names. 
+In general all names should be descriptive. The following are examples of the casing for different names.
 
 * Package names: package_name
 * Topics/Services: topic_or_service_name
@@ -33,10 +33,4 @@ See https://wiki.ros.org/ROS/Patterns/Communication#Communication_via_Topics_vs_
 ## CWRUbotix Custom Conventions
 
 * Python ROS nodes should be implemented as classes
-  * They should have a subscribe method that subscribes to all topics
-  * Anything being published should have its own publish function that encapsulates the code to convert data to ROS msg types
-
-
-
-
-
+  * Anything being published could have its own publish function that encapsulates the code to convert data to ROS msg types
