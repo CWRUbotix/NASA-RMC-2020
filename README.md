@@ -7,7 +7,7 @@ Taken from http://wiki.ros.org/ROS/Patterns/Conventions
 
 ### Naming
 
-In general all names should be descriptive. The following are examples of the casing for differnt names. 
+In general all names should be descriptive. The following are examples of the casing for different names. 
 
 * Package names: package_name
 * Topics/Services: topic_or_service_name
