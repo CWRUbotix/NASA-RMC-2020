@@ -39,12 +39,13 @@ class ObstacleDetectionNode:
         self.grid_pub = rospy.Publisher('local_occupancy_grid', OccupancyGrid, queue_size=1)
 
         # RealSense physical orientation in the real world.
+        self.camera_x_offset = rospy.get_param('obstacle_detection/realsense/x')
         self.CameraPosition = {
-            "x": rospy.get_param('obstacle_detection/realsense/x'),  # actual position in meters of RealSense sensor relative to the viewport's center.
-            "y": rospy.get_param('obstacle_detection/realsense/y'),  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "x": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "y": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
             "z": rospy.get_param('obstacle_detection/realsense/z'),  # height in meters of actual RealSense sensor from the floor.
             "roll": 0,  # sensor's roll angle in degrees (these values are with respect to a fixed frame)
-            "pitch": -20,  # sensor's pitch angle in degrees.
+            "pitch": 20,  # sensor's pitch angle in degrees.
             "yaw": 0,  # sensor's yaw angle in degrees.
         }
 
@@ -68,7 +69,7 @@ class ObstacleDetectionNode:
         rospy.spin()
 
     def subscribe(self):
-        rospy.Subscriber('realsense_imu_filtered', Imu, self.realsense_callback)
+        rospy.Subscriber('imu_realsense/data_raw', Imu, self.realsense_callback)
         rospy.Subscriber('realsense/depth/points', PointCloud2, self.receive_point_cloud, buff_size=9830400, queue_size=1)
 
     def clear_dir(self, dir_name):
@@ -89,9 +90,9 @@ class ObstacleDetectionNode:
     def realsense_callback(self, msg):
         quat = msg.orientation
         euler_angles = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-        print(euler_angles * 57.296)
-        self.CameraPosition['roll'] = -(euler_angles[0]) * 57.296
-        self.CameraPosition['pitch'] = (euler_angles[1]) * 57.296
+        # self.CameraPosition['roll'] = -(euler_angles[0]) * 57.296 # TODO reenable when we figure out how to calculate orientation properly
+        # self.CameraPosition['pitch'] = (euler_angles[1]) * 57.296
+        # rospy.loginfo("Camera position pitch: " + str(self.CameraPosition['pitch']))
 
     def apply_camera_matrix_orientation(self, pt):
         """
@@ -184,7 +185,7 @@ class ObstacleDetectionNode:
         map_meta_data.resolution = self.resolution
         map_meta_data.width = self.grid_size
         map_meta_data.height = self.grid_size
-        map_meta_data.origin = Pose(Point(self.CameraPosition['x'], -self.grid_size * self.resolution / 2, 0),
+        map_meta_data.origin = Pose(Point(self.camera_x_offset, -self.grid_size * self.resolution / 2, 0),
                                     Quaternion(0, 0, sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
 
         grid_msg = OccupancyGrid()
