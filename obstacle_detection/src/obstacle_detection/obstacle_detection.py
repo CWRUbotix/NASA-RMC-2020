@@ -81,7 +81,6 @@ class ObstacleDetectionNode:
 
     def receive_point_cloud(self, msg):
         xyz = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)
-        print("recieved valid points: ", xyz.shape[0], time.time()-self.last_time)
         self.last_time = time.time()
         xyz = xyz[::11]  # decimate to save processing power
         self.detect_obstacles_from_above(xyz, None)

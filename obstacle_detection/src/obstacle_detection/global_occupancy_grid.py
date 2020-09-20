@@ -146,7 +146,7 @@ class GlobalOccupancyGrid:
             local_origin = [int(np.round(self.global_grid_shape[0] - local_origin[1] - rotated_grid.shape[0] / 2)),
                             int(np.round(local_origin[0] - rotated_grid.shape[1] / 2))]
 
-            print(local_origin)
+            # print(local_origin)
 
             counts = np.ones_like(rotated_grid)  # Count how many times each cell was measured
             counts[rotated_grid == -1] = -1
