@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 import rospy
 import smach
+import smach_ros
 
 
 class Calibrate(smach.State):
@@ -58,9 +59,14 @@ class RobotStateMachine():
         rospy.on_shutdown(self.shutdown)
 
         self.sm = self.construct_state_machine()
+
+        sis = smach_ros.IntrospectionServer('server_name', self.sm, '/SM_ROOT')
+        sis.start()
+
         self.outcome = self.sm.execute()
 
         rospy.spin()
+        sis.stop()
 
     def construct_state_machine(self):
         sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
