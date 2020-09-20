@@ -1,5 +1,5 @@
 type: "diff_drive_controller/DiffDriveController"
-publish_rate: 40 
+publish_rate: 30
 left_wheel: ['front_left_wheel_joint', 'back_left_wheel_joint']
 right_wheel: ['front_right_wheel_joint', 'back_right_wheel_joint']
 
