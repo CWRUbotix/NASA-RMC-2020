@@ -172,6 +172,8 @@ class GlobalOccupancyGrid:
             self.global_grid = ndimage.gaussian_filter(self.global_grid, sigma=1.5)
             self.global_grid[self.global_grid >= 50] = 100
 
+            self.global_grid[self.global_totals >= 50] = 150 + self.global_totals[self.global_totals >= 50]
+
             header = Header()
             header.stamp = rospy.Time.now()
             header.frame_id = 'map'
