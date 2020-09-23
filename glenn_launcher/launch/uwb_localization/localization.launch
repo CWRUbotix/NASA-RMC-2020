@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="sim" default="false"/>
+
+    <rosparam command="load" file="$(find glenn_launcher)/params/uwb_localization/ekf_map.yaml" />
+
+    <node pkg="uwb_localization" type="imu_listener_node.py" name="imu_node" cwd="node"/>
+    <node pkg="uwb_localization" type="localization_listener_node.py" name="uwb_node" cwd="node" unless="$(arg sim)"/>
+    <node pkg="uwb_localization" type="kalman_filter_listener_node.py" name="kalman_filter_node" output="screen" cwd="node"/>
+
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true">
+        <remap from="odometry/filtered" to="odometry/filtered_map"/>
+    </node>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="odom_broadcaster" args="0 0 0 0 0 0 1 odom base_link"/>
+
+</launch>
