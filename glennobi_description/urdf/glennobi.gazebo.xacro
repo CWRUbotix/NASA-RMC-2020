@@ -81,7 +81,7 @@
                 <updateRateHZ>100.0</updateRateHZ>
                 <gaussianNoise>0.01</gaussianNoise>
                 <xyzOffset>0 0 0</xyzOffset>
-                <rpyOffset>${-20*pi/180} 0 0</rpyOffset>
+                <rpyOffset>0 0 0</rpyOffset>
                 <frameName>realsense_link</frameName>
                 <initialOrientationAsReference>false</initialOrientationAsReference>
             </plugin>

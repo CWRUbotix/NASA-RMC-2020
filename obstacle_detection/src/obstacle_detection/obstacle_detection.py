@@ -44,8 +44,8 @@ class ObstacleDetectionNode:
             "x": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
             "y": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
             "z": rospy.get_param('obstacle_detection/realsense/z'),  # height in meters of actual RealSense sensor from the floor.
-            "roll": 0,  # sensor's roll angle in degrees (these values are with respect to a fixed frame)
-            "pitch": 20,  # sensor's pitch angle in degrees.
+            "roll": -20,  # sensor's roll angle in degrees (these values are with respect to a fixed frame)
+            "pitch": 0,  # sensor's pitch angle in degrees.
             "yaw": 0,  # sensor's yaw angle in degrees.
         }
 
@@ -69,7 +69,7 @@ class ObstacleDetectionNode:
         rospy.spin()
 
     def subscribe(self):
-        rospy.Subscriber('imu_realsense/data_raw', Imu, self.realsense_callback)
+        rospy.Subscriber('imu_realsense/data', Imu, self.realsense_callback)
         rospy.Subscriber('realsense/depth/points', PointCloud2, self.receive_point_cloud, buff_size=9830400, queue_size=1)
 
     def clear_dir(self, dir_name):
@@ -90,9 +90,9 @@ class ObstacleDetectionNode:
     def realsense_callback(self, msg):
         quat = msg.orientation
         euler_angles = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-        # self.CameraPosition['roll'] = -(euler_angles[0]) * 57.296 # TODO reenable when we figure out how to calculate orientation properly
-        # self.CameraPosition['pitch'] = (euler_angles[1]) * 57.296
-        # rospy.loginfo("Camera position pitch: " + str(self.CameraPosition['pitch']))
+        self.CameraPosition['roll'] = (euler_angles[0]) * 57.296 + 90
+        self.CameraPosition['pitch'] = (euler_angles[1]) * 57.296
+        # rospy.loginfo("Camera position: {:.1f}, {:.1f}".format(self.CameraPosition['roll'], self.CameraPosition['pitch']))
 
     def apply_camera_matrix_orientation(self, pt):
         """
@@ -116,9 +116,8 @@ class ObstacleDetectionNode:
             pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
             pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
 
-        rotatePoints(0, 2, self.CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
-        rotatePoints(1, 2, self.CameraPosition['pitch']) #rotate on the X&Z plane
-        #rotatePoints(0, 1, self.CameraPosition['azimuth']) #rotate on the X&Y
+        rotatePoints(1, 2, -self.CameraPosition['roll']) #rotate on the X&Z plane
+        rotatePoints(0, 2, self.CameraPosition['pitch']) #rotate on the Y&Z plane
 
         # Apply offsets for height and linear position of the sensor (from viewport's center)
         pt[:, 2] *= -1  # TODO: Is this still necessary?
