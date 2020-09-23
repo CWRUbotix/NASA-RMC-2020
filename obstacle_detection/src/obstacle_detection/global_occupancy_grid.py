@@ -41,10 +41,13 @@ class GlobalOccupancyGrid:
         self.arena_length = rospy.get_param('arena_y')
         self.arena_width = rospy.get_param('arena_x')
         self.resolution = rospy.get_param('obstacle_detection/grid_resolution')
+        self.map_buffer = int(math.ceil(rospy.get_param('obstacle_detection/map_buffer') / self.resolution))
         self.camera_offset = [rospy.get_param('obstacle_detection/realsense/x'),
                               rospy.get_param('obstacle_detection/realsense/y'),
                               rospy.get_param('obstacle_detection/realsense/yaw')]
-        self.global_grid_shape = (int(self.arena_length / self.resolution), int(self.arena_width / self.resolution))
+
+        self.global_grid_shape = (int(self.arena_length / self.resolution) + 2 * self.map_buffer,
+                                  int(self.arena_width / self.resolution) + 2 * self.map_buffer)
         self.global_grid = np.zeros(self.global_grid_shape)
         self.global_counts = np.zeros_like(self.global_grid)  # keeps track of number of measurements for each cell
         self.global_totals = np.zeros_like(self.global_grid)  # keeps track of sum of measurements for each cell
@@ -146,6 +149,9 @@ class GlobalOccupancyGrid:
             local_origin = [int(np.round(self.global_grid_shape[0] - local_origin[1] - rotated_grid.shape[0] / 2)),
                             int(np.round(local_origin[0] - rotated_grid.shape[1] / 2))]
 
+            # Account for map origin not being the 0,0 cell
+            local_origin = [local_origin[0] - self.map_buffer, local_origin[1] + self.map_buffer]
+
             # print(local_origin)
 
             counts = np.ones_like(rotated_grid)  # Count how many times each cell was measured
@@ -180,10 +186,10 @@ class GlobalOccupancyGrid:
 
             map_meta_data = MapMetaData()
             map_meta_data.map_load_time = rospy.Time.now()
-            map_meta_data.resolution = self.resolution  # each cell is 15cm
+            map_meta_data.resolution = self.resolution
             map_meta_data.width = self.global_grid_shape[1]
             map_meta_data.height = self.global_grid_shape[0]
-            map_meta_data.origin = Pose(Point(0, 0, 0),
+            map_meta_data.origin = Pose(Point(-self.map_buffer * self.resolution, -self.map_buffer * self.resolution, 0),
                                         Quaternion(0, 0, 0, 1))
 
             grid_msg = OccupancyGrid()
