@@ -13,5 +13,4 @@
     </node>
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="odom_broadcaster" args="0 0 0 0 0 0 1 odom base_link"/>
-
 </launch>
