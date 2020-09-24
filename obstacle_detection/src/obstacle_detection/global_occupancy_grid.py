@@ -198,7 +198,7 @@ class GlobalOccupancyGrid:
             grid_msg.data = list((np.int8(np.flipud(self.global_grid).flatten())))
 
             try:
-                pub = rospy.Publisher(rospy.get_param('obstacle_detection_name'), OccupancyGrid, queue_size=1)
+                pub = rospy.Publisher("global_occupancy_grid", OccupancyGrid, queue_size=1)
                 pub.publish(grid_msg)
             except rospy.ROSInterruptException as e:
                 print(e.getMessage())

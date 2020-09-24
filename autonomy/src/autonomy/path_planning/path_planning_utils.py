@@ -8,7 +8,6 @@ except:
 # Global Variables
 ERROR_BOUND = 0.05
 CLEARANCE = 0.3
-GRID_SIZE = 0.15
 
 
 # angle constrained to [-pi, pi]
@@ -102,7 +101,7 @@ class Vertex(Position):
 
 
 class Grid(object):
-    def __init__(self, width, height, grid_width=GRID_SIZE, occupancies=None):
+    def __init__(self, width, height, grid_width=0.15, occupancies=None):
         if occupancies:
             self.num_cols = occupancies.info.width
             self.num_rows = occupancies.info.height
@@ -129,7 +128,7 @@ class Grid(object):
                 prob, x, y = 0, 0, 0
                 if occupancies:
                     prob = occupancies.data[i * self.num_cols + j] / 100
-                vertex = Vertex(self.x + (j + 0.5) * grid_width, self.y + (i + 0.5) * grid_width, i, j, prob)
+                vertex = Vertex(self.x + (j + 0.5) * self.unit_width, self.y + (i + 0.5) * self.unit_height, i, j, prob)
                 row.append(vertex)
             self.vertices.append(row)
 
