@@ -1,7 +1,8 @@
 # Obstacle detection params
 ground_tolerance: 0.08  # (m) points within this tolerance of the ground plane are removed
 grid_resolution: 0.15 # (m / cell) resolution of local and global occupancy grid
-grid_size: 30 # (cells) width and height of local occupancy grid
+grid_size: 4 # (m) width and height of local occupancy grid
+map_buffer: 0.15 # (m) width/cells to be added to global map to catch obstacles near edge
 
 # realsense params
 realsense/z: 0.56  # (m) height of the realsense from the ground

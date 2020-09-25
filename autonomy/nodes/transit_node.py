@@ -4,7 +4,7 @@ import actionlib
 from scipy.spatial.transform import Rotation as R
 from geometry_msgs.msg import Twist, PoseStamped
 from nav_msgs.msg import Odometry, OccupancyGrid, Path
-from glenn_msgs.msg import GoToGoalAction, TransitControlData
+from glenn_msgs.msg import GoToGoalAction, GoToGoalResult, TransitControlData
 from autonomy.path_following.path_follower import PathFollower
 from autonomy.path_following.skid_steer_simulator import SkidSteerSimulator
 from autonomy.path_planning.path_planning_utils import Position, Grid
@@ -142,7 +142,8 @@ class TransitNode:
                 vel = 0
                 angular_vel = 0
                 rospy.loginfo("Preempt requested")
-                self.server.set_preempted()
+                result = GoToGoalResult(success=False)
+                self.server.set_preempted(result)
 
             # only used for target wheel speeds for now, not published directly
             right_speed = (vel + angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
@@ -164,7 +165,8 @@ class TransitNode:
             r.sleep()
 
         if self.state != State.PREEMPTED:
-            self.server.set_succeeded()
+            result = GoToGoalResult(success=True)
+            self.server.set_succeeded(result)
             rospy.loginfo("Path Complete")
 
     def receive_state(self, msg):

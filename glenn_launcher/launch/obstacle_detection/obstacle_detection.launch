@@ -6,9 +6,13 @@
     <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
 
     <!-- only run if not using simulator -->
-    <group if="$(arg on_robot)">
-        <node name="realsense_motion_tracking" pkg="obstacle_detection" type="realsense_motion_tracking_node.py" cwd="node"/>
-    </group>
+    <!-- <node name="realsense_motion_tracking" pkg="obstacle_detection" type="realsense_motion_tracking_node.py" cwd="node"/> -->
+    <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
+        <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
+        <remap from="/imu/data" to="/imu_realsense/data"/>
+        <param name="use_mag" value="false"/>
+        <param name="publish_tf" value="false"/>
+    </node>
 
     <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" output="screen" cwd="node"/>
     <node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid_node.py" output="screen" cwd="node"/>

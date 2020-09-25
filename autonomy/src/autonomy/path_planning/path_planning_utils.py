@@ -8,7 +8,6 @@ except:
 # Global Variables
 ERROR_BOUND = 0.05
 CLEARANCE = 0.3
-GRID_SIZE = 0.15
 
 
 # angle constrained to [-pi, pi]
@@ -102,7 +101,7 @@ class Vertex(Position):
 
 
 class Grid(object):
-    def __init__(self, width, height, grid_width=GRID_SIZE, occupancies=None):
+    def __init__(self, width, height, grid_width=0.15, occupancies=None):
         if occupancies:
             self.num_cols = occupancies.info.width
             self.num_rows = occupancies.info.height
@@ -110,6 +109,8 @@ class Grid(object):
             self.unit_height = occupancies.info.resolution
             self.width = self.num_cols * self.unit_width
             self.height = self.num_rows * self.unit_height
+            self.x = occupancies.info.origin.position.x
+            self.y = occupancies.info.origin.position.y
         else:
             self.width = width
             self.height = height
@@ -117,6 +118,8 @@ class Grid(object):
             self.num_rows = int(math.floor(height / grid_width))
             self.unit_width = grid_width
             self.unit_height = grid_width
+            self.x = 0
+            self.y = 0
         self.vertices = []
 
         for i in range(self.num_rows):
@@ -124,10 +127,8 @@ class Grid(object):
             for j in range(self.num_cols):
                 prob, x, y = 0, 0, 0
                 if occupancies:
-                    x = occupancies.info.origin.position.x
-                    y = occupancies.info.origin.position.y
                     prob = occupancies.data[i * self.num_cols + j] / 100
-                vertex = Vertex(x + (j + 0.5) * grid_width, y + (i + 0.5) * grid_width, i, j, prob_blocked=prob)
+                vertex = Vertex(self.x + (j + 0.5) * self.unit_width, self.y + (i + 0.5) * self.unit_height, i, j, prob)
                 row.append(vertex)
             self.vertices.append(row)
 
@@ -177,8 +178,8 @@ class Grid(object):
                     self.vertices[i][j].set_prob_blocked(max(guassian, self.vertices[i][j].get_prob_blocked()))
 
     def getGridIndices(self, x_pos, y_pos):
-        col_index = min(self.num_cols - 1, max(int(x_pos / self.unit_width), 0))
-        row_index = min(self.num_rows - 1, max(int(y_pos / self.unit_height), 0))
+        col_index = min(self.num_cols - 1, max(int((x_pos - self.x) / self.unit_width), 0))
+        row_index = min(self.num_rows - 1, max(int((y_pos - self.y) / self.unit_height), 0))
 
         return int(row_index), int(col_index)
 

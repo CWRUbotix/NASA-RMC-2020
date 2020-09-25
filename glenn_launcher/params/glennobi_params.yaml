@@ -16,7 +16,3 @@ arena_y: 5.4 # (m) length of the arena from starting area to mining area
 
 # transit params
 motor_command_accel: 15  # (RPM  / s) rate to change the motor speed upon sending a new command
-
-# message topics
-localization_name: 'odometry/filtered_map'  # filtered global localization data as an Odometry msg
-obstacle_detection_name: 'global_occupancy_grid'

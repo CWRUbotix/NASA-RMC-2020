@@ -6,7 +6,7 @@ sys.path.remove('/opt/ros/melodic/lib/python2.7/dist-packages')  # Fix cv2 impor
 import cv2  # TODO Dumb fix please fix
 sys.path.append('/opt/ros/melodic/lib/python2.7/dist-packages')  # Fix cv2 import error
 import rospy
-from math import sqrt
+from math import sqrt, ceil
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -25,11 +25,10 @@ class ObstacleDetectionNode:
         self.h, self.w = rospy.get_param('obstacle_detection/realsense/img_h'), \
                          rospy.get_param('obstacle_detection/realsense/img_w')  # realsense depth image size
         self.resolution = rospy.get_param('obstacle_detection/grid_resolution')  # meters per grid cell
-        self.grid_size = rospy.get_param('obstacle_detection/grid_size')  # number of rows/cols grid cells
+        self.grid_size = int(ceil(rospy.get_param('obstacle_detection/grid_size') / self.resolution))  # number of rows/cols grid cells
         self.tolerance = rospy.get_param('obstacle_detection/ground_tolerance')  # tolerance in meters above/below ground to ignore
         self.save_imgs = False  # set to True to save local grid visualizations
         self.save_data = False  # set to True to save testing data
-        self.localization_topic = rospy.get_param('localization_name')  # filtered global localization topic
         self.viz_dir = 'obstacle_viz/'  # directory to save visualizations
         self.viz_step = 10
         self.viz_i = 0
@@ -39,12 +38,13 @@ class ObstacleDetectionNode:
         self.grid_pub = rospy.Publisher('local_occupancy_grid', OccupancyGrid, queue_size=1)
 
         # RealSense physical orientation in the real world.
+        self.camera_x_offset = rospy.get_param('obstacle_detection/realsense/x')
         self.CameraPosition = {
-            "x": rospy.get_param('obstacle_detection/realsense/x'),  # actual position in meters of RealSense sensor relative to the viewport's center.
-            "y": rospy.get_param('obstacle_detection/realsense/y'),  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "x": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
+            "y": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
             "z": rospy.get_param('obstacle_detection/realsense/z'),  # height in meters of actual RealSense sensor from the floor.
-            "roll": 0,  # sensor's roll angle in degrees (these values are with respect to a fixed frame)
-            "pitch": -20,  # sensor's pitch angle in degrees.
+            "roll": -20,  # sensor's roll angle in degrees (these values are with respect to a fixed frame)
+            "pitch": 0,  # sensor's pitch angle in degrees.
             "yaw": 0,  # sensor's yaw angle in degrees.
         }
 
@@ -64,11 +64,11 @@ class ObstacleDetectionNode:
         self.clear_dir(self.data_dir + 'color')
         self.clear_dir(self.data_dir + 'localization')
         self.clear_dir(self.data_dir + 'points')
-        self.last_time = time.time()
+
         rospy.spin()
 
     def subscribe(self):
-        rospy.Subscriber('realsense_imu_filtered', Imu, self.realsense_callback)
+        rospy.Subscriber('imu_realsense/data', Imu, self.realsense_callback)
         rospy.Subscriber('realsense/depth/points', PointCloud2, self.receive_point_cloud, buff_size=9830400, queue_size=1)
 
     def clear_dir(self, dir_name):
@@ -81,17 +81,15 @@ class ObstacleDetectionNode:
 
     def receive_point_cloud(self, msg):
         xyz = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)
-        print("recieved valid points: ", xyz.shape[0], time.time()-self.last_time)
-        self.last_time = time.time()
         xyz = xyz[::11]  # decimate to save processing power
-        self.detect_obstacles_from_above(xyz, None)
+        self.detect_obstacles_from_above(xyz, None, msg)
 
     def realsense_callback(self, msg):
         quat = msg.orientation
         euler_angles = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-        print(euler_angles * 57.296)
-        self.CameraPosition['roll'] = -(euler_angles[0]) * 57.296
+        self.CameraPosition['roll'] = (euler_angles[0]) * 57.296 + 90
         self.CameraPosition['pitch'] = (euler_angles[1]) * 57.296
+        # rospy.loginfo("Camera position: {:.1f}, {:.1f}".format(self.CameraPosition['roll'], self.CameraPosition['pitch']))
 
     def apply_camera_matrix_orientation(self, pt):
         """
@@ -115,9 +113,8 @@ class ObstacleDetectionNode:
             pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
             pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
 
-        rotatePoints(0, 2, self.CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
-        rotatePoints(1, 2, self.CameraPosition['pitch']) #rotate on the X&Z plane
-        #rotatePoints(0, 1, self.CameraPosition['azimuth']) #rotate on the X&Y
+        rotatePoints(1, 2, -self.CameraPosition['roll']) #rotate on the X&Z plane
+        rotatePoints(0, 2, self.CameraPosition['pitch']) #rotate on the Y&Z plane
 
         # Apply offsets for height and linear position of the sensor (from viewport's center)
         pt[:, 2] *= -1  # TODO: Is this still necessary?
@@ -125,8 +122,8 @@ class ObstacleDetectionNode:
         return pt
 
     def project_point_cloud_onto_plane(self, xyz_arr, cropping=500, pcnt=0):
-        grid_size = 450
-        final_grid_size = 450
+        grid_size = self.grid_size * 10
+        final_grid_size = self.grid_size * 10
         proj = xyz_arr[..., [0, 1]]  # take only the X and Y components of point cloud
         proj_img = np.zeros((grid_size, grid_size))
         indices = np.int32(proj * (grid_size / (self.grid_size * self.resolution)))
@@ -142,7 +139,7 @@ class ObstacleDetectionNode:
             pass
         return np.uint8(proj_img)
 
-    def detect_obstacles_from_above(self, xyz_arr, color_frame):
+    def detect_obstacles_from_above(self, xyz_arr, color_frame, msg):
         '''
         Isolate the obstacles in a depth frame and publish a local occupancy grid.
         :param depth_frame: depth frame object from realsense
@@ -176,7 +173,7 @@ class ObstacleDetectionNode:
         occupancy_grid = np.flipud(occupancy_grid)
 
         header = Header()
-        header.stamp = rospy.Time.now()
+        header.stamp = msg.header.stamp
         header.frame_id = 'base_link'  # local grid is in base_link frame
 
         map_meta_data = MapMetaData()
@@ -184,7 +181,7 @@ class ObstacleDetectionNode:
         map_meta_data.resolution = self.resolution
         map_meta_data.width = self.grid_size
         map_meta_data.height = self.grid_size
-        map_meta_data.origin = Pose(Point(self.CameraPosition['x'], -self.grid_size * self.resolution / 2, 0),
+        map_meta_data.origin = Pose(Point(self.camera_x_offset, -self.grid_size * self.resolution / 2, 0),
                                     Quaternion(0, 0, sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
 
         grid_msg = OccupancyGrid()
