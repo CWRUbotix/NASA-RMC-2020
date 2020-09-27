@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 import rospy
 from obstacle_detection.global_occupancy_grid import GlobalOccupancyGrid
 
