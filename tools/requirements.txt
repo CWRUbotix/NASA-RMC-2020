@@ -9,4 +9,4 @@ scipy
 filterpy
 shapely
 scikit-build
-opencv-python
+opencv-contrib-python
