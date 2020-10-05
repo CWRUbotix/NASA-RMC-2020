@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="dumper_node" pkg="excavation" type="dumper_node.py"/>
+</launch>
