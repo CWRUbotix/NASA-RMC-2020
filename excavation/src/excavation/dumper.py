@@ -6,13 +6,16 @@ import rospy
 import actionlib
 from actionlib.msg import TestAction
 
+from hwctrl.msg import SetMotorMsg, SensorData, LimitSwState
+
 
 # State Machine states
 class State(Enum):
     RAISE = 0
     WAIT = 1
     LOWER = 2
-    LIFT_A_BIT = 3
+    MINI_LOWER = 3
+    LIFT_A_BIT = 4
 
 
 class Dumper:
@@ -30,10 +33,16 @@ class Dumper:
 
         self.move_speed = 0.5  # Speed to move dumper at
         self.wait_time = 2  # How long to let dirt fall out for
+        self.max_accel = 4  # Max bucket acceleration
+        self.mini_lower_time = 3 # Mini lower duration
 
         # Variables that are part of state machine operation
         self.state_last_time = rospy.get_time()
         self.state_done = False
+
+        self.motor_setpoint_pub = rospy.Publisher("motor_setpoints", SetMotorMsg, queue_size=2)
+        rospy.Subscriber("sensor_value", SensorData, self.receive_sensor_data, queue_size=4)
+        rospy.Subscriber("limit_sw_states", LimitSwState, self.receive_limit_switches, queue_size=4)
 
         # Create dump action server
         self.server = actionlib.SimpleActionServer("dump", TestAction, self.dump, auto_start=False)
@@ -43,6 +52,7 @@ class Dumper:
 
     def dump(self, goal_msg):
         rospy.loginfo("Dumper received target goal: " + str(goal_msg.goal))
+        mini_lower_count = goal_msg.goal
 
         # Initialize variables
         self.state = State.RAISE
@@ -65,13 +75,23 @@ class Dumper:
 
                 # Wait for determined time
                 if rospy.get_time() - self.state_last_time > self.wait_time:
-                    self.state = State.LOWER
+                    if mini_lower_count > 0:
+                        self.state = State.MINI_LOWER
+                    else:
+                        self.state = State.LOWER
 
             elif self.state == State.LOWER:
                 self.set_motor_speed(-self.move_speed)
 
                 if self.weight_sensor_data > 0.1:
                     self.state = State.LIFT_A_BIT
+
+            elif self.state == State.MINI_LOWER:
+                self.set_motor_speed(-self.move_speed)
+
+                if rospy.get_time() - self.state_last_time > self.mini_lower_time:
+                    mini_lower_count -= 1  # We have completed one mini lower
+                    self.state = State.RAISE
 
             elif self.state == State.LIFT_A_BIT:
                 self.set_motor_speed(self.move_speed)
@@ -86,8 +106,23 @@ class Dumper:
 
             rate.sleep()  # Wait for desired time
 
+        self.set_motor_speed(0)
+        rospy.loginfo("Dump state machine finished")
         self.server.set_succeeded()
 
     def set_motor_speed(self, command):
-        """Sends command to dumper motor"""
-        pass
+        motor_msg = SetMotorMsg()
+        motor_msg.id = 2
+        motor_msg.setpoint = command
+        motor_msg.acceleration = self.max_accel
+        self.motor_setpoint_pub.publish(motor_msg)
+
+    def receive_sensor_data(self, msg):
+        if msg.sensor_id == 2:
+            self.weight_sensor_data = msg.value
+        elif msg.sensor_id == 3:
+            self.bucket_pos_data = msg.value
+
+    def receive_limit_switches(self, msg):
+        if msg.id == 1:
+            self.top_sensor_data = msg.state
