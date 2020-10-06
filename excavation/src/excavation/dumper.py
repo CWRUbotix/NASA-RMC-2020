@@ -31,10 +31,10 @@ class Dumper:
         self.weight_sensor_data = 0
         self.bucket_pos_data = 0
 
-        self.move_speed = 0.5  # Speed to move dumper at
-        self.wait_time = 2  # How long to let dirt fall out for
-        self.max_accel = 4  # Max bucket acceleration
-        self.mini_lower_time = 3 # Mini lower duration
+        self.move_speed = rospy.get_param("~move_speed")  # Speed to move dumper at
+        self.wait_time = rospy.get_param("~wait_time")  # How long to let dirt fall out for
+        self.max_accel = rospy.get_param("~max_accel")  # Max bucket acceleration
+        self.mini_lower_time = rospy.get_param("~mini_lower_time")  # Mini lower duration
 
         # Variables that are part of state machine operation
         self.state_last_time = rospy.get_time()

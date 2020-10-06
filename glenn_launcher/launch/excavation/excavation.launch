@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+    <rosparam command="load" file="$(find glenn_launcher)/params/excavation/excavation_params.yaml"/>
+
     <node name="dumper_node" pkg="excavation" type="dumper_node.py"/>
 </launch>
