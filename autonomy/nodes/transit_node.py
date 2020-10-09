@@ -56,7 +56,7 @@ class TransitNode:
 
         self.server = actionlib.SimpleActionServer('go_to_goal', GoToGoalAction, self.go_to_goal, auto_start=False)
 
-        self.command_vel_pub = rospy.Publisher("/glennobi_diff_drive_controller/cmd_vel", Twist, queue_size=4)
+        self.command_vel_pub = rospy.Publisher("/glenn_base/cmd_vel", Twist, queue_size=4)
         self.path_pub = rospy.Publisher("transit_path", Path, queue_size=4)
         self.control_data_pub = rospy.Publisher("transit_control_data", TransitControlData, queue_size=4)
         self.controller = PathFollower(reference_point_x, goal=(0, 0), config=config)
