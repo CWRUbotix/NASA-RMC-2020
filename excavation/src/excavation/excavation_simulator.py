@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 import rospy
-from hwctrl.msg import SetMotorMsg, SensorData, LimitSwState
+from std_msgs.msg import Float32, Bool
+from hwctrl.msg import SetMotorMsg
 
 
 class ExcavationSimulator:
@@ -19,14 +20,14 @@ class ExcavationSimulator:
         self.dumper_weight_scale = 2
         self.dumper_encoder_scale = 1
 
-        rospy.Subscriber("motor_setpoints", SetMotorMsg, self.receive_motor_msg, queue_size=2)
-        self.sensor_data_pub = rospy.Publisher("sensor_value", SensorData, queue_size=4)
-        self.limit_states_pub = rospy.Publisher("limit_sw_states", LimitSwState, queue_size=4)
+        rospy.Subscriber("dumper/motor_cmd", SetMotorMsg, self.receive_motor_msg, queue_size=2)
+        self.dumper_top_limit_switch_pub = rospy.Publisher("dumper/top_limit_switch", Bool, queue_size=4)
+        self.dumper_weight_pub = rospy.Publisher("dumper/weight", Float32, queue_size=4)
+        self.dumper_position_pub = rospy.Publisher("dumper/position", Float32, queue_size=4)
 
         self.simulate_loop()
 
         rospy.spin()
-
 
     def simulate_loop(self):
         frequency = 15
@@ -48,14 +49,11 @@ class ExcavationSimulator:
             rate.sleep()
 
     def publish_sensor_data(self):
-        weight_data = SensorData(sensor_id=2, value=self.dumper_weight_sensor)
-        encoder_data = SensorData(sensor_id=3, value=self.dumper_pos * self.dumper_encoder_scale)
-        top_sensor = LimitSwState(id=1, state=self.dumper_top_sensor)
+        encoder_data = self.dumper_pos * self.dumper_encoder_scale
 
-        self.sensor_data_pub.publish(weight_data)
-        self.sensor_data_pub.publish(encoder_data)
-        self.limit_states_pub.publish(top_sensor)
+        self.dumper_top_limit_switch_pub.publish(self.dumper_top_sensor)
+        self.dumper_weight_pub.publish(self.dumper_weight_sensor)
+        self.dumper_position_pub.publish(encoder_data)
 
     def receive_motor_msg(self, msg):
-        if msg.id == 2:
-            self.dumper_cmd_vel = msg.setpoint
+        self.dumper_cmd_vel = msg.setpoint
