@@ -14,16 +14,29 @@ class ExcavationSimulator:
         self.dumper_cmd_vel = 0
         self.dumper_top_sensor = False
         self.dumper_weight_sensor = 0
+        self.dumper_weight = 0
 
         self.dumper_max_pos = 1.5
         self.dumper_weight_start = 0.1
         self.dumper_weight_scale = 2
         self.dumper_encoder_scale = 1
 
-        rospy.Subscriber("dumper/motor_cmd", SetMotorMsg, self.receive_motor_msg, queue_size=2)
+        self.excavation_depth = 0
+        self.excavation_angle = 0
+        self.excavation_depth_cmd = 0
+        self.excavation_angle_cmd = 0
+        self.excavation_conveyor_cmd = 0
+
+        rospy.Subscriber("dumper/motor_cmd", SetMotorMsg, self.receive_dumper_motor_cmd, queue_size=2)
+        rospy.Subscriber("excavation/angle_cmd", SetMotorMsg, self.receive_excavation_angle_cmd, queue_size=2)
+        rospy.Subscriber("excavation/depth_cmd", SetMotorMsg, self.receive_excavation_depth_cmd, queue_size=2)
+        rospy.Subscriber("excavation/conveyor_cmd", SetMotorMsg, self.receive_excavation_conveyor_cmd, queue_size=2)
+
         self.dumper_top_limit_switch_pub = rospy.Publisher("dumper/top_limit_switch", Bool, queue_size=4)
         self.dumper_weight_pub = rospy.Publisher("dumper/weight", Float32, queue_size=4)
         self.dumper_position_pub = rospy.Publisher("dumper/position", Float32, queue_size=4)
+        self.excavation_angle_pub = rospy.Publisher("excavation/angle", Float32, queue_size=4)
+        self.excavation_depth_pub = rospy.Publisher("excavation/depth", Float32, queue_size=4)
 
         self.simulate_loop()
 
@@ -41,8 +54,21 @@ class ExcavationSimulator:
             # When near the top the sensor triggers
             self.dumper_top_sensor = self.dumper_pos > self.dumper_max_pos - 0.1
 
-            # Wen dumper is close to the bottom that puts weight on the sensor
+            # Dumper weight increases if conveyor is putting dirt in it
+            # When the bucket reaches the top the dirt falls out
+            self.dumper_weight += 0.03 * self.excavation_conveyor_cmd
+            if self.dumper_top_sensor:
+                self.dumper_weight = 0
+
+            # When dumper is close to the bottom that adds weight on the sensor
+            # When the dumper raises the sensor no longer detects anything
             self.dumper_weight_sensor = max(0, self.dumper_weight_start - self.dumper_pos) * self.dumper_weight_scale
+            self.dumper_weight_sensor += self.dumper_weight
+            if self.dumper_pos > 2 * self.dumper_weight_start:
+                self.dumper_weight_sensor = 0
+
+            self.excavation_depth += 0.07 * (self.excavation_depth_cmd - self.excavation_depth)
+            self.excavation_angle += 0.07 * (self.excavation_angle_cmd - self.excavation_angle)
 
             self.publish_sensor_data()
 
@@ -54,6 +80,17 @@ class ExcavationSimulator:
         self.dumper_top_limit_switch_pub.publish(self.dumper_top_sensor)
         self.dumper_weight_pub.publish(self.dumper_weight_sensor)
         self.dumper_position_pub.publish(encoder_data)
+        self.excavation_angle_pub.publish(self.excavation_angle)
+        self.excavation_depth_pub.publish(self.excavation_depth)
 
-    def receive_motor_msg(self, msg):
+    def receive_dumper_motor_cmd(self, msg):
         self.dumper_cmd_vel = msg.setpoint
+
+    def receive_excavation_angle_cmd(self, msg):
+        self.excavation_angle_cmd = msg.setpoint
+
+    def receive_excavation_depth_cmd(self, msg):
+        self.excavation_depth_cmd = msg.setpoint
+
+    def receive_excavation_conveyor_cmd(self, msg):
+        self.excavation_conveyor_cmd = msg.setpoint
