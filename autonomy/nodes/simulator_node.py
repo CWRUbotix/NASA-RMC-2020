@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from hwctrl.msg import MotorData, SetMotorMsg
+from hwctrl.msg import MotorData, MotorCmd
 from nav_msgs.msg import Odometry, OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseWithCovariance, Pose, Point, Quaternion, Twist, TwistWithCovariance
@@ -64,7 +64,7 @@ class Simulator:
             r.sleep()
 
     def subscribe(self):
-        rospy.Subscriber("motor_setpoints", SetMotorMsg, self.receiveMotorCommand)
+        rospy.Subscriber("motor_setpoints", MotorCmd, self.receiveMotorCommand)
 
     def receiveMotorCommand(self, msg):
         if msg.id == 0:

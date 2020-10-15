@@ -20,7 +20,7 @@
 #include <hwctrl/SensorData.h>
 #include <hwctrl/LimitSwState.h>
 #include <hwctrl/MotorData.h>
-#include <hwctrl/SetMotorMsg.h>
+#include <hwctrl/MotorCmd.h>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -215,7 +215,7 @@ public:
 	bool sys_power_on = false; // to track current system power state
 	bool vesc_update_pending = false;
 	bool set_motor_callback(hwctrl::SetMotor::Request& request, hwctrl::SetMotor::Response& response);
-	void set_motor_cb_alt(hwctrl::SetMotorMsg msg);
+	void set_motor_cb_alt(hwctrl::MotorCmd msg);
 	void add_motor(HwMotor mtr);
 	void get_motors_from_csv();
 	void get_motor_configs();

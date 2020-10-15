@@ -74,9 +74,9 @@ target_link_libraries(hwctrl ${catkin_LIBRARIES})
 target_link_libraries(hwctrl_cal ${catkin_LIBRARIES})
 
 # for hwctrl executable
-add_dependencies(hwctrl ${catkin_EXPORTED_TARGETS})
+add_dependencies(hwctrl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(hwctrl hwctrl_generate_messages_cpp)
 
 # for hwctrl_cal executable
-add_dependencies(hwctrl_cal ${catkin_EXPORTED_TARGETS})
+add_dependencies(hwctrl_cal ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(hwctrl_cal hwctrl_generate_messages_cpp)

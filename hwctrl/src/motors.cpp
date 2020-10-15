@@ -286,7 +286,7 @@ void HwMotorIf::maintain_next_motor(){
 /**
  * set motors based on messages from a topic
  */
-void HwMotorIf::set_motor_cb_alt(hwctrl::SetMotorMsg msg){
+void HwMotorIf::set_motor_cb_alt(hwctrl::MotorCmd msg){
 	int id = msg.id;
 	if(id >= this->motors.size()){
 		return;
