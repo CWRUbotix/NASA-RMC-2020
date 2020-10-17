@@ -107,11 +107,11 @@ class TransitNode:
 
         rospy.loginfo("Going to ({}, {})".format(goal.x, goal.y))
 
-        rate = 30
-        r = rospy.Rate(rate)  # 'rate' Hz
+        frequency = 30
+        rate = rospy.Rate(frequency)
         last_time = rospy.get_time()
         last_pause_time = 0
-        while not self.controller.done and not self.state == State.PREEMPTED:
+        while not (rospy.is_shutdown() or self.controller.done or self.state == State.PREEMPTED):
             time = rospy.get_time()
 
             vel, angular_vel = 0, 0
@@ -119,7 +119,7 @@ class TransitNode:
             if self.server.is_preempt_requested():
                 self.state = State.PREEMPTED
 
-            if self.step % int(0.5 * rate) == 0 and self.state != State.PREEMPTED:  # Every half second
+            if self.step % int(0.5 * frequency) == 0 and self.state != State.PREEMPTED:  # Every half second
                 self.controller.update_grid(self.grid)
                 if self.controller.is_path_blocked() and self.state == State.FOLLOWING:
                     self.state = State.BLOCKED_PAUSE
@@ -141,9 +141,6 @@ class TransitNode:
             elif self.state == State.PREEMPTED:
                 vel = 0
                 angular_vel = 0
-                rospy.loginfo("Preempt requested")
-                result = GoToGoalResult(success=False)
-                self.server.set_preempted(result)
 
             # only used for target wheel speeds for now, not published directly
             right_speed = (vel + angular_vel * effective_robot_width / 2) * 30 / (np.pi * wheel_radius)
@@ -162,12 +159,26 @@ class TransitNode:
             self.draw()
             self.step += 1
             last_time = time
-            r.sleep()
 
-        if self.state != State.PREEMPTED:
+            try:
+                rate.sleep()  # Wait for desired time
+            except rospy.ROSInterruptException as e:
+                rospy.loginfo(str(e))
+
+        if rospy.is_shutdown():
+            result = GoToGoalResult(success=False)
+            self.server.set_aborted(result)
+            rospy.loginfo("Path Aborted")
+        elif self.state != State.PREEMPTED:
             result = GoToGoalResult(success=True)
             self.server.set_succeeded(result)
             rospy.loginfo("Path Complete")
+        else:
+            result = GoToGoalResult(success=False)
+            self.server.set_preempted(result)
+            rospy.loginfo("Path Prempted")
+
+
 
     def receive_state(self, msg):
         pose = msg.pose.pose

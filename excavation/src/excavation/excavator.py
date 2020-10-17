@@ -123,7 +123,10 @@ class Excavator:
                 rospy.loginfo("Excavation state machine %s -> %s" % (last_state, self.state))
                 self.state_last_time = rospy.get_time()
 
-            rate.sleep()  # Wait for desired time
+            try:
+                rate.sleep()  # Wait for desired time
+            except rospy.ROSInterruptException as e:
+                rospy.loginfo(str(e))
 
         self.server.set_succeeded()
         rospy.loginfo("Excavation state machine finished")

@@ -72,7 +72,10 @@ class ExcavationSimulator:
 
             self.publish_sensor_data()
 
-            rate.sleep()
+            try:
+                rate.sleep()  # Wait for desired time
+            except rospy.ROSInterruptException as e:
+                rospy.loginfo(str(e))
 
     def publish_sensor_data(self):
         encoder_data = self.dumper_pos * self.dumper_encoder_scale
