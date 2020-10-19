@@ -4,7 +4,7 @@
     <arg name="rviz" default="true"/>
     <arg name="use_steering" default="true"/>
     <arg name="model" default="$(find glennobi_description)/urdf/glennobi.urdf.xacro"/>
-    <arg name="world_name" default="$(find glennobi_description)/gazebo/my_world.world"/>
+    <arg name="world_name" default="$(find glennobi_description)/worlds/default.world"/>
     <arg name="verbose" default="false"/>
 
     <rosparam command="load" file="$(find glennobi_description)/config/diff_drive.yaml"
