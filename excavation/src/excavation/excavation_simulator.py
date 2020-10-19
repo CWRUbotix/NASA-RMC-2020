@@ -10,22 +10,22 @@ class ExcavationSimulator:
         rospy.init_node("excavation_simulator_node")
         rospy.loginfo("Excavation simulator node initialized")
 
-        self.dumper_pos = 0
-        self.dumper_cmd_vel = 0
+        self.dumper_pos = 0  # m
+        self.dumper_cmd_vel = 0  # speed
         self.dumper_top_sensor = False
-        self.dumper_weight_sensor = 0
-        self.dumper_weight = 0
+        self.dumper_weight_sensor = 0  # (kg) weight reported by sensor
+        self.dumper_weight = 0  # (kg) actual weight in bucket
 
-        self.dumper_max_pos = 1.5
+        self.dumper_max_pos = 1.2  # m
         self.dumper_weight_start = 0.1
         self.dumper_weight_scale = 2
         self.dumper_encoder_scale = 1
 
-        self.excavation_depth = 0
-        self.excavation_angle = 0
-        self.excavation_depth_cmd = 0
-        self.excavation_angle_cmd = 0
-        self.excavation_conveyor_cmd = 0
+        self.excavation_depth = 0  # m
+        self.excavation_angle = 0  # rad
+        self.excavation_depth_cmd = 0  # m
+        self.excavation_angle_cmd = 0  # rad
+        self.excavation_conveyor_cmd = 0  # speed
 
         rospy.Subscriber("dumper/motor_cmd", SetMotorMsg, self.receive_dumper_motor_cmd, queue_size=2)
         rospy.Subscriber("excavation/angle_cmd", SetMotorMsg, self.receive_excavation_angle_cmd, queue_size=2)
@@ -67,8 +67,8 @@ class ExcavationSimulator:
             if self.dumper_pos > 2 * self.dumper_weight_start:
                 self.dumper_weight_sensor = 0
 
-            self.excavation_depth += 0.07 * (self.excavation_depth_cmd - self.excavation_depth)
-            self.excavation_angle += 0.07 * (self.excavation_angle_cmd - self.excavation_angle)
+            self.excavation_depth += 0.08 * (self.excavation_depth_cmd - self.excavation_depth)
+            self.excavation_angle += 0.08 * (self.excavation_angle_cmd - self.excavation_angle)
 
             self.publish_sensor_data()
 

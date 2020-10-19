@@ -34,12 +34,12 @@ class Excavator:
         self.excavation_angle = 0
 
         # Parameters
-        self.angle_setpoint = 85
+        self.angle_setpoint = 1.45  # rad
         self.conveyor_cmd_setpoint = 0.9
-        self.first_depth = 30
-        self.second_depth = 40
+        self.first_depth = 0.30  # m
+        self.second_depth = 0.40  # m
         self.conveyor_accel = 1
-        self.full_weight_threshold = 1.2
+        self.full_weight_threshold = 1.2  # kg
 
         # Variables that are part of state machine operation
         self.state_last_time = rospy.get_time()
@@ -84,8 +84,8 @@ class Excavator:
             if self.state == State.RAISE:
                 self.publish_cmd(self.angle_cmd_pub, self.angle_setpoint)
 
-                # Check if excavator is within ~7 deg of setpoint
-                if abs(self.excavation_angle - self.angle_setpoint) < 0.12:
+                # Check if excavator is within ~5 deg of setpoint
+                if abs(self.excavation_angle - self.angle_setpoint) < 0.1:
                     self.state = State.EXTEND_DIG
                 
             elif self.state == State.EXTEND_DIG:
