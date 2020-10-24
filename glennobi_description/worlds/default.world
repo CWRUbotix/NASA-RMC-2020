@@ -39,60 +39,20 @@
       </include>
     </model>
 
-    <model name='unit_sphere'>
-      <static>1</static>
-      <pose frame=''>0.79 3.37 0.02 0 -0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry>
-            <sphere>
-              <radius>0.15</radius>
-            </sphere>
-          </geometry>
-          <max_contacts>10</max_contacts>
-        </collision>
-        <visual name='visual'>
-          <geometry>
-            <sphere>
-              <radius>0.15</radius>
-            </sphere>
-          </geometry>
-          <material>
-            <script>
-              <name>Gazebo/Grey</name>
-              <uri>file://media/materials/scripts/gazebo.material</uri>
-            </script>
-          </material>
-        </visual>
-      </link>
+    <!-- A rock-->
+    <model name="rock_1">
+	<pose>0.79 3.37 0 0 0 0</pose>
+	<include>
+	  <uri>model://rock</uri>
+	</include>
     </model>
 
-    <model name='unit_sphere_clone'>
-      <static>1</static>
-      <pose frame=''>1.94 2.55 0.008779 0 -0 0</pose>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry>
-            <sphere>
-              <radius>0.15</radius>
-            </sphere>
-          </geometry>
-          <max_contacts>10</max_contacts>
-        </collision>
-        <visual name='visual'>
-          <geometry>
-            <sphere>
-              <radius>0.15</radius>
-            </sphere>
-          </geometry>
-          <material>
-            <script>
-              <name>Gazebo/Grey</name>
-              <uri>file://media/materials/scripts/gazebo.material</uri>
-            </script>
-          </material>
-        </visual>
-      </link>
+    <!-- Another rock -->
+    <model name="rock_2">
+	<pose>0.79 3.37 0 0 0 0.5</pose>
+	<include>
+	  <uri>model://rock</uri>
+	</include>
     </model>
   </world>
 </sdf>
