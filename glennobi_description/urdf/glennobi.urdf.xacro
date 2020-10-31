@@ -4,15 +4,29 @@
     <xacro:include filename="$(find glennobi_description)/urdf/glennobi.gazebo.xacro"/>
     <xacro:include filename="$(find glennobi_description)/urdf/glennobi.transmission.xacro"/>
 
-    <xacro:property name="bodylength" value="1.3"/>
-    <xacro:property name="bodywidth" value="0.43"/>
-    <xacro:property name="bodyheight" value="0.35"/>
-    <xacro:property name="wheelradius" value="0.232"/>
-    <xacro:property name="wheelwidth" value="0.12"/>
-    <xacro:property name="wheelsepx" value="0.28"/>
-    <xacro:property name="wheelsepy" value="0.4"/>
-    <xacro:property name="wheeloffsetx" value="0.13"/>
-    <xacro:property name="bodyx" value="0.51"/>
+
+    <!-- Units in Meters-->
+    <xacro:property name="bodylength" value="0.9411"/>
+    <xacro:property name="bodywidth" value="0.4577"/>
+    <xacro:property name="bodyheight" value="0.477"/>
+    <xacro:property name="wheelradius" value="0.1642"/>
+    <xacro:property name="wheelwidth" value="0.0635"/>
+    <!-- Distance from the centers of the wheels in the length and width of robot. -->
+    <!-- wheelsepx crosses through the robot -->
+    <xacro:property name="wheelsepx" value="0.3874"/>
+    <!-- wheelsepy is from wheel to wheel not crossing the center line-->
+    <xacro:property name="wheelsepy" value="0.386"/>
+    <!-- If wheels are not aligned use offset-->
+    <xacro:property name="wheeloffsetx" value="0.0"/>
+
+    <!-- body is for aligning the robot mesh to the center of gravity-->
+    <!-- Data from cad model 
+    X = -2.54667
+	Y = 0.68615
+	Z = 9.90497
+    Note not currently used but leaving here because might be useful later-->
+    <xacro:property name="bodyx" value="0"/>
+    <xacro:property name="bodyy" value="0"/>
     <xacro:property name="bodyz" value="-0.05"/>
 
     <xacro:macro name="default_inertial" params="mass">
@@ -61,7 +75,7 @@
 
     <link name="base_link">
         <visual>
-            <origin xyz="${bodyx} 0 ${bodyz}" rpy="${pi/2} 0 ${pi/2}"/>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="0 0 ${pi/2}"/>
             <geometry>
                     <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
             </geometry>
