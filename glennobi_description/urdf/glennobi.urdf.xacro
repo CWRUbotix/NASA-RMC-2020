@@ -59,6 +59,12 @@
     <xacro:property name="realpitch" value="${bodypitch}"/>
     <xacro:property name="realyaw" value="${bodyyaw}"/>
 
+    <!-- Controls tilt of robot model-->
+    <!-- Not yet sure if use pitch, yaw and roll to represent the correct rotations-->
+    <xacro:property name="bodypitch" value="0"/>
+    <xacro:property name="bodyyaw" value="0"/>
+    <xacro:property name="bodyroll" value="${pi/2}"/>
+
     <xacro:macro name="default_inertial" params="mass">
         <inertial>
           <mass value="${mass}"/>
@@ -105,7 +111,7 @@
 
     <link name="base_link">
         <visual>
-            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodypitch} ${bodyyaw} ${bodyroll}"/>
             <geometry>
                     <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
             </geometry>
