@@ -299,9 +299,16 @@ public:
 	ros::CallbackQueue cb_queue;
 	ros::Publisher sensor_data_pub; // send data to rest of ROS system
 	ros::Publisher can_tx_pub;		// send data to canbus
-	ros::Publisher limit_sw_pub; 	// send out limit switch states
-	ros::Publisher uwb_data_pub; 	// publish uwb data
-	ros::Publisher imu_data_pub;	// publishe IMU data!
+
+	ros::Publisher limit_sw1_pub;   // send out limit switch 1 state
+	ros::Publisher limit_sw2_pub;   // send out limit switch 2 state
+	ros::Publisher limit_sw3_pub;   // send out limit switch 3 state
+	ros::Publisher limit_sw4_pub;   // send out limit switch 4 state
+
+	ros::Publisher uwb_data_pub; 	// publish uwb  data
+
+
+	ros::Publisher imu_data_pub;	// publisher IMU data!
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
 	SensorInfo sensors[MAX_NUMBER_OF_SENSORS]; // all our SensorInfo structs, superceded by sensors_vect
 	std::vector<SensorInfo> sensors_vect; // supercedes the sensors array
