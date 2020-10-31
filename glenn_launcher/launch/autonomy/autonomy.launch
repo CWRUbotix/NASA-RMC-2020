@@ -14,9 +14,20 @@
     <group unless="$(arg launch_from_robot)">
         <!-- Commented out for now until we figure out how to switch between launching on robot and launching on computer -->
 <!--         <node machine="robot" name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/> -->
-        <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
+        <!-- <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/> -->
+
+        <node pkg="move_base" type="move_base" name="move_base" output="screen">
+            <param name="controller_frequency" value="10.0"/>
+            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_global.yaml" command="load"/>
+            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_local.yaml" command="load"/>
+            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/global_trajectory_planner.yaml" command="load"/>
+            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/local_trajectory_planner.yaml" command="load"/>
+
+            <remap from="/cmd_vel" to="/glennobi_diff_drive_controller/cmd_vel"/>
+        </node>
+
         <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
 
-        <node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/>
+        <!-- <node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/> -->
     </group>
 </launch>

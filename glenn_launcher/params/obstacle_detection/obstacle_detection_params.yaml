@@ -1,6 +1,6 @@
 # Obstacle detection params
 ground_tolerance: 0.08  # (m) points within this tolerance of the ground plane are removed
-grid_resolution: 0.15 # (m / cell) resolution of local and global occupancy grid
+grid_resolution: 0.1 # (m / cell) resolution of local and global occupancy grid
 grid_size: 4 # (m) width and height of local occupancy grid
 map_buffer: 0.15 # (m) width/cells to be added to global map to catch obstacles near edge
 
@@ -11,4 +11,4 @@ realsense/y: 0  # (m) y offset of realsense from center of robot
 realsense/yaw: 90  # (degrees) angle from robot coordinate to camera coordinate system
 realsense/img_h: 640  # (px) height of realsense depth image
 realsense/img_w: 480  # (px) width of realsense depth image
-realsense/fps: 30  # (frames per second) rate of depth frame updates
+realsense/fps: 6  # (frames per second) rate of depth frame updates
