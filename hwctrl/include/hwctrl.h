@@ -307,7 +307,7 @@ public:
 
 	ros::Publisher uwb_data_pub; 	// publish uwb  data
 
-	ros::Publisher ebay_tempeture_pub; // publisher ebay temperature
+	ros::Publisher ebay_temperature_pub; // publisher ebay temperature
 
 	ros::Publisher imu_data_pub;	// publisher IMU data!
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot

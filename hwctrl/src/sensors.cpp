@@ -31,7 +31,7 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 
 	this->imu_data_pub = this->nh.advertise<sensor_msgs::Imu>("imu_data", 128);
 
-
+    this->ebay_temperature_pub = this->nh.advertise<hwctrl::SensorData>("ebay_temperature_pub",128);
 
 	// create all our sensor info objects and whatever
 	// this step also links the spi devices to the correct SensorInfo objects
