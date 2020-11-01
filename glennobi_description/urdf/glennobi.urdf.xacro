@@ -55,9 +55,9 @@
     <xacro:property name="realz" value="${-0.01+bodyz}"/>
 
     <!-- Controls tilt of RealSense model-->
-    <xacro:property name="realroll" value="${bodypitch + (20.42)*pi/180}"/>
-    <xacro:property name="realpitch" value="${bodyyaw}"/>
-    <xacro:property name="realyaw" value="${bodyroll}"/>
+    <xacro:property name="realroll" value="${bodyroll + (20.42)*pi/180}"/>
+    <xacro:property name="realpitch" value="${bodypitch}"/>
+    <xacro:property name="realyaw" value="${bodyyaw}"/>
 
     <xacro:macro name="default_inertial" params="mass">
         <inertial>
@@ -105,13 +105,13 @@
 
     <link name="base_link">
         <visual>
-            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodypitch} ${bodyyaw} ${bodyroll}"/>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
                     <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
             </geometry>
         </visual>
         <collision>
-            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodypitch} ${bodyyaw} ${bodyroll}"/>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
                 <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
                 <!-- box size="${bodylength} ${bodywidth} ${bodyheight}"/-->
@@ -140,7 +140,7 @@
         <parent link="base_link"/>
         <child link="realsense_link"/>
         <!-- transform from base_link with additional 20 degree tilt down -->
-        <origin xyz="${realx} ${realy} ${realz}" rpy="${realpitch} ${realyaw} ${realroll}"/>
+        <origin xyz="${realx} ${realy} ${realz}" rpy="${realroll} ${realpitch} ${realyaw}"/>
     </joint>
 
     <!-- Waiting on this location from CAD people-->
