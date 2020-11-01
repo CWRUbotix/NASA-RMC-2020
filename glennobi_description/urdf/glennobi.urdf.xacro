@@ -59,31 +59,6 @@
     <xacro:property name="realpitch" value="${bodypitch}"/>
     <xacro:property name="realyaw" value="${bodyyaw}"/>
 
-    <!-- Controls tilt of robot model-->
-    <!-- Not yet sure if use pitch, yaw and roll to represent the correct rotations-->
-    <xacro:property name="bodypitch" value="0"/>
-    <xacro:property name="bodyyaw" value="${pi/2}"/>
-
-
-    <!-- Note line up robot model first or you will spend time realigning the other sensors-->
-
-    <!-- Values for RealSense-->
-
-    <!-- Values for overall dimensions of RealSense-->
-    <xacro:property name="reallength" value="0.0758"/>
-    <xacro:property name="realwidth" value="0.025"/>
-    <xacro:property name="realheight" value="0.0151"/>
-
-    <!-- Values from center of Body to the RealSense-->
-    <xacro:property name="realx" value="${0.35+bodyx}"/>
-    <xacro:property name="realy" value="${0.152+bodyy}"/>
-    <xacro:property name="realz" value="${-0.01+bodyz}"/>
-
-    <!-- Controls tilt of RealSense model-->
-    <xacro:property name="realroll" value="${bodypitch + (20.42)*pi/180}"/>
-    <xacro:property name="realpitch" value="${bodyyaw}"/>
-    <xacro:property name="realyaw" value="${bodyroll}"/>
-
     <xacro:macro name="default_inertial" params="mass">
         <inertial>
           <mass value="${mass}"/>
@@ -130,7 +105,7 @@
 
     <link name="base_link">
         <visual>
-            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodypitch} ${bodyyaw} ${bodyroll}"/>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
                     <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
             </geometry>
