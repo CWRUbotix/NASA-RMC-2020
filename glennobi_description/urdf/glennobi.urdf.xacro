@@ -5,7 +5,6 @@
     <xacro:include filename="$(find glennobi_description)/urdf/glennobi.transmission.xacro"/>
 
 
-
     <!-- NOTE Length=x, Width=y, Height=z-->
 
     <!-- Values for the robot body-->
@@ -55,9 +54,38 @@
     <xacro:property name="realz" value="${-0.01+bodyz}"/>
 
     <!-- Controls tilt of RealSense model-->
-    <xacro:property name="realroll" value="${bodyroll + (20.42)*pi/180}"/>
-    <xacro:property name="realpitch" value="${bodypitch}"/>
+    <xacro:property name="realroll" value="${bodyroll + (20.42+90)*pi/180}"/>
+    <xacro:property name="realpitch" value="${bodypitch +pi}"/>
     <xacro:property name="realyaw" value="${bodyyaw}"/>
+
+    <!-- Inertia Section-->
+
+    <!-- Cadders Inertia Offset-->
+    <xacro:property name="robotlengthfromzero" value="-0.282549"/>
+    <xacro:property name="robotwidthfromzero" value="0.85221"/>
+    <xacro:property name="robotheightfromzero" value="-9.8254"/>
+
+    <!-- Masses unit kg-->
+    
+    <xacro:property name="wheelmass" value="1.05216"/>
+    <!-- Mass of robot without wheels-->
+    <xacro:property name="robotmass" value="30.8"/>
+
+    <!-- Inertial values for robot units kg/m^2-->
+    <xacro:property name="robotlxx" value="0.385"/>
+    <xacro:property name="robotlxy" value="0"/>
+    <xacro:property name="robotlxz" value="0"/>
+    <xacro:property name="robotlyy" value="1.92098166"/>
+    <xacro:property name="robotlyz" value="0"/>
+    <xacro:property name="robotlzz" value="1.844169"/>
+
+    <!-- Inertial values for wheels units kg/m^2-->
+    <xacro:property name="wheellxx" value="${1/12*wheelmass*(3*wheelradius*wheelradius+wheelwidth*wheelwidth)}"/>
+    <xacro:property name="wheellxy" value="0.0"/>
+    <xacro:property name="wheellxz" value="0"/>
+    <xacro:property name="wheellyy" value="${1/2*wheelmass*wheelradius*wheelradius}"/>
+    <xacro:property name="wheellyz" value="0.0"/>
+    <xacro:property name="wheellzz" value="${wheellxx}"/>
 
     <xacro:macro name="default_inertial" params="mass">
         <inertial>
@@ -82,8 +110,8 @@
                 </geometry>
             </collision>
             <inertial>
-                <mass value="1.6"/>
-                <inertia ixx="0.035" ixy="0.0" ixz="0.0" iyy="0.035" iyz="0.0" izz="0.06" />
+                <mass value="${wheelmass}"/>
+                <inertia ixx="${wheellxx}" ixy="${wheellxy}" ixz="${wheellxz}" iyy="${wheellyy}" iyz="${wheellyz}" izz="${wheellzz}" />
             </inertial>
         </link>
         
@@ -118,8 +146,8 @@
             </geometry>
         </collision>
         <inertial>
-            <mass value="16"/>
-            <inertia ixx="4.5" ixy="0.0" ixz="0.0" iyy="4.5" iyz="0.0" izz="0.8" />
+            <mass value="${robotmass}"/>
+            <inertia ixx="${robotlxx}" ixy="${robotlxy}" ixz="${robotlxz}" iyy="${robotlyy}" iyz="${robotlyz}" izz="${robotlzz}" />
         </inertial>
     </link>
 
