@@ -77,7 +77,7 @@
 
     <!-- Values from center of Body to the RealSense-->
     <xacro:property name="realx" value="${0.35+bodyx}"/>
-    <xacro:property name="realy" value="${0.145+bodyy}"/>
+    <xacro:property name="realy" value="${0.152+bodyy}"/>
     <xacro:property name="realz" value="${-0.01+bodyz}"/>
 
     <!-- Controls tilt of RealSense model-->
