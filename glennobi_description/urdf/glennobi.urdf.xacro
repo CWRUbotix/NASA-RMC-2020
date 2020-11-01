@@ -5,17 +5,22 @@
     <xacro:include filename="$(find glennobi_description)/urdf/glennobi.transmission.xacro"/>
 
 
+
+    <!-- NOTE Length=x, Width=y, Height=z-->
+
+    <!-- Values for the robot body-->
+
     <!-- Units in Meters-->
     <xacro:property name="bodylength" value="0.9411"/>
     <xacro:property name="bodywidth" value="0.4577"/>
     <xacro:property name="bodyheight" value="0.477"/>
-    <xacro:property name="wheelradius" value="0.1642"/>
-    <xacro:property name="wheelwidth" value="0.0635"/>
+    <xacro:property name="wheelradius" value="0.1561"/>
+    <xacro:property name="wheelwidth" value="0.0762"/>
     <!-- Distance from the centers of the wheels in the length and width of robot. -->
-    <!-- wheelsepx crosses through the robot -->
-    <xacro:property name="wheelsepx" value="0.3874"/>
+    <!-- wheelsepx distance from spoke to spoke over 2 -->
+    <xacro:property name="wheelsepx" value="${0.3947/2}"/>
     <!-- wheelsepy is from wheel to wheel not crossing the center line-->
-    <xacro:property name="wheelsepy" value="0.386"/>
+    <xacro:property name="wheelsepy" value="0.3175"/>
     <!-- If wheels are not aligned use offset-->
     <xacro:property name="wheeloffsetx" value="0.0"/>
 
@@ -25,15 +30,36 @@
 	Y = 0.68615
 	Z = 9.90497
     Note not currently used but leaving here because might be useful later-->
-    <xacro:property name="bodyx" value="0"/>
-    <xacro:property name="bodyy" value="0"/>
-    <xacro:property name="bodyz" value="-0.05"/>
+    <xacro:property name="bodyx" value="0.13"/>
+    <xacro:property name="bodyy" value="0.01"/>
+    <xacro:property name="bodyz" value="0.12"/>
 
     <!-- Controls tilt of robot model-->
     <!-- Not yet sure if use pitch, yaw and roll to represent the correct rotations-->
     <xacro:property name="bodypitch" value="0"/>
     <xacro:property name="bodyyaw" value="0"/>
     <xacro:property name="bodyroll" value="${pi/2}"/>
+
+
+    <!-- Note line up robot model first or you will spend time realigning the other sensors-->
+
+    <!-- Values for RealSense-->
+
+    <!-- Values for overall dimensions of RealSense-->
+    <xacro:property name="reallength" value="0.0758"/>
+    <xacro:property name="realwidth" value="0.025"/>
+    <xacro:property name="realheight" value="0.0151"/>
+
+    <!-- Values from center of Body to the RealSense-->
+    <xacro:property name="realx" value="${0.35+bodyx}"/>
+    <xacro:property name="realy" value="${0.145+bodyy}"/>
+    <xacro:property name="realz" value="${-0.01+bodyz}"/>
+
+    <!-- Controls tilt of RealSense model-->
+    <!-- Not yet sure if use pitch, yaw and roll to represent the correct rotations-->
+    <xacro:property name="realpitch" value="${bodypitch + (20.42)*pi/180}"/>
+    <xacro:property name="realyaw" value="${bodyyaw}"/>
+    <xacro:property name="realroll" value="${bodyroll}"/>
 
     <xacro:macro name="default_inertial" params="mass">
         <inertial>
@@ -87,7 +113,7 @@
             </geometry>
         </visual>
         <collision>
-            <origin xyz="${bodyx} 0 ${bodyz}" rpy="${pi/2} 0 ${pi/2}"/>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodypitch} ${bodyyaw} ${bodyroll}"/>
             <geometry>
                 <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
                 <!-- box size="${bodylength} ${bodywidth} ${bodyheight}"/-->
@@ -107,7 +133,7 @@
     <link name="realsense_link">
         <visual>
             <geometry>
-                <box size="0.1 0.025 0.015"/>
+                <box size="${reallength} ${realwidth} ${realheight}"/>
             </geometry>
         </visual>
     </link>
@@ -116,8 +142,10 @@
         <parent link="base_link"/>
         <child link="realsense_link"/>
         <!-- transform from base_link with additional 20 degree tilt down -->
-        <origin xyz="-0.57 0 0.33" rpy="${-(20+90)*pi/180} 0 ${pi/2}"/>
+        <origin xyz="${realx} ${realy} ${realz}" rpy="${realpitch} ${realyaw} ${realroll}"/>
     </joint>
+
+    <!-- Waiting on this location from CAD people-->
 
     <link name="imu_link"/>
     <joint name="imu_joint" type="fixed">
