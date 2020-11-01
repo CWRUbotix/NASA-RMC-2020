@@ -1,22 +1,22 @@
 <?xml version="1.0" ?>
 <sdf version='1.6'>
   <model name='moon_arena'>
-    <pose frame=''>1.71 2.75 0 0 -0 0</pose>
-    <link name='Wall_0'>
-      <collision name='Wall_0_Collision'>
+    <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name='short_wall_1'>
+      <collision name='short_wall_1_Collision'>
         <geometry>
           <box>
-            <size>3.75 0.15 0.5</size>
+            <size>2.6 0.1 0.5</size>
           </box>
         </geometry>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <max_contacts>10</max_contacts>
       </collision>
-      <visual name='Wall_0_Visual'>
+      <visual name='short_wall_1_Visual'>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <geometry>
           <box>
-            <size>3.75 0.15 0.5</size>
+            <size>2.5 0.1 0.5</size>
           </box>
         </geometry>
         <material>
@@ -30,26 +30,26 @@
           <layer>0</layer>
         </meta>
       </visual>
-      <pose frame=''>0.1475 -2.675 0 0 -0 0</pose>
+      <pose frame=''>1.25 0.05 0 0 -0 0</pose>
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
     </link>
-    <link name='Wall_2'>
-      <collision name='Wall_2_Collision'>
+    <link name='long_wall_1'>
+      <collision name='long_wall_1_Collision'>
         <geometry>
           <box>
-            <size>5.5 0.15 0.5</size>
+            <size>6.9 0.1 0.5</size>
           </box>
         </geometry>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <max_contacts>10</max_contacts>
       </collision>
-      <visual name='Wall_2_Visual'>
+      <visual name='long_wall_1_Visual'>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <geometry>
           <box>
-            <size>5.5 0.15 0.5</size>
+            <size>6.9 0.1 0.5</size>
           </box>
         </geometry>
         <material>
@@ -63,26 +63,26 @@
           <layer>0</layer>
         </meta>
       </visual>
-      <pose frame=''>1.9475 -0 0 0 -0 1.5708</pose>
+      <pose frame=''>0 3.45 0 0 -0 1.5708</pose>
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
     </link>
-    <link name='Wall_7'>
-      <collision name='Wall_7_Collision'>
+    <link name='long_wall_2'>
+      <collision name='long_wall_2_Collision'>
         <geometry>
           <box>
-            <size>5.5 0.15 0.5</size>
+            <size>6.9 0.1 0.5</size>
           </box>
         </geometry>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <max_contacts>10</max_contacts>
       </collision>
-      <visual name='Wall_7_Visual'>
+      <visual name='long_wall_2_Visual'>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <geometry>
           <box>
-            <size>5.5 0.15 0.5</size>
+            <size>6.9 0.1 0.5</size>
           </box>
         </geometry>
         <material>
@@ -96,26 +96,26 @@
           <layer>0</layer>
         </meta>
       </visual>
-      <pose frame=''>-1.6525 -0 0 0 -0 1.5708</pose>
+      <pose frame=''>2.5 3.45 0 0 -0 1.5708</pose>
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
     </link>
-    <link name='Wall_8'>
-      <collision name='Wall_8_Collision'>
+    <link name='short_wall_2'>
+      <collision name='short_wall_2_Collision'>
         <geometry>
           <box>
-            <size>3.75 0.15 0.5</size>
+            <size>2.5 0.1 0.5</size>
           </box>
         </geometry>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <max_contacts>10</max_contacts>
       </collision>
-      <visual name='Wall_8_Visual'>
+      <visual name='short_wall_2_Visual'>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <geometry>
           <box>
-            <size>3.75 0.15 0.5</size>
+            <size>2.6 0.1 0.5</size>
           </box>
         </geometry>
         <material>
@@ -129,7 +129,7 @@
           <layer>0</layer>
         </meta>
       </visual>
-      <pose frame=''>0.1475 2.675 0 0 -0 0</pose>
+      <pose frame=''>1.25 6.9 0 0 -0 0</pose>
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
