@@ -65,6 +65,27 @@
     <xacro:property name="bodyyaw" value="0"/>
     <xacro:property name="bodyroll" value="${pi/2}"/>
 
+
+    <!-- Note line up robot model first or you will spend time realigning the other sensors-->
+
+    <!-- Values for RealSense-->
+
+    <!-- Values for overall dimensions of RealSense-->
+    <xacro:property name="reallength" value="0.0758"/>
+    <xacro:property name="realwidth" value="0.025"/>
+    <xacro:property name="realheight" value="0.0151"/>
+
+    <!-- Values from center of Body to the RealSense-->
+    <xacro:property name="realx" value="${0.35+bodyx}"/>
+    <xacro:property name="realy" value="${0.145+bodyy}"/>
+    <xacro:property name="realz" value="${-0.01+bodyz}"/>
+
+    <!-- Controls tilt of RealSense model-->
+    <!-- Not yet sure if use pitch, yaw and roll to represent the correct rotations-->
+    <xacro:property name="realpitch" value="${bodypitch + (20.42)*pi/180}"/>
+    <xacro:property name="realyaw" value="${bodyyaw}"/>
+    <xacro:property name="realroll" value="${bodyroll}"/>
+
     <xacro:macro name="default_inertial" params="mass">
         <inertial>
           <mass value="${mass}"/>
