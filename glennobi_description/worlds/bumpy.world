@@ -34,11 +34,11 @@
       </include>
     </model>
 
-    <model name="ground">
+    <model name="bumpy_ground">
       <!-- Offset by width/2, height/2, and rotate 180 -->
       <pose>1.25 3.45 0 0 0 3.14159</pose>
       <include>
-        <uri>model://ground_holes</uri>
+        <uri>model://ground_bumpy_holes</uri>
       </include>
     </model>
 

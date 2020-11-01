@@ -1,9 +1,8 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
-  <model name='rock'>
+  <model name='ground_bumpy_holes'>
     <link name='link_0'>
-      <!-- Mesh is offset -->
-      <pose frame=''>-0.4 -0.6 -0.5 0 -0 0</pose>
+      <pose frame=''>0 0 0 0 -0 0</pose>
       <gravity>0</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -12,14 +11,13 @@
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
-            <uri>model://rock/meshes/rock.dae</uri>
-            <scale>0.5 0.5 0.5</scale>
+            <uri>model://ground_bumpy_holes/meshes/ground_bumpy_holes.dae</uri>
           </mesh>
         </geometry>
         <material>
           <lighting>1</lighting>
-          <ambient>0.36 0.38 0.36 1</ambient>
-          <diffuse>0.36 0.38 0.36 1</diffuse>
+          <ambient>0.26 0.28 0.26 1</ambient>
+          <diffuse>0.26 0.28 0.26 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
         </material>
@@ -32,8 +30,7 @@
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
-            <uri>model://rock/meshes/rock.dae</uri>
-            <scale>0.5 0.5 0.5</scale>
+            <uri>model://ground_bumpy_holes/meshes/ground_bumpy_holes.dae</uri>
           </mesh>
         </geometry>
       </collision>
