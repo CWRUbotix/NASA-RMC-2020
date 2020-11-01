@@ -7,7 +7,7 @@ imu_angular_vel_z_offset: 8.37  # (degrees / s)
 wheel_radius: 0.1561  # (m)
 robot_length: 0.9411 # (m) x dimension of robot
 robot_width: 0.4577  # (m) y dimension of robot
-effective_robot_width: 1.15  # (m) The width used to calculate conversion between angular velocity and wheel speed
+effective_robot_width: 0.8354  # (m) The width used to calculate conversion between angular velocity and wheel speed
                             # is larger than the actual robot width due to friction
 
 # competition constants
