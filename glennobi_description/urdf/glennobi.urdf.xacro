@@ -10,8 +10,8 @@
     <!-- Values for the robot body-->
 
     <!-- Units in Meters-->
-    <xacro:property name="bodylength" value="0.9411"/>
-    <xacro:property name="bodywidth" value="0.4577"/>
+    <xacro:property name="bodylength" value="0.4577"/>
+    <xacro:property name="bodywidth" value="0.9411"/>
     <xacro:property name="bodyheight" value="0.477"/>
     <xacro:property name="wheelradius" value="0.1561"/>
     <xacro:property name="wheelwidth" value="0.0762"/>
@@ -54,8 +54,8 @@
     <xacro:property name="realz" value="${-0.01+bodyz}"/>
 
     <!-- Controls tilt of RealSense model-->
-    <xacro:property name="realroll" value="${bodyroll + (20.42+90)*pi/180}"/>
-    <xacro:property name="realpitch" value="${bodypitch +pi}"/>
+    <xacro:property name="realroll" value="${(20.42+90)*pi/180}"/>
+    <xacro:property name="realpitch" value="${bodypitch+pi}"/>
     <xacro:property name="realyaw" value="${bodyyaw}"/>
 
     <!-- Inertia Section-->
@@ -141,8 +141,8 @@
         <collision>
             <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
-                <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
-                <!-- box size="${bodylength} ${bodywidth} ${bodyheight}"/-->
+                <!-- <mesh filename="package://glennobi_description/meshes/chassis.dae"/> -->
+                <box size="${bodylength} ${bodywidth} ${bodyheight}"/>
             </geometry>
         </collision>
         <inertial>

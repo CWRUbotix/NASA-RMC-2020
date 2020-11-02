@@ -98,7 +98,7 @@ class TransitNode:
 
         self.state = State.FOLLOWING
         self.controller.reset()
-        self.controller.set_drive_backwards(True)
+        self.controller.set_drive_backwards(False)
         self.controller.set_goal(goal)
         self.controller.state = self.robot_state["state"]
         self.controller.state_dot = self.robot_state["state_dot"]
