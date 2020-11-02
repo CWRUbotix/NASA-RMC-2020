@@ -213,8 +213,8 @@ class ObstacleDetectionNode:
         map_meta_data.resolution = self.resolution
         map_meta_data.width = self.grid_size
         map_meta_data.height = self.grid_size
-        map_meta_data.origin = Pose(Point(self.camera_x_offset, -self.grid_size * self.resolution / 2, -self.camera_y_offset),
-                                    Quaternion(0, 0, sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
+        map_meta_data.origin = Pose(Point(self.camera_x_offset, -self.grid_size * self.resolution / 2 -self.camera_y_offset, 0),
+                                    Quaternion(0, 0, -sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
 
         grid_msg = OccupancyGrid()
         grid_msg.header = header

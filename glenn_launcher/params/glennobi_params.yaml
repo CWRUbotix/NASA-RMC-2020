@@ -11,8 +11,8 @@ effective_robot_width: 0.8354  # (m) The width used to calculate conversion betw
                             # is larger than the actual robot width due to friction
 
 # competition constants
-arena_x: 3.6  # (m) width of the arena
-arena_y: 5.4 # (m) length of the arena from starting area to mining area
+arena_x: 2.5  # (m) width of the arena
+arena_y: 6.9 # (m) length of the arena from starting area to mining area
 
 # transit params
 motor_command_accel: 15  # (RPM  / s) rate to change the motor speed upon sending a new command
