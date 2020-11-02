@@ -54,8 +54,8 @@
     <xacro:property name="realz" value="${-0.01+bodyz}"/>
 
     <!-- Controls tilt of RealSense model-->
-    <xacro:property name="realroll" value="${(0+90)*pi/180}"/>
-    <xacro:property name="realpitch" value="${bodypitch+pi}"/>
+    <xacro:property name="realroll" value="${bodyroll + (20.42+90)*pi/180}"/>
+    <xacro:property name="realpitch" value="${bodypitch}"/>
     <xacro:property name="realyaw" value="${bodyyaw}"/>
 
     <!-- Inertia Section-->
