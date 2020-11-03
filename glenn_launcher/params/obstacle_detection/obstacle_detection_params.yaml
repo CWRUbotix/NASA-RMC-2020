@@ -6,8 +6,8 @@ map_buffer: 0.15 # (m) width/cells to be added to global map to catch obstacles 
 
 # realsense params
 realsense/z: 0.29  # (m) height of the realsense from the ground
-realsense/x: 0.35  # (m) x offset of realsense from center of robot
-realsense/y: 0.152  # (m) y offset of realsense from center of robot
+realsense/x: 0.48  # (m) x offset of realsense from center of robot
+realsense/y: 0.266  # (m) y offset of realsense from center of robot
 realsense/yaw: -90  # (degrees) angle from robot coordinate to camera coordinate system
 realsense/img_h: 640  # (px) height of realsense depth image
 realsense/img_w: 480  # (px) width of realsense depth image

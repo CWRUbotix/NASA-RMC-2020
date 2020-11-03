@@ -54,9 +54,9 @@
     <xacro:property name="realz" value="${-0.01+bodyz}"/>
 
     <!-- Controls tilt of RealSense model-->
-    <xacro:property name="realroll" value="${bodyroll + (20.42+90)*pi/180}"/>
-    <xacro:property name="realpitch" value="${bodypitch}"/>
-    <xacro:property name="realyaw" value="${bodyyaw}"/>
+    <xacro:property name="realroll" value="${-(20.42 + 90) * pi/180}"/>
+    <xacro:property name="realpitch" value="0"/>
+    <xacro:property name="realyaw" value="${-pi/2}"/>
 
     <!-- Inertia Section-->
 
@@ -141,8 +141,8 @@
         <collision>
             <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
-                <!-- <mesh filename="package://glennobi_description/meshes/chassis.dae"/> -->
-                <box size="${bodylength} ${bodywidth} ${bodyheight}"/>
+                <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
+                <!-- <box size="${bodylength} ${bodywidth} ${bodyheight}"/> -->
             </geometry>
         </collision>
         <inertial>
