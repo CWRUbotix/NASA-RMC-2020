@@ -80,12 +80,11 @@
     <xacro:property name="robotlzz" value="1.844169"/>
 
     <!-- Inertial values for wheels units kg/m^2-->
-    <xacro:property name="wheellxx" value="${1/12*wheelmass*(3*wheelradius*wheelradius+wheelwidth*wheelwidth)}"/>
-    <xacro:property name="wheellxy" value="0.0"/>
-    <xacro:property name="wheellxz" value="0.0"/>
-    <xacro:property name="wheellyy" value="${1/2*wheelmass*wheelradius*wheelradius}"/>
-    <xacro:property name="wheellyz" value="0.0"/>
-    <xacro:property name="wheellzz" value="${wheellxx}"/>
+    <xacro:macro name="cylinder_inertia" params="m r h">
+      <inertia  ixx="${m*(3*r*r+h*h)/12}" ixy = "0" ixz = "0"
+        iyy="${m*(3*r*r+h*h)/12}" iyz = "0"
+        izz="${m*r*r/2}"/>
+    </xacro:macro>
 
     <xacro:macro name="wheel" params="prefix side reflect">
         <link name="${prefix}_wheel_link">
@@ -103,8 +102,9 @@
                 </geometry>
             </collision>
             <inertial>
+                <origin xyz="0 0 0" rpy="${pi/2} 0 0" />
                 <mass value="${wheelmass}"/>
-                <inertia ixx="${wheellxx}" ixy="${wheellxy}" ixz="${wheellxz}" iyy="${wheellyy}" iyz="${wheellyz}" izz="${wheellzz}" />
+                <xacro:cylinder_inertia m="${wheelmass}" r="${wheelradius}" h="${wheelwidth}"/>
             </inertial>
         </link>
         
