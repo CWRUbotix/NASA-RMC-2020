@@ -82,17 +82,10 @@
     <!-- Inertial values for wheels units kg/m^2-->
     <xacro:property name="wheellxx" value="${1/12*wheelmass*(3*wheelradius*wheelradius+wheelwidth*wheelwidth)}"/>
     <xacro:property name="wheellxy" value="0.0"/>
-    <xacro:property name="wheellxz" value="0"/>
+    <xacro:property name="wheellxz" value="0.0"/>
     <xacro:property name="wheellyy" value="${1/2*wheelmass*wheelradius*wheelradius}"/>
     <xacro:property name="wheellyz" value="0.0"/>
     <xacro:property name="wheellzz" value="${wheellxx}"/>
-
-    <xacro:macro name="default_inertial" params="mass">
-        <inertial>
-          <mass value="${mass}"/>
-          <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
-        </inertial>
-    </xacro:macro>
 
     <xacro:macro name="wheel" params="prefix side reflect">
         <link name="${prefix}_wheel_link">
@@ -135,7 +128,7 @@
         <visual>
             <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
-                    <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
+                <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
             </geometry>
         </visual>
         <collision>
