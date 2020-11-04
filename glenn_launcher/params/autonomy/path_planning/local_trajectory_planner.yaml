@@ -30,4 +30,8 @@ TrajectoryPlannerROS:
   dwa: true
   publish_cost_grid_pc: false
   global_frame_id: odom
-    
+
+  cost_factor: 0.55
+  neutral_cost: 66
+  lethal_cost: 250
+
