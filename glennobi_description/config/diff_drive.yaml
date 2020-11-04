@@ -10,7 +10,7 @@ enable_odom_tf: true
 base_frame_id: base_link
 odom_frame_id: odom
 
-wheel_separation_multiplier: 1.8 
+wheel_separation_multiplier: 1.8
 
 linear:
     x:
