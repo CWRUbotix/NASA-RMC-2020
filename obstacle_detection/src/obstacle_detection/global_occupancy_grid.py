@@ -90,7 +90,7 @@ class GlobalOccupancyGrid:
         self.local_grid = np.flipud(np.reshape(msg.data, (grid_size, grid_size)))
 
         # Transform center of grid in robot coordinate frame to map frame
-        grid_origin = PointStamped(msg.header, Point(self.camera_offset[0] - grid_size * self.resolution / 2, 0, 0))
+        grid_origin = PointStamped(msg.header, Point(self.camera_offset[0] + grid_size * self.resolution / 2, self.camera_offset[1], 0))
 
         try:
             grid_origin = self.tf_buffer.transform(grid_origin, "map", rospy.Duration(0.1))

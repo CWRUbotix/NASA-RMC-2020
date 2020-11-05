@@ -34,12 +34,14 @@ class ObstacleDetectionNode:
         self.viz_i = 0
         self.frame_i = 0  # current frame number
         self.data_dir = 'saved_frames/'  # directory to save testing data
+        self.past_orients = np.zeros(shape=(30, 3)) # store past 30 time, roll, pitch
 
         self.grid_pub = rospy.Publisher('local_occupancy_grid', OccupancyGrid, queue_size=1)
 
         # RealSense physical orientation in the real world.
         self.camera_x_offset = rospy.get_param('obstacle_detection/realsense/x')
-        self.CameraPosition = {
+        self.camera_y_offset = rospy.get_param('obstacle_detection/realsense/y')
+        self.camera_pos = {
             "x": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
             "y": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
             "z": rospy.get_param('obstacle_detection/realsense/z'),  # height in meters of actual RealSense sensor from the floor.
@@ -79,6 +81,29 @@ class ObstacleDetectionNode:
             except OSError as e:
                 print(e)
 
+    # Custom interpolation back in time since I was
+    # having issues getting imu filter to publish tf
+    # tf would be a better solution of course
+    def interpolate_orientation(self, timestamp):
+        # Make sure array is filled in
+        if 0 in self.past_orients[:, 0]:
+            return (self.camera_pos['roll'], self.camera_pos['pitch'])
+
+        index = -1
+        if timestamp <= self.past_orients[0, 0]:
+            index = 0
+        if timestamp >= self.past_orients[-1, 0]:
+            index = len(self.past_orients) - 1.0001
+        if index == -1:
+            for i in range(0, len(self.past_orients) - 1):
+                if self.past_orients[i, 0] < timestamp < self.past_orients[i+1, 0]:
+                    index = i + (timestamp - self.past_orients[i, 0]) / (self.past_orients[i+1, 0] - self.past_orients[i, 0])
+                    break
+
+        data = self.past_orients[int(index), 1:] + (index % 1) * (self.past_orients[int(index+1), 1:] - self.past_orients[int(index), 1:])
+
+        return data[0], data[1]
+
     def receive_point_cloud(self, msg):
         xyz = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)
         xyz = xyz[::11]  # decimate to save processing power
@@ -87,16 +112,22 @@ class ObstacleDetectionNode:
     def realsense_callback(self, msg):
         quat = msg.orientation
         euler_angles = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler('xyz')
-        self.CameraPosition['roll'] = (euler_angles[0]) * 57.296 + 90
-        self.CameraPosition['pitch'] = (euler_angles[1]) * 57.296
-        # rospy.loginfo("Camera position: {:.1f}, {:.1f}".format(self.CameraPosition['roll'], self.CameraPosition['pitch']))
 
-    def apply_camera_matrix_orientation(self, pt):
+        roll = (euler_angles[0]) * 57.296 + 90
+        pitch = (euler_angles[1]) * 57.296
+
+        # Store history of orientations
+        self.past_orients = np.roll(self.past_orients, -1, axis=0)
+        self.past_orients[-1] = [msg.header.stamp.to_sec(), roll, pitch]
+
+        # rospy.loginfo("Camera position: {:.1f}, {:.1f}".format(self.camera_pos['roll'], self.camera_pos['pitch']))
+
+    def apply_camera_matrix_orientation(self, pt, msg):
         """
         Transforms the entire 3D point cloud according to the position of the Kinect.  Basically an efficient vectorized version of ``apply_camera_orientation``
         Args:
             pt (:obj:`numpy.float32`) : 3D point cloud represented by an [N, 3] Numpy array
-            CameraPosition (:obj:`dict`) : the current position and orientation of the Kinect sensor.  Either hardcoded in the ``CameraPosition`` dictionary, or computed from the best-fit ground plane
+            camera_pos (:obj:`dict`) : the current position and orientation of the Kinect sensor.  Either hardcoded in the ``camera_pos`` dictionary, or computed from the best-fit ground plane
         Returns:
             Updated point cloud represented as an [N, 3] numpy array in correct orientation to the Kinect
         """
@@ -113,12 +144,13 @@ class ObstacleDetectionNode:
             pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
             pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
 
-        rotatePoints(1, 2, -self.CameraPosition['roll']) #rotate on the X&Z plane
-        rotatePoints(0, 2, self.CameraPosition['pitch']) #rotate on the Y&Z plane
+        camera_pos = self.interpolate_orientation(msg.header.stamp.to_sec())
+        rotatePoints(1, 2, -camera_pos[0]) #rotate on the X&Z plane
+        rotatePoints(0, 2, camera_pos[1]) #rotate on the Y&Z plane
 
         # Apply offsets for height and linear position of the sensor (from viewport's center)
         pt[:, 2] *= -1  # TODO: Is this still necessary?
-        pt[:] += np.float_([self.CameraPosition['x'], self.CameraPosition['y'], self.CameraPosition['z']])
+        pt[:] += np.float_([self.camera_pos['x'], self.camera_pos['y'], self.camera_pos['z']])
         return pt
 
     def project_point_cloud_onto_plane(self, xyz_arr, cropping=500, pcnt=0):
@@ -149,7 +181,7 @@ class ObstacleDetectionNode:
         # convert frame objects to arrays
 
         xyz_arr[:, [1, 2]] = xyz_arr[:, [2, 1]]  # swap axes to be XYZ since realsense Z is depth
-        xyz_arr = self.apply_camera_matrix_orientation(xyz_arr)  # apply height param and orientation from IMU
+        xyz_arr = self.apply_camera_matrix_orientation(xyz_arr, msg)  # apply height param and orientation from IMU
 
         if self.save_data:  # save testing data
             # np.save('%s/%d.npy' % (self.data_dir, self.frame_i), depth_image)
@@ -181,8 +213,8 @@ class ObstacleDetectionNode:
         map_meta_data.resolution = self.resolution
         map_meta_data.width = self.grid_size
         map_meta_data.height = self.grid_size
-        map_meta_data.origin = Pose(Point(self.camera_x_offset, -self.grid_size * self.resolution / 2, 0),
-                                    Quaternion(0, 0, sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
+        map_meta_data.origin = Pose(Point(self.camera_x_offset, self.grid_size * self.resolution / 2 + self.camera_y_offset, 0),
+                                    Quaternion(0, 0, -sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
 
         grid_msg = OccupancyGrid()
         grid_msg.header = header

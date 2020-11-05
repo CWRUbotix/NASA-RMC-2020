@@ -4,8 +4,8 @@
     <xacro:macro name="wheel_gazebo" params="prefix">
         <gazebo reference="${prefix}_wheel_link">
             <material>Gazebo/Grey</material>
-            <mu1>1.5</mu1>
-            <mu2>1.5</mu2>
+            <mu1 value="0.6"/>
+            <mu2 value="0.6"/>
         </gazebo>
     </xacro:macro>
 
@@ -112,7 +112,7 @@
     <gazebo>
         <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
             <legacyModeNS>true</legacyModeNS>
-        <robotNamespace>/</robotNamespace>
+            <robotNamespace>/</robotNamespace>
         </plugin>
     </gazebo>
 </robot>

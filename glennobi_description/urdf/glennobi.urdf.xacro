@@ -5,22 +5,67 @@
     <xacro:include filename="$(find glennobi_description)/urdf/glennobi.transmission.xacro"/>
     <xacro:include filename="$(find glennobi_description)/urdf/realsense.urdf.xacro"/>
 
-    <xacro:property name="bodylength" value="1.3"/>
-    <xacro:property name="bodywidth" value="0.43"/>
-    <xacro:property name="bodyheight" value="0.35"/>
-    <xacro:property name="wheelradius" value="0.232"/>
-    <xacro:property name="wheelwidth" value="0.12"/>
-    <xacro:property name="wheelsepx" value="0.28"/>
-    <xacro:property name="wheelsepy" value="0.4"/>
-    <xacro:property name="wheeloffsetx" value="0.13"/>
-    <xacro:property name="bodyx" value="0.51"/>
-    <xacro:property name="bodyz" value="-0.05"/>
+    <!-- NOTE Length=x, Width=y, Height=z-->
 
-    <xacro:macro name="default_inertial" params="mass">
-        <inertial>
-          <mass value="${mass}"/>
-          <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
-        </inertial>
+    <!-- Values for the robot body-->
+
+    <!-- Units in Meters-->
+    <xacro:property name="bodylength" value="0.4577"/>
+    <xacro:property name="bodywidth" value="0.9411"/>
+    <xacro:property name="bodyheight" value="0.477"/>
+    <xacro:property name="wheelradius" value="0.1561"/>
+    <xacro:property name="wheelwidth" value="0.0762"/>
+    <!-- Distance from the centers of the wheels in the length and width of robot. -->
+    <!-- wheelsepx distance from spoke to spoke over 2 -->
+    <xacro:property name="wheelsepx" value="${0.3947/2}"/>
+    <!-- wheelsepy is from wheel to wheel not crossing the center line-->
+    <xacro:property name="wheelsepy" value="0.3175"/>
+    <!-- If wheels are not aligned use offset-->
+    <xacro:property name="wheeloffsetx" value="0.0"/>
+
+    <!-- body is for aligning the robot mesh to the center of gravity-->
+    <!-- Data from cad model 
+    X = -2.54667
+	Y = 0.68615
+	Z = 9.90497
+    Note not currently used but leaving here because might be useful later-->
+    <xacro:property name="bodyx" value="0.13"/>
+    <xacro:property name="bodyy" value="0.01"/>
+    <xacro:property name="bodyz" value="0.12"/>
+
+    <!-- Controls tilt of robot model-->
+    <xacro:property name="bodyroll" value="0"/>
+    <xacro:property name="bodypitch" value="0"/>
+    <xacro:property name="bodyyaw" value="${pi/2}"/>
+
+    <!-- Note line up robot model first or you will spend time realigning the other sensors-->
+
+    <!-- Inertia Section-->
+
+    <!-- Cadders Inertia Offset-->
+    <xacro:property name="robotlengthfromzero" value="-0.282549"/>
+    <xacro:property name="robotwidthfromzero" value="0.85221"/>
+    <xacro:property name="robotheightfromzero" value="-9.8254"/>
+
+    <!-- Masses unit kg-->
+    
+    <xacro:property name="wheelmass" value="1.05216"/>
+    <!-- Mass of robot without wheels-->
+    <xacro:property name="robotmass" value="30.8"/>
+
+    <!-- Inertial values for robot units kg/m^2-->
+    <xacro:property name="robotlxx" value="0.385"/>
+    <xacro:property name="robotlxy" value="0"/>
+    <xacro:property name="robotlxz" value="0"/>
+    <xacro:property name="robotlyy" value="1.92098166"/>
+    <xacro:property name="robotlyz" value="0"/>
+    <xacro:property name="robotlzz" value="1.844169"/>
+
+    <!-- Inertial values for wheels units kg/m^2-->
+    <xacro:macro name="cylinder_inertia" params="m r h">
+      <inertia  ixx="${m*(3*r*r+h*h)/12}" ixy = "0" ixz = "0"
+        iyy="${m*(3*r*r+h*h)/12}" iyz = "0"
+        izz="${m*r*r/2}"/>
     </xacro:macro>
 
     <xacro:macro name="wheel" params="prefix side reflect">
@@ -39,8 +84,9 @@
                 </geometry>
             </collision>
             <inertial>
-                <mass value="1.6"/>
-                <inertia ixx="0.035" ixy="0.0" ixz="0.0" iyy="0.035" iyz="0.0" izz="0.06" />
+                <origin xyz="0 0 0" rpy="${pi/2} 0 0" />
+                <mass value="${wheelmass}"/>
+                <xacro:cylinder_inertia m="${wheelmass}" r="${wheelradius}" h="${wheelwidth}"/>
             </inertial>
         </link>
         
@@ -62,21 +108,21 @@
 
     <link name="base_link">
         <visual>
-            <origin xyz="${bodyx} 0 ${bodyz}" rpy="${pi/2} 0 ${pi/2}"/>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
-                    <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
+                <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
             </geometry>
         </visual>
         <collision>
-            <origin xyz="${bodyx} 0 ${bodyz}" rpy="${pi/2} 0 ${pi/2}"/>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
                 <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
-                <!-- box size="${bodylength} ${bodywidth} ${bodyheight}"/-->
+                <!-- <box size="${bodylength} ${bodywidth} ${bodyheight}"/> -->
             </geometry>
         </collision>
         <inertial>
-            <mass value="16"/>
-            <inertia ixx="4.5" ixy="0.0" ixz="0.0" iyy="4.5" iyz="0.0" izz="0.8" />
+            <mass value="${robotmass}"/>
+            <inertia ixx="${robotlxx}" ixy="${robotlxy}" ixz="${robotlxz}" iyy="${robotlyy}" iyz="${robotlyz}" izz="${robotlzz}" />
         </inertial>
     </link>
 
@@ -87,6 +133,7 @@
 
     <xacro:realsense name="realsense"/>
 
+    <!-- Waiting on this location from CAD people-->
     <link name="imu_link"/>
     <joint name="imu_joint" type="fixed">
         <parent link="base_link"/>

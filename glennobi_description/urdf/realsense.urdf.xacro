@@ -22,18 +22,23 @@
     <xacro:property name="d435_cam_depth_py" value="0.0175"/>
     <xacro:property name="d435_cam_depth_pz" value="${d435_cam_height/2}"/>
 
+    <!-- Our robot's coordinates to RealSense-->
+    <xacro:macro name="realsense_origin">
+      <origin xyz="0.35 0.152 -0.01" rpy="${-(20.42 + 90) * pi/180} 0 ${-pi/2}"/>
+    </xacro:macro>
+
     <material name="${name}_aluminum">
       <color rgba="0.5 0.5 0.5 1"/>
     </material>
 
     <link name="${name}_link">
       <visual>
-      <!-- offset to location of a lens -->
-      <origin xyz="${-d435_cam_depth_py} 0 0" rpy="${pi/2} 0 0"/>
-      <geometry>
-        <box size="${d435_cam_width} ${d435_cam_height} ${d435_cam_depth}"/>
-      </geometry>
-      <material name="${name}_aluminum"/>
+        <!-- offset to location of a lens -->
+        <origin xyz="${-d435_cam_depth_py} 0 0" rpy="${pi/2} 0 0"/>
+        <geometry>
+          <box size="${d435_cam_width} ${d435_cam_height} ${d435_cam_depth}"/>
+        </geometry>
+        <material name="${name}_aluminum"/>
       </visual>
       <collision>
         <origin xyz="${-d435_cam_depth_py} 0 0" rpy="0 0 0"/>
@@ -43,10 +48,10 @@
       </collision>
     </link>
 
-      <joint name="${name}_joint" type="fixed">
-        <parent link="base_link"/>
-        <child link="${name}_link"/>
-        <origin xyz="-0.57 0 0.33" rpy="0 0 ${pi/2}"/>
+    <joint name="${name}_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${name}_link"/>
+      <xacro:realsense_origin/>
     </joint>
 
     <link name="${name}_gyro_link"/>
