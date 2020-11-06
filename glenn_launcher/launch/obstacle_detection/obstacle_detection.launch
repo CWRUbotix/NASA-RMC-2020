@@ -13,7 +13,7 @@
         <param name="use_mag" value="false"/>
         <param name="publish_tf" value="true"/>
         <param name="fixed_frame" value="realsense_footprint_link"/>
-        <param name="stateless" value="false"/>
+        <param name="remove_yaw_tf" value="true"/>
         <param name="reverse_tf" value="false"/>
     </node>
 
