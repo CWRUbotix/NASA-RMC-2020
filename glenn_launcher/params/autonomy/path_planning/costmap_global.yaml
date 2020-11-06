@@ -12,7 +12,7 @@ global_costmap:
   origin_y: 0
   resolution: 0.1
 
-  footprint: [[0.65, 0.32], [-0.65, 0.32], [-0.65, -0.32], [0.65, -0.32]]
+  footprint: [[0.54, 0.24], [-0.36, 0.24], [-0.36, -0.24], [0.54, -0.24]]
 
   plugins: 
     - {name: static_layer, type: "costmap_2d::StaticLayer"}
