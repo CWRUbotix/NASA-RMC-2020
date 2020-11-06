@@ -24,12 +24,20 @@
 
     <!-- Our robot's coordinates to RealSense-->
     <xacro:macro name="realsense_origin">
-      <origin xyz="0.35 0.152 -0.01" rpy="${-(20.42 + 90) * pi/180} 0 ${-pi/2}"/>
+      <origin xyz="0.48 0.162 0.11" rpy="${-(20.42+90)*pi/180} 0 ${-pi/2}"/>
     </xacro:macro>
 
     <material name="${name}_aluminum">
       <color rgba="0.5 0.5 0.5 1"/>
     </material>
+
+    <link name="${name}_footprint_link"/>
+
+    <joint name="${name}_footprint_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${name}_footprint_link"/>
+      <origin xyz="0.48 0.162 0.11" rpy="0 0 ${-pi/2}"/>
+    </joint>
 
     <link name="${name}_link">
       <visual>
@@ -49,18 +57,18 @@
     </link>
 
     <joint name="${name}_joint" type="fixed">
-      <parent link="base_link"/>
+      <parent link="${name}_footprint_link"/>
       <child link="${name}_link"/>
-      <xacro:realsense_origin/>
+      <origin xyz="0 0 0" rpy="${-radians(20.42 + 90)} 0 0"/>
     </joint>
 
-    <link name="${name}_gyro_link"/>
+    <!-- realsense_link will move due to imu data calulated with imu filter -->
+   <!--  <link name="${name}_link"/>
 
-    <joint name="${name}_gyro_joint" type="fixed">
-      <parent link="${name}_link"/>
-      <child link="${name}_gyro_link"/>
-      <!-- transform from realsense_link with additional 20 degree tilt down -->
-      <origin xyz="0 0 0" rpy="${-(20+90)*pi/180} 0 0"/>
-    </joint>
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${name}_stabilized_link"/>
+      <child link="${name}_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint> -->
   </xacro:macro>
 </robot>
