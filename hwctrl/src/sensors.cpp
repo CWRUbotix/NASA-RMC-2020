@@ -20,18 +20,18 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	this->can_tx_pub = this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
 	this->sensor_data_pub = this->nh.advertise<hwctrl::SensorData>("sensor_data", 128);
 
-	this->limit_sw1_pub = this -> nh.advertise<hwctrl::LimitSwState>("limit_sw1_states", 128);
-    this->limit_sw2_pub = this -> nh.advertise<hwctrl::LimitSwState>("limit_sw2_states", 128);
-    this->limit_sw3_pub = this -> nh.advertise<hwctrl::LimitSwState>("limit_sw3_states", 128);
-    this->limit_sw4_pub = this -> nh.advertise<hwctrl::LimitSwState>("limit_sw4_states", 128);
+	this->limit_sw1_pub = this -> nh.advertise<hwctrl::LimitSwState>("/dumper/dep_bottom_limit_switch", 128);
+	this->limit_sw2_pub = this -> nh.advertise<hwctrl::LimitSwState>("/dumper/top_limit_switch", 128);
+	this->limit_sw3_pub = this -> nh.advertise<hwctrl::LimitSwState>("/excavation/exc_lower_limit_switch", 128);
+	this->limit_sw4_pub = this -> nh.advertise<hwctrl::LimitSwState>("/excavation/exc_upper_limit_switch", 128);
 
 
 	this->uwb_data_pub = this->nh.advertise<hwctrl::UwbData>("localization_data", 1024);
 
 
-	this->imu_data_pub = this->nh.advertise<sensor_msgs::Imu>("imu_data", 128);
+	this->imu_data_pub = this->nh.advertise<sensor_msgs::Imu>("/realsense/imu/data_raw", 128);
 
-    this->ebay_temperature_pub = this->nh.advertise<hwctrl::SensorData>("ebay_temperature_pub",128);
+	this->ebay_temperature_pub = this->nh.advertise<hwctrl::SensorData>("ebay_temperature_pub",128);
 
 	// create all our sensor info objects and whatever
 	// this step also links the spi devices to the correct SensorInfo objects

@@ -300,16 +300,17 @@ public:
 	ros::Publisher sensor_data_pub; // send data to rest of ROS system
 	ros::Publisher can_tx_pub;		// send data to canbus
 
-	ros::Publisher limit_sw1_pub;   // send out limit switch 1 state
-	ros::Publisher limit_sw2_pub;   // send out limit switch 2 state
-	ros::Publisher limit_sw3_pub;   // send out limit switch 3 state
-	ros::Publisher limit_sw4_pub;   // send out limit switch 4 state
+	ros::Publisher limit_sw1_pub;   // send out limit switch 1 state to /dumper/dep_bottom_limit_switch topic
+	ros::Publisher limit_sw2_pub;   // send out limit switch 2 state to /dumper/top_limit_switch topic
+	ros::Publisher limit_sw3_pub;   // send out limit switch 3 state to /excavation/exc_lower_limit_switch topic
+	ros::Publisher limit_sw4_pub;   // send out limit switch 4 state to /excavation/exc_upper_limit_switch topic
 
 	ros::Publisher uwb_data_pub; 	// publish uwb  data
 
-	ros::Publisher ebay_temperature_pub; // publisher ebay temperature
+	ros::Publisher ebay_temperature_pub; // publisher ebay temperature, sends to ebay_temperature_pub topic
 
-	ros::Publisher imu_data_pub;	// publisher IMU data!
+	ros::Publisher imu_data_pub;	// publisher IMU data, sends to /realsense/imu/data_raw topic
+
 	std::vector<UwbNode> uwb_nodes; // holds all the UWB nodes on the robot
 	SensorInfo sensors[MAX_NUMBER_OF_SENSORS]; // all our SensorInfo structs, superceded by sensors_vect
 	std::vector<SensorInfo> sensors_vect; // supercedes the sensors array
