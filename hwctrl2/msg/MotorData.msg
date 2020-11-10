@@ -1,0 +1,19 @@
+int8 RPM 				= 0
+int8 RAW_RPM 			= 1
+int8 CURRENT_IN 		= 2
+int8 VOLTAGE_IN 		= 3
+int8 DUTY_CYCLE 		= 4
+int8 TEMPERATURE_MOS 	= 5
+int8 AMP_HOURS 			= 6
+int8 AMP_HOURS_CHARGED 	= 7
+int8 WATT_HOURS 		= 8
+int8 WATT_HOURS_CHARGED = 9
+int8 TACHOMETER 		= 10
+int8 TACHOMETER_ABS 	= 11
+int8 FAULT_CODE 		= 12
+int8 SETPOINT 			= 13
+
+int8 id
+time timestamp
+int8 data_type
+float32 value
