@@ -11,7 +11,10 @@
         <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
         <remap from="/imu/data" to="/imu_realsense/data"/>
         <param name="use_mag" value="false"/>
-        <param name="publish_tf" value="false"/>
+        <param name="publish_tf" value="true"/>
+        <param name="fixed_frame" value="realsense_footprint_link"/>
+        <param name="remove_yaw_tf" value="true"/>
+        <param name="reverse_tf" value="false"/>
     </node>
 
     <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" output="screen" cwd="node"/>

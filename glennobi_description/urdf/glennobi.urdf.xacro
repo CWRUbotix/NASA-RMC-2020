@@ -3,7 +3,7 @@
 
     <xacro:include filename="$(find glennobi_description)/urdf/glennobi.gazebo.xacro"/>
     <xacro:include filename="$(find glennobi_description)/urdf/glennobi.transmission.xacro"/>
-
+    <xacro:include filename="$(find glennobi_description)/urdf/realsense.urdf.xacro"/>
 
     <!-- NOTE Length=x, Width=y, Height=z-->
 
@@ -38,25 +38,7 @@
     <xacro:property name="bodypitch" value="0"/>
     <xacro:property name="bodyyaw" value="${pi/2}"/>
 
-
     <!-- Note line up robot model first or you will spend time realigning the other sensors-->
-
-    <!-- Values for RealSense-->
-
-    <!-- Values for overall dimensions of RealSense-->
-    <xacro:property name="reallength" value="0.0758"/>
-    <xacro:property name="realwidth" value="0.025"/>
-    <xacro:property name="realheight" value="0.0151"/>
-
-    <!-- Values from center of Body to the RealSense-->
-    <xacro:property name="realx" value="${0.35+bodyx}"/>
-    <xacro:property name="realy" value="${0.152+bodyy}"/>
-    <xacro:property name="realz" value="${-0.01+bodyz}"/>
-
-    <!-- Controls tilt of RealSense model-->
-    <xacro:property name="realroll" value="${-(20.42 + 90) * pi/180}"/>
-    <xacro:property name="realpitch" value="0"/>
-    <xacro:property name="realyaw" value="${-pi/2}"/>
 
     <!-- Inertia Section-->
 
@@ -149,28 +131,13 @@
     <xacro:wheel prefix="back_right" side="-1" reflect="-1"/>
     <xacro:wheel prefix="back_left" side="-1" reflect="1"/>
 
-    <link name="realsense_link">
-        <visual>
-            <geometry>
-                <box size="${reallength} ${realwidth} ${realheight}"/>
-            </geometry>
-        </visual>
-    </link>
-
-    <joint name="realsense_joint" type="fixed">
-        <parent link="base_link"/>
-        <child link="realsense_link"/>
-        <!-- transform from base_link with additional 20 degree tilt down -->
-        <origin xyz="${realx} ${realy} ${realz}" rpy="${realroll} ${realpitch} ${realyaw}"/>
-    </joint>
+    <xacro:realsense name="realsense"/>
 
     <!-- Waiting on this location from CAD people-->
-
     <link name="imu_link"/>
     <joint name="imu_joint" type="fixed">
         <parent link="base_link"/>
         <child link="imu_link"/>
         <origin xyz="0.35 -0.1 0" rpy="0 0 0"/>
     </joint>
-
 </robot>
