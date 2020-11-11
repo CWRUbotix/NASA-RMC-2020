@@ -16,9 +16,9 @@ void SensorThread::shutdown() {
 }
 
 void SensorThread::setup_sensors() {
-    // for(auto sensor : m_sensors) {
-    //     sensor.setup();
-    // }
+    for(SensorImpl sensor : m_sensors) {
+        sensor.setup();
+    }
 }
 
 // run thread
@@ -26,8 +26,9 @@ void SensorThread::operator()() {
     ROS_INFO("Starting sensor_thread");
     ros::AsyncSpinner spinner(1, NULL);
 
-    while(ros::ok()) {
+    setup_sensors();
 
+    while(ros::ok()) {
         sleep();   
     }
     shutdown();

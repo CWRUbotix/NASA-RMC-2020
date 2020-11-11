@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "hardware/sensor.h"
+#include "hardware/quad_encoder.h"
+#include "hardware/uwb.h"
 
 class SensorThread {
 public:
@@ -23,7 +25,7 @@ private:
     ros::Rate          m_loop_rate;
     ros::CallbackQueue m_cb_queue;
 
-    std::vector<Sensor> m_sensors;
+    std::vector<SensorImpl>  m_sensors;
+    std::vector<UwbNode> m_uwb_nodes;
+    uint32_t             m_uwb_ind;
 };
-
-void sensor_thread(SensorThread* sensor_thread);

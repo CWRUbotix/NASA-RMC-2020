@@ -27,14 +27,14 @@ boost::optional<const Calibration&> Sensor::get_calibration_by_name(const std::s
 }
 
 CanSensor::CanSensor(CanSensorArgs)
-: SensorBaseArgsPass
+: SensorImplArgsPass
  {
     m_can_rx_sub = m_nh.subscribe("can_frames_rx", 128, &CanSensor::can_rx_callback, this);
     m_can_tx_pub = m_nh.advertise<hwctrl2::CanFrame>("can_frames_tx", 128);
 }
 
 SpiSensor::SpiSensor(SpiSensorArgs)
-: SensorBaseArgsPass, m_spi_handle(spi_handle), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
+: SensorImplArgsPass, m_spi_handle(spi_handle), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
 {}
 
 

@@ -2,23 +2,42 @@
 
 #include "sensor.h"
 
-struct AnchorData{
-  uint32_t id;
-  uint32_t timestamp;
-  float x;
-  float y;
-  float z;
-  float distance;
-  float rx_power;
-  float fp_power;
-  float fp_snr;
-  bool data_ready;
-  std::string to_string();
+#include <vector>
+
+struct Anchor {
+    Anchor(uint32_t id) : id(id) {};
+
+    uint32_t id;
+    uint32_t timestamp;
+    float x;
+    float y;
+    float z;
+    float distance;
+    float rx_power;
+    float fp_power;
+    float fp_snr;
+    bool data_ready;
+
+    std::string to_string();
 };
 
 
 class UwbNode : public CanSensor {
+public:
+    UwbNode(CanSensorArgs);
+    virtual ~UwbNode() = default;
 
+    virtual void setup() override final;
+    virtual void update(const ros::TimerEvent&) override final;
 
+    virtual void can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) override final;
 
-}
+    inline uint32_t get_num_anchors() const { return m_anchors.size(); }
+
+    Anchor const* get_anchor_by_id(uint32_t id);
+
+private:
+    std::vector<Anchor> m_anchors;
+
+    using AnchorIter = std::vector<Anchor>::iterator;
+};

@@ -67,18 +67,22 @@ protected:
     ros::Timer      m_update_timer;
 };
 
+#define SensorImplArgsPass SensorImpl(nh, name, desc, type, id, topic, topic_size, update_period)
 
 // TODO: maybe make this fully templated later?
 // template<typename _T>
-// class SensorImpl : public Sensor {
-//     using T = _T;
+class SensorImpl : public Sensor {
+public:
+    SensorImpl(SensorBaseArgs) : SensorBaseArgsPass {}
 
-// };
+    virtual void setup() override { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id);};
+    virtual void update(const ros::TimerEvent&) override { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
+};
 
 #define CanSensorArgs SensorBaseArgs
 #define CanSensorArgsPass CanSensor(nh, name, desc, type, id, topic, topic_size, update_period)
 
-class CanSensor : public Sensor {
+class CanSensor : public SensorImpl {
 public:
 
     CanSensor(
@@ -96,7 +100,7 @@ protected:
 #define SpiSensorArgs SensorBaseArgs, uint32_t spi_handle, uint32_t spi_speed, uint32_t spi_mode, Gpio& cs_pin
 #define SpiSensorArgsPass SpiSensor(nh, name, desc, type, id, topic, topic_size, update_period, spi_handle, spi_speed, spi_mode, cs_pin)
 
-class SpiSensor : public Sensor {
+class SpiSensor : public SensorImpl {
 public:
     SpiSensor(
         SpiSensorArgs
@@ -119,11 +123,11 @@ protected:
 #define GpioSensorArgs SensorBaseArgs, Gpio& gpio
 #define GpioSensorArgsPass GpioSensor(nh, name, desc, type, id, topic, topic_size, update_period, gpio)
 
-class GpioSensor : public Sensor {
+class GpioSensor : public SensorImpl {
 public:
     GpioSensor(
         GpioSensorArgs
-    ) : SensorBaseArgsPass, m_gpio(gpio) {}
+    ) : SensorImplArgsPass, m_gpio(gpio) {}
 
     virtual ~GpioSensor() = default;
 
