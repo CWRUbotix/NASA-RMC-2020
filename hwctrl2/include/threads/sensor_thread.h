@@ -13,7 +13,6 @@ public:
     ~SensorThread() = default;
 
     void setup_sensors();
-    void update_sensors();
 
     void shutdown();
     void sleep();

@@ -3,7 +3,7 @@
 #include <ros/spinner.h>
 
 
-SensorThread::SensorThread(ros::NodeHandle nh) : m_loop_rate(10000) {
+SensorThread::SensorThread(ros::NodeHandle nh) : m_loop_rate(100) {
 
 }
 
@@ -13,6 +13,12 @@ void SensorThread::sleep() {
 
 void SensorThread::shutdown() {
 
+}
+
+void SensorThread::setup_sensors() {
+    // for(auto sensor : m_sensors) {
+    //     sensor.setup();
+    // }
 }
 
 // run thread

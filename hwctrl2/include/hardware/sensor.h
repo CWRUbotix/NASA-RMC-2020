@@ -3,17 +3,19 @@
 #include <ros/ros.h>
 
 #include <hwctrl2/CanFrame.h>
-#include <hwctrl2/LimitSwState.h>
 
 #include <memory>
 #include <string>
 #include <vector>
 #include <inttypes.h>
+#include <system_error>
 
-#include <linux/spi/spidev.h>
+#include <boost/optional.hpp>
 
 #include "interface/gpio.h"
 #include "interface/spi.h"
+
+#include "util.h"
 
 struct Calibration {
     std::string name;
@@ -26,19 +28,21 @@ enum SensorType {
 
 };
 
+#define SensorBaseArgs ros::NodeHandle nh, const std::string& name, const std::string& desc, SensorType type, uint32_t id, const std::string& topic, uint32_t topic_size, ros::Duration update_period
+#define SensorBaseArgsPass Sensor(nh, name, desc, type, id, topic, topic_size, update_period)
+
 class Sensor {
 public:
-
-    template<typename T, uint32_t topic_size = 128>
-    Sensor(ros::NodeHandle nh, std::string name, std::string desc, uint32_t id, std::string topic)
-    : m_nh(nh), m_id(id), m_name(name), m_desc(desc), m_topic(topic)
-    {
-        m_pub = nh.advertise<T>(m_topic, topic_size);
-    };
+    Sensor(
+        SensorBaseArgs
+    );
     virtual ~Sensor() = default;
 
-    virtual void setup();
-    virtual void update();
+    virtual void setup() = 0;
+    virtual void update(const ros::TimerEvent&) = 0;
+
+    void add_calibration(const Calibration& cal);
+    boost::optional<const Calibration&> get_calibration_by_name(const std::string& name) const;
 
     inline uint32_t           get_id()    const  { return m_id;       }
     inline SensorType         get_type()  const  { return m_type;     }
@@ -47,102 +51,107 @@ public:
     inline const std::string& get_name()  const  { return m_name;     }
     inline const std::string& get_desc()  const  { return m_desc;     }
 
-private:
-    uint32_t m_id;
-    SensorType m_type;
+protected:
+    uint32_t    m_id;
+    SensorType  m_type;
     std::string m_name;
     std::string m_desc;
-    bool m_is_setup;
+    std::string m_topic;
+    bool        m_is_setup;
 
     std::vector<Calibration> m_calibrations;
 
-    std::string     m_topic;
-
     ros::Publisher  m_pub;
     ros::NodeHandle m_nh;
-    ros::Duration   m_update_duration;
+    ros::Duration   m_update_period;
     ros::Timer      m_update_timer;
 };
 
+
+// TODO: maybe make this fully templated later?
+// template<typename _T>
+// class SensorImpl : public Sensor {
+//     using T = _T;
+
+// };
+
+#define CanSensorArgs SensorBaseArgs
+#define CanSensorArgsPass CanSensor(nh, name, desc, type, id, topic, topic_size, update_period)
+
 class CanSensor : public Sensor {
 public:
-    CanSensor();
+
+    CanSensor(
+        CanSensorArgs
+    );
     virtual ~CanSensor() = default;
 
-private:
-    ros::Subscriber can_rx_sub;
-    ros::Publisher  can_tx_sub;
+protected:
+    ros::Subscriber m_can_rx_sub;
+    ros::Publisher  m_can_tx_pub;
 
-    void can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame);
+    virtual void can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) = 0;
 };
+
+#define SpiSensorArgs SensorBaseArgs, uint32_t spi_handle, uint32_t spi_speed, uint32_t spi_mode, Gpio& cs_pin
+#define SpiSensorArgsPass SpiSensor(nh, name, desc, type, id, topic, topic_size, update_period, spi_handle, spi_speed, spi_mode, cs_pin)
 
 class SpiSensor : public Sensor {
 public:
-    template<typename T>
     SpiSensor(
-        ros::NodeHandle nh, std::string name, std::string desc, uint32_t id, std::string topic,
-        uint32_t spi_handle, uint32_t spi_speed, uint32_t spi_mode, Gpio& cs_pin
-    )
-    :
-    Sensor(nh, name, desc, id, topic),
-    m_spi_handle(spi_handle), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
-    {}
-
+        SpiSensorArgs
+    );
     virtual ~SpiSensor() = default;
 
-    virtual void update() override {
-        spi::spi_set_speed(m_spi_handle, m_spi_speed);
-        spi::spi_set_mode(m_spi_handle, m_spi_mode);
-        ros::Duration(0.0005).sleep();
-
-        // set chip select low
-        m_cs.reset();
-
-        spi_update();
-
-        // set chip select high
-        m_cs.set();
-    }
+    virtual void update(const ros::TimerEvent&) override final;
 
     virtual void spi_update() = 0;
-private:
+
+protected:
     uint32_t m_spi_handle;
     uint32_t m_spi_speed;
     uint32_t m_spi_mode;
 
-    // SHOULD THIS BE A REFERENCE OR A PTR
+    // SHOULD THIS BE A REFERENCE OR A PTR???
     Gpio&     m_cs;
 };
 
+#define GpioSensorArgs SensorBaseArgs, Gpio& gpio
+#define GpioSensorArgsPass GpioSensor(nh, name, desc, type, id, topic, topic_size, update_period, gpio)
+
 class GpioSensor : public Sensor {
 public:
-    template<typename T>
     GpioSensor(
-        ros::NodeHandle nh, std::string name, std::string desc, uint32_t id, std::string topic, Gpio& gpio
-    ) : Sensor(nh, name, desc, id, topic), m_gpio(gpio) {}
+        GpioSensorArgs
+    ) : SensorBaseArgsPass, m_gpio(gpio) {}
 
     virtual ~GpioSensor() = default;
 
-private:
+protected:
     Gpio& m_gpio;
 };
 
-class GenericGpioSensor : public Sensor {
-}
-
-class LimitSwitch : public GpioSensor {
+class GenericGpioSensor : public GpioSensor {
 public:
-    using DataType = hwctrl2::LimitSwState;
-    
-    LimitSwitch();
-    virtual ~LimitSwitch() = default;
+    GenericGpioSensor(GpioSensorArgs, Gpio::State on_state = Gpio::State::Set);
+    virtual ~GenericGpioSensor() = default;
 
-    virtual void update() override {
-        auto msg = boost::make_shared<hwctrl2::LimitSwState>();
-        auto state = m_gpio.read();
-        msg->id = m_id;
-        msg
-    }
+    virtual void setup() override final;
+    virtual void update(const ros::TimerEvent&) override final;
+
+private:
+    Gpio::State m_on_state;
 };
 
+class LimitSwitch : public GpioSensor {
+public:    
+    LimitSwitch(GpioSensorArgs, uint32_t motor_id, uint32_t allowed_dir);
+    virtual ~LimitSwitch() = default;
+
+    virtual void setup() override final;
+    virtual void update(const ros::TimerEvent&) override final;
+protected:
+    uint32_t m_motor_id;
+    uint32_t m_allowed_dir;
+};
 

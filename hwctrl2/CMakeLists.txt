@@ -41,6 +41,8 @@ include_directories(
 add_executable(hwctrl2
   src/hwctrl_node.cpp
   src/threads/sensor_thread.cpp
+  src/threads/canbus_thread.cpp
+  src/threads/motor_thread.cpp
   src/hardware/sensor.cpp
   src/interface/gpio.cpp
   src/interface/spi.cpp
@@ -49,6 +51,8 @@ add_executable(hwctrl2
 add_executable(hwctrl2_cal
   src/hwctrl_node.cpp
   src/threads/sensor_thread.cpp
+  src/threads/canbus_thread.cpp
+  src/threads/motor_thread.cpp
   src/hardware/sensor.cpp
   src/interface/gpio.cpp
   src/interface/spi.cpp
