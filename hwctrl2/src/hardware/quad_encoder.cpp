@@ -1,12 +1,8 @@
 #include "hardware/quad_encoder.h"
 
-#include <hwctrl2/SensorData.h>
-
 QuadEncoder::QuadEncoder(CanSensorArgs, bool inverted)
-: CanSensorArgsPass, m_inverted(inverted)
-{
-    m_pub = m_nh.advertise<hwctrl2::SensorData>(m_topic, topic_size);
-}
+: CanSensorArgsPass(PubData), m_inverted(inverted)
+{}
 
 void QuadEncoder::setup() {
     auto frame = boost::make_shared<hwctrl2::CanFrame>();
@@ -71,5 +67,3 @@ void QuadEncoder::can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) {
 
 
 }
-
-

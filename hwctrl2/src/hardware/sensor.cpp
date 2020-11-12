@@ -1,13 +1,8 @@
 #include "hardware/sensor.h"
 
-#include <hwctrl2/SensorData.h>
-#include <hwctrl2/LimitSwState.h>
-
 Sensor::Sensor(SensorBaseArgs)
 : m_nh(nh), m_id(id), m_name(name), m_desc(desc), m_topic(topic), m_update_period(update_period), m_type(type)
 {
-    // m_pub = m_nh.advertise<T>(m_topic, topic_size);
-
     // TODO: Check if this is ok to call in this construtor
     m_update_timer = m_nh.createTimer(m_update_period, &Sensor::update, this);
 };
@@ -26,19 +21,21 @@ boost::optional<const Calibration&> Sensor::get_calibration_by_name(const std::s
     return boost::optional<const Calibration&>();
 }
 
-CanSensor::CanSensor(CanSensorArgs)
-: SensorImplArgsPass
- {
-    m_can_rx_sub = m_nh.subscribe("can_frames_rx", 128, &CanSensor::can_rx_callback, this);
-    m_can_tx_pub = m_nh.advertise<hwctrl2::CanFrame>("can_frames_tx", 128);
+template<typename T>
+CanSensor<T>::CanSensor(CanSensorArgs)
+: SensorImplArgsPass(T)
+{
+    m_can_rx_sub = CanSensor<T>::m_nh.subscribe("can_frames_rx", 128, &CanSensor::can_rx_callback, this);
+    m_can_tx_pub = CanSensor<T>::m_nh.template advertise<hwctrl2::CanFrame>("can_frames_tx", 128);
 }
 
-SpiSensor::SpiSensor(SpiSensorArgs)
-: SensorImplArgsPass, m_spi_handle(spi_handle), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
+template<typename T>
+SpiSensor<T>::SpiSensor(SpiSensorArgs)
+: SensorImplArgsPass(T), m_spi_handle(spi_handle), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
 {}
 
-
-void SpiSensor::update(const ros::TimerEvent&) {
+template<typename T>
+void SpiSensor<T>::update(const ros::TimerEvent&) {
     spi::spi_set_speed(m_spi_handle, m_spi_speed);
     spi::spi_set_mode(m_spi_handle, m_spi_mode);
     ros::Duration(0.0005).sleep();
@@ -102,3 +99,19 @@ void LimitSwitch::update(const ros::TimerEvent&) {
     msg->timestamp = ros::Time::now();
     m_pub.publish(msg);
 }
+
+
+// Define these types to avoid linking errors
+// this also prevents random things from being published (totally a feature and NOT a bug)
+// eventually I should restructure the project so we dont have to do this
+template class CanSensor<hwctrl2::UwbData>;
+template class CanSensor<hwctrl2::SensorData>;
+template class CanSensor<hwctrl2::LimitSwState>;
+template class CanSensor<sensor_msgs::Imu>;
+
+template class SpiSensor<hwctrl2::SensorData>;
+template class SpiSensor<hwctrl2::LimitSwState>;
+template class SpiSensor<sensor_msgs::Imu>;
+
+template class GpioSensor<hwctrl2::SensorData>;
+template class GpioSensor<hwctrl2::LimitSwState>;

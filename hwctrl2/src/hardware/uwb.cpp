@@ -2,7 +2,7 @@
 
 
 UwbNode::UwbNode(CanSensorArgs)
-: CanSensorArgsPass, m_anchors()
+: CanSensorArgsPass(PubData), m_anchors()
 {
     // reserve space for 5 anchors
     m_anchors.reserve(5);

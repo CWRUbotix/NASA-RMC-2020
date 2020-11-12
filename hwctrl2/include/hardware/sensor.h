@@ -4,6 +4,9 @@
 
 #include <hwctrl2/CanFrame.h>
 #include <hwctrl2/SensorData.h>
+#include <hwctrl2/UwbData.h>
+#include <hwctrl2/LimitSwState.h>
+#include <sensor_msgs/Imu.h>
 
 #include <memory>
 #include <string>
@@ -39,8 +42,8 @@ public:
     );
     virtual ~Sensor() = default;
 
-    virtual void setup() = 0;
-    virtual void update(const ros::TimerEvent&) = 0;
+    virtual void setup() { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id);};
+    virtual void update(const ros::TimerEvent&) { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
 
     void add_calibration(const Calibration& cal);
     boost::optional<const Calibration&> get_calibration_by_name(const std::string& name) const;
@@ -68,27 +71,26 @@ protected:
     ros::Timer      m_update_timer;
 };
 
-#define SensorImplArgsPass SensorImpl(nh, name, desc, type, id, topic, topic_size, update_period)
+#define SensorImplArgsPass(x) SensorImpl<x>(nh, name, desc, type, id, topic, topic_size, update_period)
 
 // TODO: maybe make this fully templated later?
-// template<typename T>
+template<typename T>
 class SensorImpl : public Sensor {
 public:
-    SensorImpl(SensorBaseArgs) : SensorBaseArgsPass {
 
+    SensorImpl(SensorBaseArgs) : SensorBaseArgsPass {
+        m_pub = m_nh.advertise<T>(m_topic, topic_size);
     }
 
-    virtual void setup() override { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id);};
-    virtual void update(const ros::TimerEvent&) override { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
 protected:
-    // using PublishData = T;
+    using PubData = T;
 };
 
 #define CanSensorArgs SensorBaseArgs
-#define CanSensorArgsPass CanSensor(nh, name, desc, type, id, topic, topic_size, update_period)
+#define CanSensorArgsPass(x) CanSensor<x>(nh, name, desc, type, id, topic, topic_size, update_period)
 
-// template<typename T>
-class CanSensor : public SensorImpl {
+template<typename T>
+class CanSensor : public SensorImpl<T> {
 public:
 
     CanSensor(
@@ -106,8 +108,10 @@ protected:
 #define SpiSensorArgs SensorBaseArgs, uint32_t spi_handle, uint32_t spi_speed, uint32_t spi_mode, Gpio& cs_pin
 #define SpiSensorArgsPass SpiSensor(nh, name, desc, type, id, topic, topic_size, update_period, spi_handle, spi_speed, spi_mode, cs_pin)
 
-class SpiSensor : public SensorImpl {
+template<typename T>
+class SpiSensor : public SensorImpl<T> {
 public:
+
     SpiSensor(
         SpiSensorArgs
     );
@@ -129,11 +133,12 @@ protected:
 #define GpioSensorArgs SensorBaseArgs, Gpio& gpio
 #define GpioSensorArgsPass GpioSensor(nh, name, desc, type, id, topic, topic_size, update_period, gpio)
 
-class GpioSensor : public SensorImpl {
+template<typename T>
+class GpioSensor : public SensorImpl<T> {
 public:
     GpioSensor(
         GpioSensorArgs
-    ) : SensorImplArgsPass, m_gpio(gpio) {}
+    ) : SensorImplArgsPass(T), m_gpio(gpio) {}
 
     virtual ~GpioSensor() = default;
 
@@ -141,7 +146,7 @@ protected:
     Gpio& m_gpio;
 };
 
-class GenericGpioSensor : public GpioSensor {
+class GenericGpioSensor : public GpioSensor<hwctrl2::SensorData> {
 public:
     GenericGpioSensor(GpioSensorArgs, Gpio::State on_state = Gpio::State::Set);
     virtual ~GenericGpioSensor() = default;
@@ -153,7 +158,7 @@ private:
     Gpio::State m_on_state;
 };
 
-class LimitSwitch : public GpioSensor {
+class LimitSwitch : public GpioSensor<hwctrl2::LimitSwState> {
 public:    
     LimitSwitch(GpioSensorArgs, uint32_t motor_id, uint32_t allowed_dir);
     virtual ~LimitSwitch() = default;

@@ -16,7 +16,7 @@ void SensorThread::shutdown() {
 }
 
 void SensorThread::setup_sensors() {
-    for(SensorImpl sensor : m_sensors) {
+    for(Sensor sensor : m_sensors) {
         sensor.setup();
     }
 }

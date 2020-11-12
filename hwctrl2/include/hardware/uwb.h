@@ -22,7 +22,7 @@ struct Anchor {
 };
 
 
-class UwbNode : public CanSensor {
+class UwbNode : public CanSensor<hwctrl2::UwbData> {
 public:
     UwbNode(CanSensorArgs);
     virtual ~UwbNode() = default;

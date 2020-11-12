@@ -2,7 +2,7 @@
 
 #include "sensor.h"
 
-class QuadEncoder : public CanSensor {
+class QuadEncoder : public CanSensor<hwctrl2::SensorData> {
 public:
     QuadEncoder(CanSensorArgs, bool inverted);
     virtual ~QuadEncoder() = default;

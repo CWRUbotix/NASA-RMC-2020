@@ -25,7 +25,7 @@ private:
     ros::Rate          m_loop_rate;
     ros::CallbackQueue m_cb_queue;
 
-    std::vector<SensorImpl>  m_sensors;
+    std::vector<Sensor>  m_sensors;
     std::vector<UwbNode> m_uwb_nodes;
     uint32_t             m_uwb_ind;
 };
