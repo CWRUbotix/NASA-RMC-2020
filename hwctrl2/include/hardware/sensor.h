@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 
 #include <hwctrl2/CanFrame.h>
+#include <hwctrl2/SensorData.h>
 
 #include <memory>
 #include <string>
@@ -70,18 +71,23 @@ protected:
 #define SensorImplArgsPass SensorImpl(nh, name, desc, type, id, topic, topic_size, update_period)
 
 // TODO: maybe make this fully templated later?
-// template<typename _T>
+// template<typename T>
 class SensorImpl : public Sensor {
 public:
-    SensorImpl(SensorBaseArgs) : SensorBaseArgsPass {}
+    SensorImpl(SensorBaseArgs) : SensorBaseArgsPass {
+
+    }
 
     virtual void setup() override { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id);};
     virtual void update(const ros::TimerEvent&) override { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
+protected:
+    // using PublishData = T;
 };
 
 #define CanSensorArgs SensorBaseArgs
 #define CanSensorArgsPass CanSensor(nh, name, desc, type, id, topic, topic_size, update_period)
 
+// template<typename T>
 class CanSensor : public SensorImpl {
 public:
 
