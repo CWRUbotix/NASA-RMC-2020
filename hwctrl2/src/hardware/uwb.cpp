@@ -10,13 +10,15 @@ UwbNode::UwbNode(CanSensorArgs)
 
 void UwbNode::setup() {
 
+    m_is_setup = true;
 }
 
-void UwbNode::update(const ros::TimerEvent&) {
+void UwbNode::update() {
 
+    m_update = false;
 }
 
-void UwbNode::can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) {
+void UwbNode::can_rx_callback(FramePtr frame) {
 
 }
 

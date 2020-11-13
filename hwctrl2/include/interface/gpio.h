@@ -13,7 +13,7 @@ public:
         Input = 0, Output
     };
 public:
-    Gpio(std::string, Direction, State);
+    Gpio(std::string, Direction dir = Direction::Input, State state = State::Reset);
     ~Gpio() = default;
 
     void init(std::string, Direction, State);
@@ -27,6 +27,8 @@ public:
     void set_state(State);
     void set();
     void reset();
+
+    void release_handle();
 
 private:
     int get_handle();

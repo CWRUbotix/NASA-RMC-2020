@@ -40,22 +40,6 @@ namespace paths {
 
 const std::string param_base = "/hardware";
 
-const std::vector<std::string> sensor_param_names{
-	"uwb_node_1",
-	"uwb_node_2",
-	"uwb_node_3",
-	"uwb_node_4",
-	"ebay_temperature",
-    "quad_encoder_1",
-	"imu",
-	"adc_1",
-	"adc_2",
-	"limit_1",
-	"limit_2",
-	"limit_3",
-	"limit_4"
-};
-
 const std::vector<std::string> motor_param_names{
 	"port_drive",
 	"starboard_drive",

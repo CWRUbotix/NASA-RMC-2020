@@ -4,11 +4,11 @@
 
 class QuadEncoder : public CanSensor<hwctrl2::SensorData> {
 public:
-    QuadEncoder(CanSensorArgs, bool inverted);
+    QuadEncoder(CanSensorArgs, bool inverted = false);
     virtual ~QuadEncoder() = default;
 
-    void setup() override final;
-    void update(const ros::TimerEvent&) override final;
+    void setup()  override final;
+    void update() override final;
 
     void can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) override final;
 private:

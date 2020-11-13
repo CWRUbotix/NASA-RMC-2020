@@ -6,6 +6,7 @@
 #include <hwctrl2/SensorData.h>
 #include <hwctrl2/UwbData.h>
 #include <hwctrl2/LimitSwState.h>
+
 #include <sensor_msgs/Imu.h>
 
 #include <memory>
@@ -15,6 +16,7 @@
 #include <system_error>
 
 #include <boost/optional.hpp>
+#include <boost/utility/string_view.hpp>
 
 #include "interface/gpio.h"
 #include "interface/spi.h"
@@ -29,8 +31,19 @@ struct Calibration {
 };
 
 enum SensorType {
-
+	NONE,
+	UWB,
+	QUAD_ENC,
+	LIMIT_SW,
+	POT,
+	LOAD_CELL,
+	ADS1120,
+	ADT7310,
+	LSM6DS3,
+	POWER_SENSE,
 };
+
+SensorType get_sensor_type_from_param(boost::string_view type_str);
 
 #define SensorBaseArgs ros::NodeHandle nh, const std::string& name, const std::string& desc, SensorType type, uint32_t id, const std::string& topic, uint32_t topic_size, ros::Duration update_period
 #define SensorBaseArgsPass Sensor(nh, name, desc, type, id, topic, topic_size, update_period)
@@ -42,8 +55,13 @@ public:
     );
     virtual ~Sensor() = default;
 
-    virtual void setup() { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id);};
-    virtual void update(const ros::TimerEvent&) { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
+    // override these
+    virtual void setup()                        { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
+    virtual void update()                       { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
+
+    bool ready_to_update() const { return m_update; }
+
+    void set_update_flag(const ros::TimerEvent&) { m_update = true; }
 
     void add_calibration(const Calibration& cal);
     boost::optional<const Calibration&> get_calibration_by_name(const std::string& name) const;
@@ -62,6 +80,7 @@ protected:
     std::string m_desc;
     std::string m_topic;
     bool        m_is_setup;
+    bool        m_update;
 
     std::vector<Calibration> m_calibrations;
 
@@ -102,7 +121,8 @@ protected:
     ros::Subscriber m_can_rx_sub;
     ros::Publisher  m_can_tx_pub;
 
-    virtual void can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) = 0;
+    using FramePtr = boost::shared_ptr<hwctrl2::CanFrame>;
+    virtual void can_rx_callback(FramePtr frame) = 0;
 };
 
 #define SpiSensorArgs SensorBaseArgs, uint32_t spi_handle, uint32_t spi_speed, uint32_t spi_mode, Gpio& cs_pin
@@ -115,11 +135,10 @@ public:
     SpiSensor(
         SpiSensorArgs
     );
-    virtual ~SpiSensor() = default;
-
-    virtual void update(const ros::TimerEvent&) override final;
-
-    virtual void spi_update() = 0;
+    virtual ~SpiSensor() {
+        // make sure we release gpio handle
+        m_cs.release_handle();
+    };
 
 protected:
     uint32_t m_spi_handle;
@@ -140,7 +159,10 @@ public:
         GpioSensorArgs
     ) : SensorImplArgsPass(T), m_gpio(gpio) {}
 
-    virtual ~GpioSensor() = default;
+    virtual ~GpioSensor() {
+        // make sure we release gpio handle
+        m_gpio.release_handle();
+    };
 
 protected:
     Gpio& m_gpio;
@@ -151,8 +173,8 @@ public:
     GenericGpioSensor(GpioSensorArgs, Gpio::State on_state = Gpio::State::Set);
     virtual ~GenericGpioSensor() = default;
 
-    virtual void setup() override final;
-    virtual void update(const ros::TimerEvent&) override final;
+    virtual void setup()  override final;
+    virtual void update() override final;
 
 private:
     Gpio::State m_on_state;
@@ -163,8 +185,8 @@ public:
     LimitSwitch(GpioSensorArgs, uint32_t motor_id, uint32_t allowed_dir);
     virtual ~LimitSwitch() = default;
 
-    virtual void setup() override final;
-    virtual void update(const ros::TimerEvent&) override final;
+    virtual void setup()  override final;
+    virtual void update() override final;
 protected:
     uint32_t m_motor_id;
     uint32_t m_allowed_dir;

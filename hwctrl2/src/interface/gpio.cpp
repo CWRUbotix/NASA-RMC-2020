@@ -28,6 +28,11 @@ void Gpio::init(std::string path, Direction dir, State state) {
 
 }
 
+void Gpio::release_handle() {
+    close(m_handle);
+    m_handle = -1;
+}
+
 
 void Gpio::set_direction(Direction dir)  {
     std::string dir_str = dir == Direction::Input ? k_in_str : k_out_str;
@@ -74,5 +79,8 @@ Gpio::State Gpio::read_state() const {
     if(m_handle > 0) {
         uint8_t buf = 0;
         int len = read(m_handle, &buf, 1);
-    };
+        return (Gpio::State) buf;
+    } else {
+        // bad
+    }
 }

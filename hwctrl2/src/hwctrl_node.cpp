@@ -16,7 +16,11 @@ int main(int argc, char** argv) {
 
     std::thread sensor_thread_obj(std::ref(sensor_thread));
     std::thread canbus_thread_obj(std::ref(canbus_thread));
-    std::thread motor_thread_obj (std::ref(motor_thread));
+    std::thread motor_thread_obj (std::ref(motor_thread ));
+
+    sensor_thread_obj.detach();
+    canbus_thread_obj.detach();
+    motor_thread_obj .detach();
 
     ros::waitForShutdown();
     return 0;

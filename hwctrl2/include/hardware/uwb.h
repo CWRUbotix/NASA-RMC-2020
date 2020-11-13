@@ -27,10 +27,10 @@ public:
     UwbNode(CanSensorArgs);
     virtual ~UwbNode() = default;
 
-    virtual void setup() override final;
-    virtual void update(const ros::TimerEvent&) override final;
+    virtual void setup()  override final;
+    virtual void update() override final;
 
-    virtual void can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) override final;
+    virtual void can_rx_callback(FramePtr frame) override final;
 
     inline uint32_t get_num_anchors() const { return m_anchors.size(); }
 

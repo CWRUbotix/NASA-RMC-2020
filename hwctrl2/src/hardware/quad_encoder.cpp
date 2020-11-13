@@ -20,11 +20,13 @@ void QuadEncoder::setup() {
     m_is_setup = true;
 }
 
-void QuadEncoder::update(const ros::TimerEvent&) {
+void QuadEncoder::update() {
     // sent rtr frame to id;
     auto frame = boost::make_shared<hwctrl2::CanFrame>();
     frame -> can_id = m_id;
     m_pub.publish(frame);
+
+    m_update = false;
 }
 
 void QuadEncoder::can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) {

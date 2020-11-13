@@ -1,10 +1,33 @@
 #include "hardware/sensor.h"
 
+SensorType get_sensor_type_from_param(boost::string_view type_str) {
+	if(      type_str.compare("uwb")         == 0){
+		return SensorType::UWB;
+	}else if(type_str.compare("quad_enc")    == 0){
+		return SensorType::QUAD_ENC;
+	}else if(type_str.compare("limit")       == 0){
+		return SensorType::LIMIT_SW;
+	}else if(type_str.compare("imu")         == 0){
+		return SensorType::LSM6DS3;
+	}else if(type_str.compare("temperature") == 0){
+		return SensorType::ADT7310;
+	}else if(type_str.compare("adc")         == 0){
+		return SensorType::ADS1120;
+	}else if(type_str.compare("pot")         == 0){
+		return SensorType::POT;
+	}else if(type_str.compare("load_cell") 	 == 0){
+		return SensorType::LOAD_CELL;
+	}else if(type_str.compare("power_sense") == 0){
+		return SensorType::POWER_SENSE;
+	}else{
+		return SensorType::NONE;
+	}
+}
+
 Sensor::Sensor(SensorBaseArgs)
-: m_nh(nh), m_id(id), m_name(name), m_desc(desc), m_topic(topic), m_update_period(update_period), m_type(type)
+: m_nh(nh), m_id(id), m_name(name), m_desc(desc), m_topic(topic), m_update_period(update_period), m_type(type), m_update(true)
 {
-    // TODO: Check if this is ok to call in this construtor
-    m_update_timer = m_nh.createTimer(m_update_period, &Sensor::update, this);
+    m_update_timer = m_nh.createTimer(m_update_period, &Sensor::set_update_flag, this);
 };
 
 
@@ -34,33 +57,16 @@ SpiSensor<T>::SpiSensor(SpiSensorArgs)
 : SensorImplArgsPass(T), m_spi_handle(spi_handle), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
 {}
 
-template<typename T>
-void SpiSensor<T>::update(const ros::TimerEvent&) {
-    spi::spi_set_speed(m_spi_handle, m_spi_speed);
-    spi::spi_set_mode(m_spi_handle, m_spi_mode);
-    ros::Duration(0.0005).sleep();
-
-    // set chip select low
-    m_cs.reset();
-
-    spi_update();
-
-    // set chip select high
-    m_cs.set();
-}
-
 GenericGpioSensor::GenericGpioSensor(GpioSensorArgs, Gpio::State on_state)
 : GpioSensorArgsPass, m_on_state(on_state)
-{
-    m_pub = m_nh.advertise<hwctrl2::SensorData>(m_topic, topic_size);
-}
+{}
 
 void GenericGpioSensor::setup() {
     m_gpio.set_direction(Gpio::Direction::Input);
     m_is_setup = true;
 }
 
-void GenericGpioSensor::update(const ros::TimerEvent&) {
+void GenericGpioSensor::update() {
     if(!m_is_setup){
         ROS_WARN("Cannot update sensor %s (id: %d): not setup yet", m_name.c_str(), m_id);
         return;
@@ -71,13 +77,13 @@ void GenericGpioSensor::update(const ros::TimerEvent&) {
     msg -> sensor_id = m_id;
     msg -> value = (float) (val == m_on_state);
     m_pub.publish(msg);
+
+    m_update = false;
 }
 
 LimitSwitch::LimitSwitch(GpioSensorArgs, uint32_t motor_id, uint32_t allowed_dir)
 : GpioSensorArgsPass, m_motor_id(motor_id), m_allowed_dir(allowed_dir)
-{
-    m_pub = m_nh.advertise<hwctrl2::LimitSwState>(m_topic, topic_size);
-}
+{}
 
 
 void LimitSwitch::setup() {
@@ -85,7 +91,7 @@ void LimitSwitch::setup() {
     m_is_setup = true;
 }
 
-void LimitSwitch::update(const ros::TimerEvent&) {
+void LimitSwitch::update() {
     if(!m_is_setup){
         ROS_WARN("Cannot update sensor %s (id: %d): not setup yet", m_name.c_str(), m_id);
         return;
@@ -98,6 +104,8 @@ void LimitSwitch::update(const ros::TimerEvent&) {
     msg->allowed_dir = m_allowed_dir;
     msg->timestamp = ros::Time::now();
     m_pub.publish(msg);
+
+    m_update = false;
 }
 
 
