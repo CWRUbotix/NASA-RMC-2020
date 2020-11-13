@@ -63,3 +63,7 @@ CATKIN_IGNORE
 # precompiled arrays
 *.npy
 saved_frames/*
+
+# vscode
+.vscode
+.vscode/*
