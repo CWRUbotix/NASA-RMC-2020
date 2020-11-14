@@ -24,9 +24,7 @@ SensorType get_sensor_type_from_param(boost::string_view type_str) {
 	}else if(type_str.compare("imu")         == 0){
 		return SensorType::LSM6DS3;
 	}else if(type_str.compare("temperature") == 0){
-		return SensorType::ADT7310;
-	}else if(type_str.compare("adc")         == 0){
-		return SensorType::ADS1120;
+		return SensorType::TEMP_SENSE;
 	}else if(type_str.compare("pot")         == 0){
 		return SensorType::POT;
 	}else if(type_str.compare("load_cell") 	 == 0){

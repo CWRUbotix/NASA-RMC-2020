@@ -39,8 +39,7 @@ enum SensorType {
 	LIMIT_SW,
 	POT,
 	LOAD_CELL,
-	ADS1120,
-	ADT7310,
+    TEMP_SENSE,
 	LSM6DS3,
 	POWER_SENSE,
 };
@@ -141,6 +140,18 @@ public:
         // make sure we release gpio handle
         m_cs.release_handle();
     };
+protected:
+    void config_spi_settings() {
+        m_spi->set_speed(m_spi_speed);
+        m_spi->set_mode(m_spi_mode);
+        ros::Duration(0.001).sleep();
+    }
+    void transfer_to_device(uint8_t* buf, int buf_len) {
+        m_cs.reset();
+        m_spi->transfer(buf, buf_len);
+        m_cs.set();
+        ros::Duration(0.001).sleep();
+    }
 
 protected:
     boost::shared_ptr<Spi> m_spi;
