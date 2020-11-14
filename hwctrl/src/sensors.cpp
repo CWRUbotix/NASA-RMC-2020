@@ -18,7 +18,7 @@ SensorIf::SensorIf(ros::NodeHandle n) :
 	this->can_rx_sub = this->nh.subscribe("can_frames_rx", 128, &SensorIf::can_rx_callback, this);
 
 	this->can_tx_pub = this->nh.advertise<hwctrl::CanFrame>("can_frames_tx", 128);
-	this->sensor_data_pub = this->nh.advertise<hwctrl::SensorData>("sensor_data", 128);
+	this->sensor_data_pub = this->nh.advertise<std_msgs::Float32>("sensor_data", 128);
 
 	this->limit_sw1_pub = this -> nh.advertise<std_msgs::Bool>("/dumper/dep_bottom_limit_switch", 128);
 	this->limit_sw2_pub = this -> nh.advertise<std_msgs::Bool>("/dumper/top_limit_switch", 128);
