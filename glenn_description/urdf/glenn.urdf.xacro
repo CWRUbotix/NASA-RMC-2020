@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<robot name="glennobi" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name="glenn" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-    <xacro:include filename="$(find glennobi_description)/urdf/glennobi.gazebo.xacro"/>
-    <xacro:include filename="$(find glennobi_description)/urdf/glennobi.transmission.xacro"/>
+    <xacro:include filename="$(find glenn_description)/urdf/glenn.gazebo.xacro"/>
+    <xacro:include filename="$(find glenn_description)/urdf/glenn.transmission.xacro"/>
 
 
     <!-- NOTE Length=x, Width=y, Height=z-->
@@ -128,13 +128,13 @@
         <visual>
             <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
-                <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
+                <mesh filename="package://glenn_description/meshes/chassis.dae"/>
             </geometry>
         </visual>
         <collision>
             <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
             <geometry>
-                <mesh filename="package://glennobi_description/meshes/chassis.dae"/>
+                <mesh filename="package://glenn_description/meshes/chassis.dae"/>
                 <!-- <box size="${bodylength} ${bodywidth} ${bodyheight}"/> -->
             </geometry>
         </collision>
