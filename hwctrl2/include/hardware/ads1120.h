@@ -3,6 +3,8 @@
 #include "interface/gpio.h"
 #include "interface/spi.h"
 
+#include "sensor.h"
+
 #define ADS1120_SPI_MODE  SPI_MODE_1
 #define ADS1120_SPI_SPEED 4000000
 
@@ -90,3 +92,22 @@
 #define ADS1120_IDAC_MUX_REFN0      (0x06 << 5)
 
 #define ADS1120_DRDYM_BOTH          (1 << 1)
+
+
+class PotentiometerADC : public SpiSensor<hwctrl2::SensorData> {
+public:
+    PotentiometerADC();
+    virtual ~PotentiometerADC() = default;
+
+    virtual void setup()  override final;
+    virtual void update() override final;
+};
+
+class LoadCellADC : public SpiSensor<hwctrl2::SensorData> {
+public:
+    LoadCellADC();
+    virtual ~LoadCellADC() = default;
+
+    virtual void setup()  override final;
+    virtual void update() override final;
+};

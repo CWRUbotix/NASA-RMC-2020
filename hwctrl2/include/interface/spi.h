@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <string>
 
 #define SPI_DEFAULT_MODE 	SPI_MODE_0
 #define SPI_DEFAULT_SPEED 	2500000
@@ -11,19 +12,23 @@
 #define SPI_ERR_WRITE_FAILED      (-4)
 #define SPI_ERR_READ_FAILED       (-5)
 
-namespace spi {
-    /* get the file id for the chosen spi bus */
-    int spi_init(const char* fname);
+class Spi {
+public:
+    Spi(const std::string& fname);
+    ~Spi();
 
-    /* set max clock speed in Hz */
-    int spi_set_speed(int f, uint32_t speed);
+    int set_speed(uint32_t speed);
+    int set_mode(uint32_t mode);
+    int cmd(uint8_t cmd, uint8_t* rpy, int rpy_len);
+    uint8_t* transfer(uint8_t* buf, int buf_len);
 
-    /* set the SPI mode */
-    int spi_set_mode(int f, uint8_t mode);
+    inline bool has_error() {return m_error;}
+    inline void clear_error() { m_error = false; }
 
-    /* send a command and read reply bytes */
-    int spi_cmd(int fd, unsigned char cmd, unsigned char * rpy, int rpy_len);
+private:
+    int init(const std::string& fname);
 
-    /* transfer buf_len bytes from buf, store received bytes in buf */
-    unsigned char* spi_transfer(int fd, unsigned char * buf, int buf_len);
-}
+private:
+    int m_file;
+    bool m_error;
+};

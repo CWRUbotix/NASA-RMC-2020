@@ -25,7 +25,7 @@ Gpio::Gpio(std::string path, Direction dir, State state)
 }
 
 void Gpio::init(std::string path, Direction dir, State state) {
-
+    
 }
 
 void Gpio::release_handle() {

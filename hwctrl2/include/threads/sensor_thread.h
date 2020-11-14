@@ -8,16 +8,34 @@
 #include <vector>
 
 #include "hardware/sensor.h"
+
+#include "hardware/sensor.h"
 #include "hardware/quad_encoder.h"
 #include "hardware/uwb.h"
+
+const std::vector<std::string> sensor_param_names{
+	"uwb_node_1",
+	"uwb_node_2",
+	"uwb_node_3",
+	"uwb_node_4",
+	"ebay_temperature",
+    "quad_encoder_1",
+	"imu",
+	"adc_1",
+	"adc_2",
+	"limit_1",
+	"limit_2",
+	"limit_3",
+	"limit_4"
+};
 
 class SensorThread {
 public:
     SensorThread(ros::NodeHandle nh);
     ~SensorThread() = default;
 
-    void configure_from_server();
-    void configure_from_csv();
+    void configure_from_server(boost::shared_ptr<Spi> spi);
+    // void configure_from_csv();
 
     void setup_sensors();
     void update_sensors();

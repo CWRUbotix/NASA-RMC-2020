@@ -1,5 +1,19 @@
 #include "hardware/sensor.h"
 
+#include "util.h"
+
+void read_calibration(const std::string& path, std::vector<Calibration>& cals) {
+    std::vector<std::vector<std::string>> data = csv::read_csv(path);
+    for(auto line : data) {
+        Calibration cal;
+        cal.name = line.at(0);
+        cal.scale = std::stof(line.at(1));
+        cal.offset = std::stof(line.at(2));
+        cal.variance = std::stof(line.at(3));
+        cals.push_back(cal);
+    }
+}
+
 SensorType get_sensor_type_from_param(boost::string_view type_str) {
 	if(      type_str.compare("uwb")         == 0){
 		return SensorType::UWB;
@@ -25,7 +39,7 @@ SensorType get_sensor_type_from_param(boost::string_view type_str) {
 }
 
 Sensor::Sensor(SensorBaseArgs)
-: m_nh(nh), m_id(id), m_name(name), m_desc(desc), m_topic(topic), m_update_period(update_period), m_type(type), m_update(true)
+: m_nh(nh), m_id(id), m_name(name), m_topic(topic), m_update_period(update_period), m_type(type), m_update(true)
 {
     m_update_timer = m_nh.createTimer(m_update_period, &Sensor::set_update_flag, this);
 };
@@ -35,9 +49,9 @@ void Sensor::add_calibration(const Calibration& cal)  {
     m_calibrations.push_back(cal);
 }
 
-boost::optional<const Calibration&> Sensor::get_calibration_by_name(const std::string& name) const {
+boost::optional<const Calibration&> Sensor::get_calibration_by_name(boost::string_view s) const {
     for( auto it = m_calibrations.begin(); it != m_calibrations.end(); ++it) {
-        if(it->name.compare(name) == 0) {
+        if(s.compare(it->name) == 0) {
             return *it;
         } 
     }
@@ -54,7 +68,7 @@ CanSensor<T>::CanSensor(CanSensorArgs)
 
 template<typename T>
 SpiSensor<T>::SpiSensor(SpiSensorArgs)
-: SensorImplArgsPass(T), m_spi_handle(spi_handle), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
+: SensorImplArgsPass(T), m_spi(spi), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
 {}
 
 GenericGpioSensor::GenericGpioSensor(GpioSensorArgs, Gpio::State on_state)
@@ -97,7 +111,7 @@ void LimitSwitch::update() {
         return;
     }
     auto msg = boost::make_shared<hwctrl2::LimitSwState>();
-    auto state = m_gpio.read_state();
+    auto state = m_gpio.read_state(); 
     msg->id = m_id;
     msg->state = (state == Gpio::State::Set);
     msg->motor_id = m_motor_id;

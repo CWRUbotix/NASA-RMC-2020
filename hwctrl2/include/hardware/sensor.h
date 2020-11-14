@@ -30,6 +30,8 @@ struct Calibration {
     float variance;
 };
 
+void read_calibration(const std::string& path, std::vector<Calibration>& cals);
+
 enum SensorType {
 	NONE,
 	UWB,
@@ -45,8 +47,8 @@ enum SensorType {
 
 SensorType get_sensor_type_from_param(boost::string_view type_str);
 
-#define SensorBaseArgs ros::NodeHandle nh, const std::string& name, const std::string& desc, SensorType type, uint32_t id, const std::string& topic, uint32_t topic_size, ros::Duration update_period
-#define SensorBaseArgsPass Sensor(nh, name, desc, type, id, topic, topic_size, update_period)
+#define SensorBaseArgs ros::NodeHandle nh, const std::string& name, SensorType type, uint32_t id, const std::string& topic, uint32_t topic_size, ros::Duration update_period
+#define SensorBaseArgsPass Sensor(nh, name, type, id, topic, topic_size, update_period)
 
 class Sensor {
 public:
@@ -56,28 +58,26 @@ public:
     virtual ~Sensor() = default;
 
     // override these
-    virtual void setup()                        { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
-    virtual void update()                       { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
+    virtual void setup()   { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
+    virtual void update()  { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
 
     bool ready_to_update() const { return m_update; }
 
     void set_update_flag(const ros::TimerEvent&) { m_update = true; }
 
     void add_calibration(const Calibration& cal);
-    boost::optional<const Calibration&> get_calibration_by_name(const std::string& name) const;
+    boost::optional<const Calibration&> get_calibration_by_name(boost::string_view name) const;
 
     inline uint32_t           get_id()    const  { return m_id;       }
     inline SensorType         get_type()  const  { return m_type;     }
     inline bool               is_setup()  const  { return m_is_setup; }
     inline const std::string& get_topic() const  { return m_topic;    }
     inline const std::string& get_name()  const  { return m_name;     }
-    inline const std::string& get_desc()  const  { return m_desc;     }
-
+    
 protected:
     uint32_t    m_id;
     SensorType  m_type;
     std::string m_name;
-    std::string m_desc;
     std::string m_topic;
     bool        m_is_setup;
     bool        m_update;
@@ -90,7 +90,7 @@ protected:
     ros::Timer      m_update_timer;
 };
 
-#define SensorImplArgsPass(x) SensorImpl<x>(nh, name, desc, type, id, topic, topic_size, update_period)
+#define SensorImplArgsPass(x) SensorImpl<x>(nh, name, type, id, topic, topic_size, update_period)
 
 // TODO: maybe make this fully templated later?
 template<typename T>
@@ -105,8 +105,8 @@ protected:
     using PubData = T;
 };
 
-#define CanSensorArgs SensorBaseArgs
-#define CanSensorArgsPass(x) CanSensor<x>(nh, name, desc, type, id, topic, topic_size, update_period)
+#define CanSensorArgs SensorBaseArgs, uint32_t can_id
+#define CanSensorArgsPass(x) CanSensor<x>(nh, name, type, id, topic, topic_size, update_period, can_id)
 
 template<typename T>
 class CanSensor : public SensorImpl<T> {
@@ -118,6 +118,8 @@ public:
     virtual ~CanSensor() = default;
 
 protected:
+    uint32_t        m_can_id;
+
     ros::Subscriber m_can_rx_sub;
     ros::Publisher  m_can_tx_pub;
 
@@ -125,8 +127,8 @@ protected:
     virtual void can_rx_callback(FramePtr frame) = 0;
 };
 
-#define SpiSensorArgs SensorBaseArgs, uint32_t spi_handle, uint32_t spi_speed, uint32_t spi_mode, Gpio& cs_pin
-#define SpiSensorArgsPass SpiSensor(nh, name, desc, type, id, topic, topic_size, update_period, spi_handle, spi_speed, spi_mode, cs_pin)
+#define SpiSensorArgs SensorBaseArgs, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, Gpio& cs_pin
+#define SpiSensorArgsPass(x) SpiSensor<x>(nh, name, type, id, topic, topic_size, update_period, spi, spi_speed, spi_mode, cs_pin)
 
 template<typename T>
 class SpiSensor : public SensorImpl<T> {
@@ -141,7 +143,7 @@ public:
     };
 
 protected:
-    uint32_t m_spi_handle;
+    boost::shared_ptr<Spi> m_spi;
     uint32_t m_spi_speed;
     uint32_t m_spi_mode;
 
@@ -150,7 +152,7 @@ protected:
 };
 
 #define GpioSensorArgs SensorBaseArgs, Gpio& gpio
-#define GpioSensorArgsPass GpioSensor(nh, name, desc, type, id, topic, topic_size, update_period, gpio)
+#define GpioSensorArgsPass GpioSensor(nh, name, type, id, topic, topic_size, update_period, gpio)
 
 template<typename T>
 class GpioSensor : public SensorImpl<T> {

@@ -5,10 +5,12 @@
 #include <array>
 #include <string>
 
+#include <boost/utility/string_view.hpp>
+
 
 namespace csv {
-    std::vector<std::vector<std::string>> read_csv(std::string fpath);
-    bool write_csv(std::string fpath, std::vector<std::vector<std::string>> data);
+    std::vector<std::vector<std::string>> read_csv(const std::string& fpath);
+    bool write_csv(const std::string& fpath, std::vector<std::vector<std::string>> data);
 }
 
 
