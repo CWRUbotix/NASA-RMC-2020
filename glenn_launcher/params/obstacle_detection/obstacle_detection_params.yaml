@@ -11,4 +11,4 @@ realsense/y: 0.266  # (m) y offset of realsense from center of robot
 realsense/yaw: -90  # (degrees) angle from robot coordinate to camera coordinate system
 realsense/img_h: 640  # (px) height of realsense depth image
 realsense/img_w: 480  # (px) width of realsense depth image
-realsense/fps: 30  # (frames per second) rate of depth frame updates
+realsense/fps: 6  # (frames per second) rate of depth frame updates
