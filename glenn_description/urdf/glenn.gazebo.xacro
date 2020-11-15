@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+
+<robot name="glenn_gazebo_description" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro name="wheel_gazebo" params="prefix">
+        <gazebo reference="${prefix}_wheel_link">
+            <material>Gazebo/Grey</material>
+            <mu1 value="0.6"/>
+            <mu2 value="0.6"/>
+        </gazebo>
+    </xacro:macro>
+
+    <gazebo reference="base_link">
+        <material>Gazebo/Blue</material>
+    </gazebo>
+
+    <gazebo reference="realsense_link">
+        <sensor name="realsense_camera" type="depth">
+            <update_rate>6</update_rate>
+            <camera>
+                <pose>0 0 0 ${pi/2} ${-pi/2} 0</pose>
+                <horizontal_fov>${radians(85.0)}</horizontal_fov>
+                <image>
+                    <width>848</width>
+                    <height>480</height>
+                    <format>R8G8B8</format>
+                </image>
+                <clip>
+                    <near>0.2</near>
+                    <far>4.0</far>
+                </clip>
+            </camera>
+            <plugin name="depth_camera_plugin" filename="libgazebo_ros_openni_kinect.so">
+                <alwaysOn>true</alwaysOn>
+                <updateRate>0.0</updateRate>
+                <cameraName>realsense</cameraName>
+                <frameName>realsense_link</frameName>
+                <imageTopicName>color/image_raw</imageTopicName>
+                <cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
+                <depthImageTopicName>depth/image_raw</depthImageTopicName>
+                <depthImageInfoTopicName>depth/camera_info</depthImageInfoTopicName>
+                <pointCloudTopicName>depth/points</pointCloudTopicName>
+                <pointCloudCutoff>0.2</pointCloudCutoff>
+                <pointCloudCutoffMax>4.0</pointCloudCutoffMax>
+                <distortionK1>0.0</distortionK1>
+                <distortionK2>0.0</distortionK2>
+                <distortionK3>0.0</distortionK3>
+                <distortionT1>0.0</distortionT1>
+                <distortionT2>0.0</distortionT2>
+                <CxPrime>0</CxPrime>
+                <Cx>0</Cx>
+                <Cy>0</Cy>
+                <focalLength>0</focalLength>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+    <!-- gazebo_ros_p3d for position groundtruth -->
+    <gazebo>
+        <plugin name="p3d_base_link_controller" filename="libcustom_p3d_plugin.so">
+            <alwaysOn>true</alwaysOn>
+            <updateRate>5.0</updateRate>
+            <bodyName>base_link</bodyName>
+            <topicName>/uwb_nodes</topicName>
+            <frameName>map</frameName>
+            <xyzOffsets>0 0 0</xyzOffsets>
+            <rpyOffsets>0 0 0</rpyOffsets>
+            <gaussianNoise>0.15</gaussianNoise>
+        </plugin>
+    </gazebo>
+
+    <gazebo reference="realsense_link">
+        <gravity>true</gravity>
+        <sensor name="imu_realsense" type="imu">
+        <always_on>true</always_on>
+        <update_rate>40.0</update_rate>
+        <visualize>false</visualize>
+            <plugin name="imu_plugin" filename="libgazebo_ros_imu_sensor.so">
+                <topicName>imu_realsense/data_raw</topicName>
+                <bodyName>realsense_link</bodyName>
+                <updateRateHZ>40.0</updateRateHZ>
+                <gaussianNoise>0.01</gaussianNoise>
+                <xyzOffset>0 0 0</xyzOffset>
+                <rpyOffset>0 0 0</rpyOffset>
+                <frameName>realsense_link</frameName>
+                <initialOrientationAsReference>false</initialOrientationAsReference>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="imu_link">
+        <gravity>true</gravity>
+        <sensor name="imu_sensor" type="imu">
+        <always_on>true</always_on>
+        <update_rate>30</update_rate>
+        <visualize>false</visualize>
+        <topic>imu</topic>
+            <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+                <topicName>imu</topicName>
+                <bodyName>imu_link</bodyName>
+                <updateRateHZ>30.0</updateRateHZ>
+                <gaussianNoise>0.01</gaussianNoise>
+                <xyzOffset>0 0 0</xyzOffset>
+                <rpyOffset>0 0 0</rpyOffset>
+                <frameName>imu_link</frameName>
+                <initialOrientationAsReference>false</initialOrientationAsReference>
+            </plugin>
+        <pose>0 0 0 0 0 0</pose>
+        </sensor>
+    </gazebo>
+
+  <!-- Gazebo plugin for ROS Control -->
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <legacyModeNS>true</legacyModeNS>
+            <robotNamespace>/</robotNamespace>
+        </plugin>
+    </gazebo>
+</robot>

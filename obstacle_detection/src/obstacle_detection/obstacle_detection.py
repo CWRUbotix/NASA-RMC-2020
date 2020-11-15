@@ -40,6 +40,7 @@ class ObstacleDetectionNode:
 
         # RealSense physical orientation in the real world.
         self.camera_x_offset = rospy.get_param('obstacle_detection/realsense/x')
+        self.camera_y_offset = rospy.get_param('obstacle_detection/realsense/y')
         self.camera_pos = {
             "x": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
             "y": 0,  # actual position in meters of RealSense sensor relative to the viewport's center.
@@ -212,8 +213,8 @@ class ObstacleDetectionNode:
         map_meta_data.resolution = self.resolution
         map_meta_data.width = self.grid_size
         map_meta_data.height = self.grid_size
-        map_meta_data.origin = Pose(Point(self.camera_x_offset, -self.grid_size * self.resolution / 2, 0),
-                                    Quaternion(0, 0, sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
+        map_meta_data.origin = Pose(Point(self.camera_x_offset, self.grid_size * self.resolution / 2 + self.camera_y_offset, 0),
+                                    Quaternion(0, 0, -sqrt(2)/2, sqrt(2)/2))  # 90 degree rotation
 
         grid_msg = OccupancyGrid()
         grid_msg.header = header

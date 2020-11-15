@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<robot name="realsense" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="realsense" params="name">
+
+    <!-- The following values are approximate, and the camera node
+     publishing TF values with actual calibrated camera extrinsic values -->
+    <xacro:property name="d435_cam_depth_to_infra1_offset" value="0.0"/>
+    <xacro:property name="d435_cam_depth_to_infra2_offset" value="-0.050"/>
+    <xacro:property name="d435_cam_depth_to_color_offset" value="0.015"/>
+  
+    <!-- The following values model the aluminum peripherial case for the
+    D435 camera, with the camera joint represented by the actual 
+    peripherial camera tripod mount -->
+    <xacro:property name="d435_cam_width" value="0.090"/>
+    <xacro:property name="d435_cam_height" value="0.025"/>
+    <xacro:property name="d435_cam_depth" value="0.02505"/>
+    <xacro:property name="d435_cam_mount_from_center_offset" value="0.0149"/>
+  
+    <!-- The following offset is relative the the physical D435 camera peripherial
+    camera tripod mount -->
+    <xacro:property name="d435_cam_depth_px" value="${d435_cam_mount_from_center_offset}"/>
+    <xacro:property name="d435_cam_depth_py" value="0.0175"/>
+    <xacro:property name="d435_cam_depth_pz" value="${d435_cam_height/2}"/>
+
+    <!-- Our robot's coordinates to RealSense-->
+    <xacro:macro name="realsense_origin">
+      <origin xyz="0.48 0.162 0.11" rpy="${-(20.42+90)*pi/180} 0 ${-pi/2}"/>
+    </xacro:macro>
+
+    <material name="${name}_aluminum">
+      <color rgba="0.5 0.5 0.5 1"/>
+    </material>
+
+    <link name="${name}_footprint_link"/>
+
+    <joint name="${name}_footprint_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${name}_footprint_link"/>
+      <origin xyz="0.48 0.162 0.11" rpy="0 0 ${-pi/2}"/>
+    </joint>
+
+    <link name="${name}_link">
+      <visual>
+        <!-- offset to location of a lens -->
+        <origin xyz="${-d435_cam_depth_py} 0 0" rpy="${pi/2} 0 0"/>
+        <geometry>
+          <box size="${d435_cam_width} ${d435_cam_height} ${d435_cam_depth}"/>
+        </geometry>
+        <material name="${name}_aluminum"/>
+      </visual>
+      <collision>
+        <origin xyz="${-d435_cam_depth_py} 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${d435_cam_depth} ${d435_cam_width} ${d435_cam_height}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${name}_footprint_link"/>
+      <child link="${name}_link"/>
+      <origin xyz="0 0 0" rpy="${-radians(20.42 + 90)} 0 0"/>
+    </joint>
+
+    <!-- realsense_link will move due to imu data calulated with imu filter -->
+   <!--  <link name="${name}_link"/>
+
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${name}_stabilized_link"/>
+      <child link="${name}_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint> -->
+  </xacro:macro>
+</robot>

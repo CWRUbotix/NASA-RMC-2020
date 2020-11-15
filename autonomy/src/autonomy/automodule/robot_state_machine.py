@@ -3,6 +3,8 @@
 import rospy
 import smach
 import smach_ros
+
+from actionlib.msg import TestAction, TestGoal
 from actionlib_msgs.msg import GoalStatus
 
 from glenn_msgs.msg import GoToGoalAction, GoToGoalGoal
@@ -19,26 +21,6 @@ class Calibrate(smach.State):
         return 'succeeded'
 
 
-class Dig(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'],
-                             output_keys=['direction_out'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state DIG')
-        userdata.direction_out = 'dump'
-        return 'succeeded'
-
-
-class Dump(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state DUMP')
-        return 'succeeded'
-
-
 class RobotStateMachine():
     def __init__(self):
         rospy.init_node("robot_state_machine")
@@ -47,7 +29,7 @@ class RobotStateMachine():
 
         self.sm = self.construct_state_machine()
 
-        sis = smach_ros.IntrospectionServer('server_name', self.sm, '/SM_ROOT')
+        sis = smach_ros.IntrospectionServer('robot_state_machine_server', self.sm, '/SM_ROOT')
         sis.start()
 
         self.outcome = self.sm.execute()
@@ -72,16 +54,32 @@ class RobotStateMachine():
                                         goal_cb=self.drive_goal_cb,
                                         result_cb=self.drive_result_cb,
                                         input_keys=['direction_in'],
-                                        outcomes=['succeeded_dig', 'succeeded_dump']),
+                                        outcomes=['succeeded_dig', 'succeeded_dump']
+                                    ),
                                    transitions={'succeeded_dig': 'DIG',
                                                 'succeeded_dump': 'DUMP'},
                                    remapping={'direction_in': 'sm_drive_direction'})
 
-            smach.StateMachine.add('DIG', Dig(),
-                                   transitions={'succeeded': 'DRIVE'},
-                                   remapping={'direction_out': 'sm_drive_direction'})
+            smach.StateMachine.add('DIG',
+                                    smach_ros.SimpleActionState(
+                                        'dig',
+                                        TestAction,
+                                        goal=TestGoal(0),
+                                        result_cb=self.dig_result_cb,
+                                        outcomes=['succeeded'],
+                                        output_keys=['direction_out']
+                                    ),
+                                    transitions={'succeeded': 'DRIVE'},
+                                    remapping={'direction_out': 'sm_drive_direction'})
 
-            smach.StateMachine.add('DUMP', Dump(),
+            smach.StateMachine.add('DUMP',
+                                    smach_ros.SimpleActionState(
+                                        'dump',
+                                        TestAction,
+                                        goal=TestGoal(1),
+                                        result_cb=self.dump_result_cb,
+                                        outcomes=['succeeded'],
+                                    ),
                                    transitions={'succeeded': 'succeeded'})
 
         return sm
@@ -90,7 +88,7 @@ class RobotStateMachine():
         if userdata.direction_in == 'dig':
             drive_goal = GoToGoalGoal(x=2.5, y=1.5)
         else:
-            drive_goal = GoToGoalGoal(x=1.5, y=0.75)
+            drive_goal = GoToGoalGoal(x=1.5, y=0.85)
 
         rospy.loginfo("State DRIVE sending goal: " + str(drive_goal.x) + ", " + str(drive_goal.y))
         return drive_goal
@@ -99,6 +97,15 @@ class RobotStateMachine():
         rospy.loginfo("DRIVE state returned with status: " + GoalStatus.to_string(status))
         if status == GoalStatus.SUCCEEDED:
             return 'succeeded_dig' if userdata.direction_in == 'dig' else 'succeeded_dump'
+
+    def dig_result_cb(self, userdata, status, result):
+        rospy.loginfo("DIG state returned with status: " + GoalStatus.to_string(status))
+        userdata.direction_out = 'dump'
+        return 'succeeded'
+
+    def dump_result_cb(self, userdata, status, result):
+        rospy.loginfo("DUMP state returned with status: " + GoalStatus.to_string(status))
+        return 'succeeded'
 
     def shutdown(self):
         rospy.logwarn("Shutting down robot state machine")
