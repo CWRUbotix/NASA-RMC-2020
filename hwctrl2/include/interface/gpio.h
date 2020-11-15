@@ -16,7 +16,7 @@ public:
     Gpio(std::string, Direction dir = Direction::Input, State state = State::Reset);
     ~Gpio() = default;
 
-    void init(std::string, Direction, State);
+    int init(std::string, Direction, State);
     
 
     void set_direction(Direction);

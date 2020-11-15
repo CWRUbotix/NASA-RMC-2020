@@ -1,5 +1,7 @@
 #include "interface/gpio.h"
 
+#include <ros/ros.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -21,11 +23,27 @@ Gpio::Gpio(std::string path, Direction dir, State state)
     // heap allocation bad
     m_dir_path   = m_path + "direction";
     m_value_path = m_path + "value";
-    init(path, dir, state);
+
+    // get handle
+    m_handle = init(path, dir, state);
 }
 
-void Gpio::init(std::string path, Direction dir, State state) {
-    
+int Gpio::init(std::string path, Direction dir, State state) {
+    if(dir == Direction::Input){
+        set_direction(dir);
+        return get_handle();
+    }else if(dir == Direction::Output){
+        int fd = open(m_value_path.c_str(), O_RDWR);
+        if(state == State::Set){
+            set();
+        }else{
+            reset();
+        }
+        set_direction(Direction::Output);
+        return fd;
+    }else{
+        return -1;
+    }
 }
 
 void Gpio::release_handle() {
@@ -63,7 +81,7 @@ void Gpio::set_state(State state) {
         char b = state == State::Set ? '1' : '0';
         write(m_handle, &b, 1);
     } else {
-        // ROS_WARN
+        ROS_WARN("Bad handle in gpio @ %s", m_path.c_str());
     }
 }
 
@@ -81,6 +99,6 @@ Gpio::State Gpio::read_state() const {
         int len = read(m_handle, &buf, 1);
         return (Gpio::State) buf;
     } else {
-        // bad
+        ROS_WARN("Bad handle in gpio @ %s", m_path.c_str());
     }
 }
