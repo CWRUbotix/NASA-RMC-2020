@@ -11,7 +11,7 @@
 #include <boost/filesystem.hpp>
 
 
-SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
+SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000), m_uwb_update_pd(0.01), m_uwb_idx(0) {
     m_sensors  .reserve(MAX_NUMBER_OF_SENSORS);
     m_uwb_nodes.reserve(4);
 
@@ -55,6 +55,14 @@ SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
 			}
 		}
 	}
+
+    // start uwb updates
+    m_uwb_update_timer = m_nh.createTimer(m_uwb_update_pd, &SensorThread::uwb_ping_callback, this);
+}
+
+void SensorThread::uwb_ping_callback(const ros::TimerEvent&) {
+    m_uwb_nodes.at(m_uwb_idx++).ping();
+    m_uwb_idx %= m_uwb_nodes.size();
 }
 
 void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
@@ -102,7 +110,8 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
 		}
 
         auto sensor = create_sensor_from_values(m_nh, name_str, type, can_id, period, std::move(gpio), spi);
-        m_sensors.push_back(*sensor); 
+        if(sensor != nullptr)
+            m_sensors.push_back(*sensor); 
     }
 }
 
@@ -115,8 +124,12 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
     boost::shared_ptr<Sensor> sensor;
     switch(type) {
         case SensorType::UWB: {
+            // I dont think we want to update all of these at the same time.
             auto node = boost::make_shared<UwbNode>(nh, name, type, sys_id_idx++, "localization_data", 1024, period, can_id);
             m_uwb_nodes.push_back(*node);
+
+            // return null ptr
+            // return nullptr;
             sensor = node;
             break;
         }

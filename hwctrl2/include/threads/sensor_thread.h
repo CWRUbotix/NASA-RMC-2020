@@ -2,6 +2,7 @@
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
+#include <ros/timer.h>
 
 #include <boost/utility/string_view.hpp>
 #include <boost/move/unique_ptr.hpp>
@@ -41,6 +42,8 @@ public:
     ~SensorThread() = default;
 
     void configure_from_server(boost::shared_ptr<Spi> spi);
+
+    // Dont think we need this anymore
     // void configure_from_csv();
 
     void setup_sensors();
@@ -55,12 +58,17 @@ private:
         ros::NodeHandle nh, std::string name, SensorType type, uint32_t id,
         ros::Duration period, unique_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
     );
+
+    void uwb_ping_callback(const ros::TimerEvent&);
 private:
     ros::NodeHandle    m_nh;
     ros::Rate          m_loop_rate;
     ros::CallbackQueue m_cb_queue;
 
     std::vector<Sensor>  m_sensors;
+
     std::vector<UwbNode> m_uwb_nodes;
-    uint32_t             m_uwb_ind;
+    uint32_t             m_uwb_idx;
+    ros::Duration        m_uwb_update_pd;
+    ros::Timer           m_uwb_update_timer;
 };

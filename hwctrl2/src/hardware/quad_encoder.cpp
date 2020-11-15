@@ -30,7 +30,9 @@ void QuadEncoder::update() {
 }
 
 void QuadEncoder::can_rx_callback(boost::shared_ptr<hwctrl2::CanFrame> frame) {
-    if(frame->can_id != m_id) {
+    uint32_t rx_id = (uint32_t)frame->can_id;
+	uint32_t can_id = (rx_id & 0xFF);
+    if(can_id != m_can_id) {
         // not for us
         return;
     }
