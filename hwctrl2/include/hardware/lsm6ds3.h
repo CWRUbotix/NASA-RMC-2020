@@ -164,7 +164,7 @@ public:
 	using VarianceMatrix        = boost::array<double, 9>;
 public:
 	Lsm6ds3(
-		ros::NodeHandle nh, std::string name, uint32_t id, std::string topic,
+		ros::NodeHandle nh, const std::string& name, uint32_t id, const std::string& topic,
 		uint32_t topic_size, ros::Duration update_period, boost::shared_ptr<Spi> spi, boost::movelib::unique_ptr<Gpio> cs,
 		uint32_t samples = 5
 	);

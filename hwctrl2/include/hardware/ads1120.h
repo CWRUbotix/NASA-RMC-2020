@@ -97,7 +97,7 @@
 class PotentiometerADC : public SpiSensor<hwctrl2::SensorData> {
 public:
     PotentiometerADC(
-        ros::NodeHandle nh, std::string name, uint32_t id, std::string topic,
+        ros::NodeHandle nh, const std::string& name, uint32_t id, const std::string& topic,
         uint32_t size, ros::Duration update_period, boost::shared_ptr<Spi> spi, boost::movelib::unique_ptr<Gpio> cs_pin
     );
     virtual ~PotentiometerADC() = default;
@@ -109,7 +109,7 @@ public:
 class LoadCellADC : public SpiSensor<hwctrl2::SensorData> {
 public:
     LoadCellADC(
-        ros::NodeHandle nh, std::string name, uint32_t id, std::string topic,
+        ros::NodeHandle nh, const std::string& name, uint32_t id, const std::string& topic,
         uint32_t size, ros::Duration update_period, boost::shared_ptr<Spi> spi, boost::movelib::unique_ptr<Gpio> cs_pin
     );
     virtual ~LoadCellADC() = default;
