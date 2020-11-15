@@ -3,130 +3,130 @@
 # BEGIN SENSOR CONFIGS
 hardware:
   sensor:
-    uwb_node_1:
-      name: 'UWB NODE 1'
-      type: 'uwb'
-      interface: 'can'
-      can_id: 1
-      update_period: 0.1
-    uwb_node_2:
-      name: 'UWB NODE 2'
-      type: 'uwb'
-      interface: 'can'
-      can_id: 2
-      update_period: 0.1
-    uwb_node_3:
-      name: 'UWB NODE 3'
-      type: 'uwb'
-      interface: 'can'
-      can_id: 3
-      update_period: 0.1
-    uwb_node_4:
-      name: 'UWB NODE 4'
-      type: 'uwb'
-      interface: 'can'
-      can_id: 4
-      update_period: 0.1
-    ebay_temperature:
-      name: 'EBAY TEMPERATURE'
-      interface: 'spi'
-      gpio: '/sys/class/gpio/gpio69/'
-      over_temp_gpio: '/sys/class/gpio/gpio27/'
-      critical_temp_gpio: '/sys/class/gpio/gpio61/'
-      update_period: 1.0
-    imu:
-      name: 'IMU'
-      type: 'imu'
-      interface: 'spi'
-      gpio: '/sys/class/gpio/gpio66/'
-      update_period: 0.005
-    adc_1:
-      name: 'ADC 1'
-      type: 'adc'
-      interface: 'spi'
-      gpio: '/sys/class/gpio/gpio67/'
-      update_period: 0.01
-    adc_2:
-      name: 'ADC 2'
-      type: 'adc'
-      interface: 'spi'
-      gpio: '/sys/class/gpio/gpio68/'
-      update_period: 0.01
-    limit_1:
-      name: 'LIMIT DEP LOWER'
-      type: 'limit'
-      interface: 'gpio'
-      gpio: '/sys/class/gpio/gpio60/'
-    limit_2:
-      name: 'LIMIT DEP UPPER'
-      type: 'limit'
-      interface: 'gpio'
-      gpio: '/sys/class/gpio/gpio48/'
-    limit_3:
-      name: 'LIMIT EXC TRANS LOWER'
-      type: 'limit'
-      interface: 'gpio'
-      gpio: '/sys/class/gpio/gpio49/'
-    limit_4:
-      name: 'LIMIT EXC TRANS UPPER'
-      type: 'limit'
-      interface: 'gpio'
-      gpio: '/sys/class/gpio/gpio117/'
+  uwb_node_1:
+    name: 'UWB NODE 1'
+    type: 'uwb'
+    interface: 'can'
+    can_id: 1
+    update_period: 0.1
+  uwb_node_2:
+    name: 'UWB NODE 2'
+    type: 'uwb'
+    interface: 'can'
+    can_id: 2
+    update_period: 0.1
+  uwb_node_3:
+    name: 'UWB NODE 3'
+    type: 'uwb'
+    interface: 'can'
+    can_id: 3
+    update_period: 0.1
+  uwb_node_4:
+    name: 'UWB NODE 4'
+    type: 'uwb'
+    interface: 'can'
+    can_id: 4
+    update_period: 0.1
+  ebay_temperature:
+    name: 'EBAY TEMPERATURE'
+    interface: 'spi'
+    gpio: '/sys/class/gpio/gpio69/'
+    over_temp_gpio: '/sys/class/gpio/gpio27/'
+    critical_temp_gpio: '/sys/class/gpio/gpio61/'
+    update_period: 1.0
+  imu:
+    name: 'IMU'
+    type: 'imu'
+    interface: 'spi'
+    gpio: '/sys/class/gpio/gpio66/'
+    update_period: 0.005
+  adc_1:
+    name: 'ADC 1'
+    type: 'adc'
+    interface: 'spi'
+    gpio: '/sys/class/gpio/gpio67/'
+    update_period: 0.01
+  adc_2:
+    name: 'ADC 2'
+    type: 'adc'
+    interface: 'spi'
+    gpio: '/sys/class/gpio/gpio68/'
+    update_period: 0.01
+  limit_1:
+    name: 'LIMIT DEP LOWER'
+    type: 'limit'
+    interface: 'gpio'
+    gpio: '/sys/class/gpio/gpio60/'
+  limit_2:
+    name: 'LIMIT DEP UPPER'
+    type: 'limit'
+    interface: 'gpio'
+    gpio: '/sys/class/gpio/gpio48/'
+  limit_3:
+    name: 'LIMIT EXC TRANS LOWER'
+    type: 'limit'
+    interface: 'gpio'
+    gpio: '/sys/class/gpio/gpio49/'
+  limit_4:
+    name: 'LIMIT EXC TRANS UPPER'
+    type: 'limit'
+    interface: 'gpio'
+    gpio: '/sys/class/gpio/gpio117/'
 
 # BEGIN MOTOR CONFIGS
   motor:
-    port_drive:
-      name: 'PORT DRIVE'
-      type: 'vesc'
-      interface: 'can'
-      can_id: 5
-      gear_reduction: 630 # gear_reduc*pole_pairs
-      max_rpm: 100
-      max_acceleration: 75
-      update_period: 0.25
-    starboard_drive:
-      name: 'STARBOARD DRIVE'
-      type: 'vesc'
-      interface: 'can'
-      can_id: 6
-      gear_reduction: 630 # gear_reduc*pole_pairs
-      max_rpm: 100
-      max_acceleration: 75
-      update_period: 0.25
-    dep:
-      name: 'DEPOSITION DUNKERINO'
-      type: 'vesc'
-      interface: 'can'
-      can_id: 7
-      gear_reduction: 245 # gear_reduc*pole_pairs
-      max_rpm: 140
-      max_acceleration: 50
-      update_period: 0.25
-    exc_belt:
-      name: 'EXCAVATION BELT'
-      type: 'vesc'
-      interface: 'can'
-      can_id: 8
-      gear_reduction: 245 # gear_reduc*pole_pairs
-      max_rpm: 140
-      max_acceleration: 50
-      update_period: 0.25
-    exc_translation:
-      name: 'EXCAVATION TRANSLATION'
-      type: 'vesc'
-      interface: 'can'
-      can_id: 9
-      gear_reduction: 245 # gear_reduc*pole_pairs
-      max_rpm: 140
-      max_acceleration: 50
-      update_period: 0.25
-    exc_port_act:
-      name: 'EXCAVATION PORT ACTUATOR'
-      type: 'brushed_motor'
-      interface: 'can'
-      can_id: 10
-    exc_starboard_act:
-      name: 'EXCAVATION STARBOARD ACTUATOR'
-      type: 'brushed_motor'
-      interface: 'can'
-      can_id: 11
+  port_drive:
+    name: 'PORT DRIVE'
+    type: 'vesc'
+    interface: 'can'
+    can_id: 5
+    gear_reduction: 630 # gear_reduc*pole_pairs
+    max_rpm: 100
+    max_acceleration: 75
+    update_period: 0.25
+  starboard_drive:
+    name: 'STARBOARD DRIVE'
+    type: 'vesc'
+    interface: 'can'
+    can_id: 6
+    gear_reduction: 630 # gear_reduc*pole_pairs
+    max_rpm: 100
+    max_acceleration: 75
+    update_period: 0.25
+  dep:
+    name: 'DEPOSITION DUNKERINO'
+    type: 'vesc'
+    interface: 'can'
+    can_id: 7
+    gear_reduction: 245 # gear_reduc*pole_pairs
+    max_rpm: 140
+    max_acceleration: 50
+    update_period: 0.25
+  exc_belt:
+    name: 'EXCAVATION BELT'
+    type: 'vesc'
+    interface: 'can'
+    can_id: 8
+    gear_reduction: 245 # gear_reduc*pole_pairs
+    max_rpm: 140
+    max_acceleration: 50
+    update_period: 0.25
+  exc_translation:
+    name: 'EXCAVATION TRANSLATION'
+    type: 'vesc'
+    interface: 'can'
+    can_id: 9
+    gear_reduction: 245 # gear_reduc*pole_pairs
+    max_rpm: 140
+    max_acceleration: 50
+    update_period: 0.25
+  exc_port_act:
+    name: 'EXCAVATION PORT ACTUATOR'
+    type: 'brushed_motor'
+    interface: 'can'
+    can_id: 10
+  exc_starboard_act:
+    name: 'EXCAVATION STARBOARD ACTUATOR'
+    type: 'brushed_motor'
+    interface: 'can'
+    can_id: 11

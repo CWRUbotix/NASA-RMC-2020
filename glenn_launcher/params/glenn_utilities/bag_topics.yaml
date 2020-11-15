@@ -1,7 +1,7 @@
 topics: [
   "/accel/filtered",
   "/diagnostics",
-  "/glennobi_diff_drive_controller/cmd_vel",
+  "/glenn_base/cmd_vel",
   "/global_occupancy_grid",
   "/go_to_goal/cancel",
   "/go_to_goal/feedback",
