@@ -16,24 +16,19 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, TwistWithCovariance, Twist
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
-from hwctrl.msg import MotorData, SensorData
+from hwctrl.msg import Encoders, SensorData
 
 
 class IMU:
     def __init__(self):
-        self.topic = 'imu'
         self.viz_dir = 'imu_plots'
         self.save_plots = False
-        print('Booting up node...')
-        rospy.init_node('imu_listener', anonymous=True)
+        rospy.loginfo('Imu listener node initializing')
+        rospy.init_node('imu_listener_node', anonymous=True)
         self.orientation = np.zeros(3)
-        self.orientation_marker = np.zeros(3)
         self.angular_velocity = np.zeros(3)
-        self.angular_velocity_marker = np.zeros(3)
         self.acceleration = np.zeros(3)
-        self.acceleration_marker = np.zeros(3)
-        self.port_encoder = 0
-        self.starboard_encoder = 0
+
         self.wheel_radius = rospy.get_param('wheel_radius')
         self.robot_width = rospy.get_param('effective_robot_width')
 
@@ -44,7 +39,13 @@ class IMU:
         self.angular_velocity_offset = [rospy.get_param('imu_angular_vel_x_offset'),
                                         rospy.get_param('imu_angular_vel_y_offset'),
                                         rospy.get_param('imu_angular_vel_z_offset')]
-        self.acceleration_offset = [0, 0]
+        self.acceleration_offset = [0, 0, 0]
+
+        self.wheel_pub = rospy.Publisher('wheel', Odometry, queue_size=10)
+        self.imu_pub = rospy.Publisher('imu/data', Imu, queue_size=10)
+
+        rospy.Subscriber('imu/data_raw', Imu, self.receive_imu)
+        rospy.Subscriber('glenn_base/encoders', Encoders, self.receive_encoders)
 
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
@@ -54,116 +55,73 @@ class IMU:
         except Exception as e:
             print(e)
 
-    def motor_callback(self, msg):
-        if msg.id == 0 and msg.data_type == 0:  # port message and RPM value
-            self.port_encoder = msg.value
-        if msg.id == 1 and msg.data_type == 0:  # starboard message and RPM value
-            self.starboard_encoder = msg.value
-        self.compose_wheel_msg()
+        rospy.spin()
 
-    def sensor_callback(self, msg):
-        if msg.sensor_id == 30:
-            self.orientation[0] = msg.value
-            self.orientation_marker[0] = 1
-        elif msg.sensor_id == 31:
-            self.orientation[1] = msg.value
-            self.orientation_marker[1] = 1
-        elif msg.sensor_id == 32:
-            self.orientation[2] = msg.value
-            self.orientation_marker[2] = 1
-        elif msg.sensor_id == 17:
-            self.angular_velocity[0] = msg.value + self.angular_velocity_offset[0]
-            self.angular_velocity_marker[0] = 1
-        elif msg.sensor_id == 18:
-            self.angular_velocity[1] = msg.value + self.angular_velocity_offset[1]
-            self.angular_velocity_marker[1] = 1
-        elif msg.sensor_id == 19:
-            self.angular_velocity[2] = msg.value + self.angular_velocity_offset[2]
-            self.angular_velocity_marker[2] = 1
-        elif msg.sensor_id == 20:
-            self.acceleration[0] = msg.value + self.acceleration_offset[0]
-            self.acceleration_marker[0] = 1
-        elif msg.sensor_id == 21:
-            self.acceleration[1] = msg.value + self.acceleration_offset[1]
-            self.acceleration_marker[1] = 1
-        elif msg.sensor_id == 22:
-            self.acceleration[2] = msg.value
-            self.acceleration_marker[2] = 1
+    def receive_imu(self, msg):
+        msg.linear_acceleration.x += self.acceleration_offset[0]
+        msg.linear_acceleration.y += self.acceleration_offset[1]
+        msg.linear_acceleration.z += self.acceleration_offset[2]
 
-        if self.orientation_marker.all() == 1 and self.angular_velocity_marker.all() == 1 and self.acceleration_marker.all() == 1:
-            self.compose_imu_msg()
+        msg.angular_velocity.x += self.angular_velocity_offset[0]
+        msg.angular_velocity.y += self.angular_velocity_offset[1]
+        msg.angular_velocity.z += self.angular_velocity_offset[2]
 
-            self.orientation_plot = np.vstack((self.orientation_plot, self.orientation))
-            self.angular_velocity_plot = np.vstack((self.angular_velocity_plot, self.angular_velocity))
-            self.acceleration_plot = np.vstack((self.acceleration_plot, self.acceleration))
+        self.publish_imu_msg(msg)
 
-            self.orientation_marker = np.zeros(3)
-            self.angular_velocity_marker = np.zeros(3)
-            self.acceleration_marker = np.zeros(3)
-            print('X: %.4f' % np.var(self.angular_velocity_plot[..., 0]), 'Y: %.4f' % np.var(self.angular_velocity_plot[..., 1]), 'Z: %.4f' % np.var(self.angular_velocity_plot[..., 2]))
+        # self.orientation_plot = np.vstack((self.orientation_plot, self.orientation))
+        self.angular_velocity_plot = np.vstack((self.angular_velocity_plot, self.angular_velocity))
+        self.acceleration_plot = np.vstack((self.acceleration_plot, self.acceleration))
 
-            if self.orientation_plot.shape[0] % 5 == 0 and self.save_plots:
-                fig = plt.figure(figsize=(15, 5))
-                ax = plt.subplot(131)
-                ax.plot(self.orientation_plot[..., 0], label='x')
-                ax.plot(self.orientation_plot[..., 1], label='y')
-                ax.plot(self.orientation_plot[..., 2], label='z')
-                ax.set_title('Orientation')
-                ax.legend(loc='best')
+        print('X: %.4f' % np.var(self.angular_velocity_plot[..., 0]), 'Y: %.4f' % np.var(self.angular_velocity_plot[..., 1]), 'Z: %.4f' % np.var(self.angular_velocity_plot[..., 2]))
 
-                ax = plt.subplot(132)
-                ax.plot(self.angular_velocity_plot[..., 0], label='x')
-                ax.plot(self.angular_velocity_plot[..., 1], label='y')
-                ax.plot(self.angular_velocity_plot[..., 2], label='z')
-                ax.set_title('Angular Velocity')
-                ax.legend(loc='best')
+        if self.orientation_plot.shape[0] % 5 == 0 and self.save_plots:
+            fig = plt.figure(figsize=(15, 5))
+            ax = plt.subplot(131)
+            ax.plot(self.orientation_plot[..., 0], label='x')
+            ax.plot(self.orientation_plot[..., 1], label='y')
+            ax.plot(self.orientation_plot[..., 2], label='z')
+            ax.set_title('Orientation')
+            ax.legend(loc='best')
 
-                ax = plt.subplot(133)
-                ax.plot(self.acceleration_plot[..., 0], label='x')
-                ax.plot(self.acceleration_plot[..., 1], label='y')
-                ax.plot(self.acceleration_plot[..., 2], label='z')
-                ax.set_title('Acceleration')
-                ax.legend(loc='best')
+            ax = plt.subplot(132)
+            ax.plot(self.angular_velocity_plot[..., 0], label='x')
+            ax.plot(self.angular_velocity_plot[..., 1], label='y')
+            ax.plot(self.angular_velocity_plot[..., 2], label='z')
+            ax.set_title('Angular Velocity')
+            ax.legend(loc='best')
 
-                fig.savefig(self.viz_dir + '/imu_%d.png' % (len(os.listdir(self.viz_dir))))
-                plt.close()
+            ax = plt.subplot(133)
+            ax.plot(self.acceleration_plot[..., 0], label='x')
+            ax.plot(self.acceleration_plot[..., 1], label='y')
+            ax.plot(self.acceleration_plot[..., 2], label='z')
+            ax.set_title('Acceleration')
+            ax.legend(loc='best')
 
-    def compose_imu_msg(self):
-        header = Header()
-        orientation_quat = R.from_euler('xyz', self.orientation, degrees=True).as_quat()
-        orientation_cov = np.ravel(np.eye(3) * 1e-9)
-        quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
-        angular_velocity = np.deg2rad(self.angular_velocity)
-        angular_vel_msg = Vector3(angular_velocity[0],
-                                  angular_velocity[1],
-                                  angular_velocity[2])
+            fig.savefig(self.viz_dir + '/imu_%d.png' % (len(os.listdir(self.viz_dir))))
+            plt.close()
+
+    def publish_imu_msg(self, msg):
+        # orientation_quat = R.from_euler('xyz', self.orientation, degrees=True).as_quat()
+        # orientation_cov = np.ravel(np.eye(3) * 1e-9)
+        # quat_msg = Quaternion(orientation_quat[0], orientation_quat[1], orientation_quat[2], orientation_quat[3])
+
+        # Keep everything the same but update covariances
         angular_vel_cov = np.ravel(np.eye(3) * 1e-4)
-        accel_msg = Vector3(-self.acceleration[0],
-                            -self.acceleration[1],
-                            -self.acceleration[2])
         accel_cov = np.ravel(np.eye(3) * 1e-4)
-        header.stamp = rospy.Time.now()
-        header.frame_id = 'base_link'
-        imu_msg = Imu()
-        imu_msg.header = header
-        imu_msg.orientation = quat_msg
-        imu_msg.orientation_covariance = orientation_cov
-        imu_msg.angular_velocity = angular_vel_msg
-        imu_msg.angular_velocity_covariance = angular_vel_cov
-        imu_msg.linear_acceleration = accel_msg
-        imu_msg.linear_acceleration_covariance = accel_cov
-        try:
-            pub = rospy.Publisher('imu', Imu, queue_size=10)
-            #rospy.loginfo(imu_msg)
-            pub.publish(imu_msg)
-        except rospy.ROSInterruptException as e:
-            print(e.getMessage())
-            pass
 
-    def compose_wheel_msg(self):
+        msg.angular_velocity_covariance = angular_vel_cov
+        msg.linear_acceleration_covariance = accel_cov
+
+        try:
+            self.imu_pub.publish(msg)
+        except rospy.ROSInterruptException as e:
+            rospy.logerr(e.getMessage())
+
+    def receive_encoders(self, msg):
         header = Header()
         header.stamp = rospy.Time.now()
         header.frame_id = 'base_link'
+
         point_msg = Point(0, 0, 0)
         orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat()
         pose_cov = np.ravel(np.eye(6) * 0.0)
@@ -172,9 +130,9 @@ class IMU:
         pose_with_cov.pose = Pose(point_msg, quat_msg)
         pose_with_cov.covariance = pose_cov
 
-        x_dot = (((self.port_encoder * math.pi / 30 * self.wheel_radius) + (self.starboard_encoder * math.pi / 30 * self.wheel_radius)) / 2)# * math.cos(self.orientation[-1])
+        x_dot = (((msg.left * math.pi / 30 * self.wheel_radius) + (msg.right * math.pi / 30 * self.wheel_radius)) / 2)# * math.cos(self.orientation[-1])
         y_dot = 0 #(((self.port_encoder * math.pi / 30 * 0.2286) + (self.starboard_encoder * math.pi / 30 * 0.2286)) / 2) * math.sin(self.orientation[-1])
-        theta_dot = ((self.starboard_encoder * math.pi / 30 * self.wheel_radius) - (self.port_encoder * math.pi / 30 * self.wheel_radius)) / self.robot_width
+        theta_dot = ((msg.right * math.pi / 30 * self.wheel_radius) - (msg.left * math.pi / 30 * self.wheel_radius)) / self.robot_width
 
         linear_twist = Vector3(x_dot, y_dot, 0)
         angular_twist = Vector3(0, 0, theta_dot)
@@ -189,19 +147,12 @@ class IMU:
         stamped_msg.child_frame_id = 'base_link'
         stamped_msg.pose = pose_with_cov
         stamped_msg.twist = twist_with_cov
+
         try:
-            pub = rospy.Publisher('wheel', Odometry, queue_size=10)
-            #rospy.loginfo(stamped_msg)
-            pub.publish(stamped_msg)
+            self.wheel_pub.publish(stamped_msg)
         except rospy.ROSInterruptException as e:
-            print(e.getMessage())
-            pass
-
-
+            rospy.logerr(e.getMessage())
 
 
 if __name__ == '__main__':
     imu_node = IMU()
-    sub = rospy.Subscriber('sensor_value', SensorData, imu_node.sensor_callback)
-    rospy.Subscriber('motor_data', MotorData, imu_node.motor_callback)
-    rospy.spin()
