@@ -7,9 +7,9 @@
 
 Lsm6ds3::Lsm6ds3(
     ros::NodeHandle nh, std::string name, uint32_t id, std::string topic,
-	uint32_t topic_size, ros::Duration update_period, boost::shared_ptr<Spi> spi, boost::shared_ptr<Gpio> cs, 
+	uint32_t topic_size, ros::Duration update_period, boost::shared_ptr<Spi> spi, boost::movelib::unique_ptr<Gpio> cs, 
     uint32_t samples
-) : SpiSensor<PubData>(nh, name, SensorType::LSM6DS3, id, topic, topic_size, update_period, spi, LSM6DS3_SPI_SPEED, LSM6DS3_SPI_MODE, cs),
+) : SpiSensor<PubData>(nh, name, SensorType::LSM6DS3, id, topic, topic_size, update_period, spi, LSM6DS3_SPI_SPEED, LSM6DS3_SPI_MODE, std::move(cs)),
   m_sample_buf1(samples), m_sample_buf2(samples), m_sample_buf3(samples),
   m_sample_buf4(samples), m_sample_buf5(samples), m_sample_buf6(samples)
 {

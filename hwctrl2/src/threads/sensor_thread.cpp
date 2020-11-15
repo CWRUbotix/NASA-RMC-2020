@@ -6,6 +6,7 @@
 #include <ros/spinner.h>
 
 #include <string>
+#include <utility>
 
 #include <boost/filesystem.hpp>
 
@@ -15,6 +16,18 @@ SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
     m_uwb_nodes.reserve(4);
 
     m_nh.setCallbackQueue(&m_cb_queue);
+
+    // initalize spi
+    // needs to be available to all sensors since all sensors are on same spi line
+    ROS_DEBUG("Initializing SPI bus from %s...", paths::spidev_path.c_str());
+    auto spi = boost::make_shared<Spi>(paths::spidev_path);
+    if(spi->has_error()) {
+        ROS_ERROR("SPI init failed :(");
+    } else {
+        ROS_INFO("SPI bus initialization on %s presumed successful", paths::spidev_path.c_str());
+    }
+
+    configure_from_server(spi);
 
     // read calibrations
     std::istringstream path_stream(std::string(std::getenv("HOME")));
@@ -42,18 +55,6 @@ SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
 			}
 		}
 	}
-
-    // initalize spi
-    // needs to be available to all sensors since all sensors are on same spi line
-    ROS_DEBUG("Initializing SPI bus from %s...", paths::spidev_path.c_str());
-    auto spi = boost::make_shared<Spi>(paths::spidev_path);
-    if(spi->has_error()) {
-        ROS_ERROR("SPI init failed :(");
-    } else {
-        ROS_INFO("SPI bus initialization on %s presumed successful", paths::spidev_path.c_str());
-    }
-
-    configure_from_server(spi);
 }
 
 void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
@@ -72,7 +73,7 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
         SensorType type;
         ros::Duration period;
         int can_id;
-        boost::shared_ptr<Gpio> gpio;
+        unique_ptr<Gpio> gpio;
 
 
         if(m_nh.hasParam(name_param)) {
@@ -97,17 +98,17 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
             std::string gpio_path;
 			m_nh.getParam(gpio_param, gpio_path);
 			ROS_INFO(" - Found gpio file path: %s", gpio_path.c_str());
-            gpio = boost::make_shared<Gpio>(gpio_path);
+            gpio = boost::movelib::make_unique<Gpio>(gpio_path);
 		}
 
-        auto sensor = create_sensor_from_values(m_nh, name_str, type, can_id, period, gpio, spi);
+        auto sensor = create_sensor_from_values(m_nh, name_str, type, can_id, period, std::move(gpio), spi);
         m_sensors.push_back(*sensor); 
     }
 }
 
 boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
     ros::NodeHandle nh, std::string name, SensorType type, uint32_t can_id, ros::Duration period,
-    boost::shared_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
+    unique_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
 )
 {
     static uint8_t sys_id_idx = 0;
@@ -128,32 +129,32 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
             static uint8_t idx = 0;
             std::string topic("limit_sw" + std::to_string(++idx) + "_state");
             // check the last two arguments, cant find where theyre defined in hwctrl
-            auto sw = boost::make_shared<LimitSwitch>(nh, name, type, sys_id_idx++, topic, 128, period, gpio, 0, 0);
+            auto sw = boost::make_shared<LimitSwitch>(nh, name, type, sys_id_idx++, topic, 128, period, std::move(gpio), 0, 0);
             sensor = sw;
             break;
         }
         case SensorType::POWER_SENSE: {
-            auto ps = boost::make_shared<GenericGpioSensor>(nh, name, type, sys_id_idx++, "sensor_data", 128, period, gpio);
+            auto ps = boost::make_shared<GenericGpioSensor>(nh, name, type, sys_id_idx++, "sensor_data", 128, period, std::move(gpio));
             sensor = ps;
             break;
         }
         case SensorType::LSM6DS3: {
-            auto imu = boost::make_shared<Lsm6ds3>(nh, name, sys_id_idx++, "imu_data", 128, period, spi, gpio);
+            auto imu = boost::make_shared<Lsm6ds3>(nh, name, sys_id_idx++, "imu_data", 128, period, spi, std::move(gpio));
             sensor = imu;
             break;
         }
         case SensorType::LOAD_CELL: {
-            auto lc = boost::make_shared<LoadCellADC>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, gpio);
+            auto lc = boost::make_shared<LoadCellADC>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, std::move(gpio));
             sensor = lc;
             break;
         }
         case SensorType::POT: {
-            auto pot = boost::make_shared<PotentiometerADC>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, gpio);
+            auto pot = boost::make_shared<PotentiometerADC>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, std::move(gpio));
             sensor = pot;
             break;
         }
         case SensorType::TEMP_SENSE: {
-            auto ts = boost::make_shared<EbayTempSensor>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, gpio);
+            auto ts = boost::make_shared<EbayTempSensor>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, std::move(gpio));
             sensor = ts;
             break;
         }

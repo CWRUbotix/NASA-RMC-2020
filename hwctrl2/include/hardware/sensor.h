@@ -17,6 +17,8 @@
 
 #include <boost/optional.hpp>
 #include <boost/utility/string_view.hpp>
+#include <boost/move/unique_ptr.hpp>
+#include <boost/move/make_unique.hpp>
 
 #include "interface/gpio.h"
 #include "interface/spi.h"
@@ -126,8 +128,8 @@ protected:
     virtual void can_rx_callback(FramePtr frame) = 0;
 };
 
-#define SpiSensorArgs SensorBaseArgs, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, boost::shared_ptr<Gpio> cs_pin
-#define SpiSensorArgsPass(x) SpiSensor<x>(nh, name, type, id, topic, topic_size, update_period, spi, spi_speed, spi_mode, cs_pin)
+#define SpiSensorArgs SensorBaseArgs, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, boost::movelib::unique_ptr<Gpio> cs_pin
+#define SpiSensorArgsPass(x) SpiSensor<x>(nh, name, type, id, topic, topic_size, update_period, spi, spi_speed, spi_mode, std::move(cs_pin))
 
 template<typename T>
 class SpiSensor : public SensorImpl<T> {
@@ -159,18 +161,18 @@ protected:
     uint32_t m_spi_mode;
 
     // SHOULD THIS BE A REFERENCE OR A PTR???
-    boost::shared_ptr<Gpio>     m_cs;
+    boost::movelib::unique_ptr<Gpio>     m_cs;
 };
 
-#define GpioSensorArgs SensorBaseArgs, boost::shared_ptr<Gpio> gpio
-#define GpioSensorArgsPass GpioSensor(nh, name, type, id, topic, topic_size, update_period, gpio)
+#define GpioSensorArgs SensorBaseArgs, boost::movelib::unique_ptr<Gpio> gpio
+#define GpioSensorArgsPass GpioSensor(nh, name, type, id, topic, topic_size, update_period, std::move(gpio))
 
 template<typename T>
 class GpioSensor : public SensorImpl<T> {
 public:
     GpioSensor(
         GpioSensorArgs
-    ) : SensorImplArgsPass(T), m_gpio(gpio) {}
+    ) : SensorImplArgsPass(T), m_gpio(std::move(gpio)) {}
 
     virtual ~GpioSensor() {
         // make sure we release gpio handle
@@ -178,7 +180,7 @@ public:
     };
 
 protected:
-    boost::shared_ptr<Gpio> m_gpio;
+    boost::movelib::unique_ptr<Gpio> m_gpio;
 };
 
 class GenericGpioSensor : public GpioSensor<hwctrl2::SensorData> {

@@ -4,8 +4,8 @@
 
 EbayTempSensor::EbayTempSensor(
     ros::NodeHandle nh, std::string name, uint32_t id, std::string topic, uint32_t topic_size, ros::Duration update_period,
-    boost::shared_ptr<Spi> spi, boost::shared_ptr<Gpio> cs_pin
-) : SpiSensor<PubData>(nh, name, SensorType::TEMP_SENSE, id, topic, topic_size, update_period, spi, ADT7310_SPI_SPEED, ADT7310_SPI_MODE, cs_pin)
+    boost::shared_ptr<Spi> spi, boost::movelib::unique_ptr<Gpio> cs_pin
+) : SpiSensor<PubData>(nh, name, SensorType::TEMP_SENSE, id, topic, topic_size, update_period, spi, ADT7310_SPI_SPEED, ADT7310_SPI_MODE, std::move(cs_pin))
 {
 }
 

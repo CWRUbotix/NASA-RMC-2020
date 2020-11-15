@@ -71,7 +71,7 @@ CanSensor<T>::CanSensor(CanSensorArgs)
 
 template<typename T>
 SpiSensor<T>::SpiSensor(SpiSensorArgs)
-: SensorImplArgsPass(T), m_spi(spi), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(cs_pin)
+: SensorImplArgsPass(T), m_spi(spi), m_spi_speed(spi_speed), m_spi_mode(spi_mode), m_cs(std::move(cs_pin))
 {}
 
 GenericGpioSensor::GenericGpioSensor(GpioSensorArgs, Gpio::State on_state)

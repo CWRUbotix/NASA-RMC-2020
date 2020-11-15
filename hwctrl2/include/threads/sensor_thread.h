@@ -4,6 +4,8 @@
 #include <ros/callback_queue.h>
 
 #include <boost/utility/string_view.hpp>
+#include <boost/move/unique_ptr.hpp>
+#include <boost/move/make_unique.hpp>
 
 #include <vector>
 
@@ -13,6 +15,9 @@
 #include "hardware/ads1120.h"
 #include "hardware/adt7310.h"
 #include "hardware/lsm6ds3.h"
+
+using boost::movelib::unique_ptr;
+using boost::movelib::make_unique;
 
 const std::vector<std::string> sensor_param_names{
 	"uwb_node_1",
@@ -48,7 +53,7 @@ public:
 private:
     boost::shared_ptr<Sensor> create_sensor_from_values(
         ros::NodeHandle nh, std::string name, SensorType type, uint32_t id,
-        ros::Duration period, boost::shared_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
+        ros::Duration period, unique_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
     );
 private:
     ros::NodeHandle    m_nh;
