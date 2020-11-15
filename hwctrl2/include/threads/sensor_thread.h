@@ -8,10 +8,11 @@
 #include <vector>
 
 #include "hardware/sensor.h"
-
-#include "hardware/sensor.h"
 #include "hardware/quad_encoder.h"
 #include "hardware/uwb.h"
+#include "hardware/ads1120.h"
+#include "hardware/adt7310.h"
+#include "hardware/lsm6ds3.h"
 
 const std::vector<std::string> sensor_param_names{
 	"uwb_node_1",
@@ -46,7 +47,8 @@ public:
     void operator()();
 private:
     boost::shared_ptr<Sensor> create_sensor_from_values(
-        ros::NodeHandle nh, std::string name, SensorType type, uint32_t id, ros::Duration period, boost::shared_ptr<Gpio> gpio
+        ros::NodeHandle nh, std::string name, SensorType type, uint32_t id,
+        ros::Duration period, boost::shared_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
     );
 private:
     ros::NodeHandle    m_nh;

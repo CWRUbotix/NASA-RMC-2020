@@ -7,11 +7,16 @@ void read_calibration(const std::string& path, std::vector<Calibration>& cals) {
     for(auto line : data) {
         Calibration cal;
         cal.name = line.at(0);
-        cal.scale = std::stof(line.at(1));
-        cal.offset = std::stof(line.at(2));
+        cal.scale =    std::stof(line.at(1));
+        cal.offset =   std::stof(line.at(2));
         cal.variance = std::stof(line.at(3));
         cals.push_back(cal);
     }
+}
+
+bool write_calibration(const std::string& path) {
+
+    return true;
 }
 
 SensorType get_sensor_type_from_param(boost::string_view type_str) {
@@ -74,7 +79,7 @@ GenericGpioSensor::GenericGpioSensor(GpioSensorArgs, Gpio::State on_state)
 {}
 
 void GenericGpioSensor::setup() {
-    m_gpio.set_direction(Gpio::Direction::Input);
+    m_gpio->set_direction(Gpio::Direction::Input);
     m_is_setup = true;
 }
 
@@ -84,7 +89,7 @@ void GenericGpioSensor::update() {
         return;
     }
     auto msg = boost::make_shared<hwctrl2::SensorData>();
-    auto val = m_gpio.read_state();
+    auto val = m_gpio->read_state();
     msg -> name = m_name;
     msg -> sensor_id = m_id;
     msg -> value = (float) (val == m_on_state);
@@ -99,7 +104,7 @@ LimitSwitch::LimitSwitch(GpioSensorArgs, uint32_t motor_id, uint32_t allowed_dir
 
 
 void LimitSwitch::setup() {
-    m_gpio.set_direction(Gpio::Direction::Input);
+    m_gpio->set_direction(Gpio::Direction::Input);
     m_is_setup = true;
 }
 
@@ -109,7 +114,7 @@ void LimitSwitch::update() {
         return;
     }
     auto msg = boost::make_shared<hwctrl2::LimitSwState>();
-    auto state = m_gpio.read_state(); 
+    auto state = m_gpio->read_state(); 
     msg->id = m_id;
     msg->state = (state == Gpio::State::Set);
     msg->motor_id = m_motor_id;

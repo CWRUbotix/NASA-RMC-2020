@@ -126,7 +126,7 @@ protected:
     virtual void can_rx_callback(FramePtr frame) = 0;
 };
 
-#define SpiSensorArgs SensorBaseArgs, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, Gpio& cs_pin
+#define SpiSensorArgs SensorBaseArgs, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, boost::shared_ptr<Gpio> cs_pin
 #define SpiSensorArgsPass(x) SpiSensor<x>(nh, name, type, id, topic, topic_size, update_period, spi, spi_speed, spi_mode, cs_pin)
 
 template<typename T>
@@ -138,7 +138,7 @@ public:
     );
     virtual ~SpiSensor() {
         // make sure we release gpio handle
-        m_cs.release_handle();
+        m_cs->release_handle();
     };
 protected:
     void config_spi_settings() {
@@ -147,9 +147,9 @@ protected:
         ros::Duration(0.001).sleep();
     }
     void transfer_to_device(uint8_t* buf, int buf_len) {
-        m_cs.reset();
+        m_cs ->reset();
         m_spi->transfer(buf, buf_len);
-        m_cs.set();
+        m_cs ->set();
         ros::Duration(0.001).sleep();
     }
 
@@ -159,10 +159,10 @@ protected:
     uint32_t m_spi_mode;
 
     // SHOULD THIS BE A REFERENCE OR A PTR???
-    Gpio&     m_cs;
+    boost::shared_ptr<Gpio>     m_cs;
 };
 
-#define GpioSensorArgs SensorBaseArgs, Gpio& gpio
+#define GpioSensorArgs SensorBaseArgs, boost::shared_ptr<Gpio> gpio
 #define GpioSensorArgsPass GpioSensor(nh, name, type, id, topic, topic_size, update_period, gpio)
 
 template<typename T>
@@ -174,11 +174,11 @@ public:
 
     virtual ~GpioSensor() {
         // make sure we release gpio handle
-        m_gpio.release_handle();
+        m_gpio->release_handle();
     };
 
 protected:
-    Gpio& m_gpio;
+    boost::shared_ptr<Gpio> m_gpio;
 };
 
 class GenericGpioSensor : public GpioSensor<hwctrl2::SensorData> {
@@ -194,7 +194,7 @@ private:
 };
 
 class LimitSwitch : public GpioSensor<hwctrl2::LimitSwState> {
-public:    
+public:
     LimitSwitch(GpioSensorArgs, uint32_t motor_id, uint32_t allowed_dir);
     virtual ~LimitSwitch() = default;
 

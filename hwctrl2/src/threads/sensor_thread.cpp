@@ -32,7 +32,7 @@ SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
 
 		for(auto cal : cals){
 			std::vector<Sensor>::iterator sensor = m_sensors.begin();
-			int pos = std::string::npos;
+			size_t pos = std::string::npos;
 			// if sensor name exists within calibration name
 			while( (pos = cal.name.find(sensor->get_name())) == std::string::npos && sensor != m_sensors.end()){
 				sensor++;
@@ -97,16 +97,17 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
             std::string gpio_path;
 			m_nh.getParam(gpio_param, gpio_path);
 			ROS_INFO(" - Found gpio file path: %s", gpio_path.c_str());
-            *gpio = Gpio(gpio_path);
+            gpio = boost::make_shared<Gpio>(gpio_path);
 		}
 
-        auto sensor = create_sensor_from_values(m_nh, name_str, type, can_id, period, gpio);
+        auto sensor = create_sensor_from_values(m_nh, name_str, type, can_id, period, gpio, spi);
         m_sensors.push_back(*sensor); 
     }
 }
 
 boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
-    ros::NodeHandle nh, std::string name, SensorType type, uint32_t can_id, ros::Duration period, boost::shared_ptr<Gpio> gpio
+    ros::NodeHandle nh, std::string name, SensorType type, uint32_t can_id, ros::Duration period,
+    boost::shared_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
 )
 {
     static uint8_t sys_id_idx = 0;
@@ -119,8 +120,7 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
             break;
         }
         case SensorType::QUAD_ENC: {
-            std::string topic("sensor_data");
-            auto q = boost::make_shared<QuadEncoder>(nh, name, type, sys_id_idx++, topic, 128, period, can_id);
+            auto q = boost::make_shared<QuadEncoder>(nh, name, type, sys_id_idx++, "sensor_data", 128, period, can_id);
             sensor = q;
             break;
         }
@@ -128,14 +128,33 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
             static uint8_t idx = 0;
             std::string topic("limit_sw" + std::to_string(++idx) + "_state");
             // check the last two arguments, cant find where theyre defined in hwctrl
-            auto sw = boost::make_shared<LimitSwitch>(nh, name, type, sys_id_idx++, topic, 128, period, *gpio, 0, 0);
+            auto sw = boost::make_shared<LimitSwitch>(nh, name, type, sys_id_idx++, topic, 128, period, gpio, 0, 0);
             sensor = sw;
             break;
         }
         case SensorType::POWER_SENSE: {
-            std::string topic("sensor_data");
-            auto ps = boost::make_shared<GenericGpioSensor>(nh, name, type, sys_id_idx++, topic, 128, period, *gpio);
+            auto ps = boost::make_shared<GenericGpioSensor>(nh, name, type, sys_id_idx++, "sensor_data", 128, period, gpio);
             sensor = ps;
+            break;
+        }
+        case SensorType::LSM6DS3: {
+            auto imu = boost::make_shared<Lsm6ds3>(nh, name, sys_id_idx++, "imu_data", 128, period, spi, gpio);
+            sensor = imu;
+            break;
+        }
+        case SensorType::LOAD_CELL: {
+            auto lc = boost::make_shared<LoadCellADC>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, gpio);
+            sensor = lc;
+            break;
+        }
+        case SensorType::POT: {
+            auto pot = boost::make_shared<PotentiometerADC>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, gpio);
+            sensor = pot;
+            break;
+        }
+        case SensorType::TEMP_SENSE: {
+            auto ts = boost::make_shared<EbayTempSensor>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, gpio);
+            sensor = ts;
             break;
         }
         default:
@@ -159,7 +178,7 @@ void SensorThread::setup_sensors() {
 }
 
 void SensorThread::update_sensors() {
-    for(Sensor sensor : m_sensors) {
+    for(auto sensor : m_sensors) {
         if(sensor.ready_to_update()) sensor.update();
     }
 }

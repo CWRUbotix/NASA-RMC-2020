@@ -7,7 +7,7 @@
 
 Lsm6ds3::Lsm6ds3(
     ros::NodeHandle nh, std::string name, uint32_t id, std::string topic,
-	uint32_t topic_size, ros::Duration update_period, Gpio& cs, boost::shared_ptr<Spi> spi,
+	uint32_t topic_size, ros::Duration update_period, boost::shared_ptr<Spi> spi, boost::shared_ptr<Gpio> cs, 
     uint32_t samples
 ) : SpiSensor<PubData>(nh, name, SensorType::LSM6DS3, id, topic, topic_size, update_period, spi, LSM6DS3_SPI_SPEED, LSM6DS3_SPI_MODE, cs),
   m_sample_buf1(samples), m_sample_buf2(samples), m_sample_buf3(samples),
@@ -90,9 +90,8 @@ void Lsm6ds3::update() {
 }
 
 void Lsm6ds3::setup() {
-    m_spi->set_speed(m_spi_speed);
-    m_spi->set_mode(m_spi_mode);
-    ros::Duration(0.002).sleep();
+    config_spi_settings();
+    ros::Duration(0.001).sleep();
     soft_reset();
     ros::Duration(0.1).sleep();
 
@@ -101,9 +100,7 @@ void Lsm6ds3::setup() {
     buf[1] = 0x00;
     LSM6DS3_SET_READ_MODE(buf[0]);
     ROS_INFO("Trying the IMU");
-    m_cs.reset();
-    m_spi->transfer(buf, 2);
-    m_cs.set();
+    transfer_to_device(buf, 2);
     ros::Duration(0.002).sleep();
 
     if(buf[1] == LSM6DS3_WHO_AM_I_ID){
@@ -125,9 +122,7 @@ void Lsm6ds3::power_on_accel(uint8_t config_byte) {
     buf[0] = (uint8_t) ImuReg::CTRL1_XL;
     buf[1] = config_byte;
 
-    m_cs.reset();
-    m_spi->transfer(buf, 2);
-    m_cs.set();
+    transfer_to_device(buf, 2);
 }
 
 void Lsm6ds3::power_on_gyro(uint8_t config_byte) {
@@ -136,9 +131,7 @@ void Lsm6ds3::power_on_gyro(uint8_t config_byte) {
     buf[0] = (uint8_t) ImuReg::CTRL2_G;
     buf[1] = config_byte;
 
-    m_cs.reset();
-    m_spi->transfer(buf, 2);
-    m_cs.set();
+    transfer_to_device(buf, 2);
 }
 
 float Lsm6ds3::read_accel(Axis axis, float fs) {
@@ -158,9 +151,7 @@ float Lsm6ds3::read_accel(Axis axis, float fs) {
         }
     }
     LSM6DS3_SET_READ_MODE(buf[0]);
-    m_cs.reset();
-    m_spi->transfer(buf, 3);
-    m_cs.set();
+    transfer_to_device(buf, 3);
 
     int16_t val = buf[1] | (buf[2] << 8);
     return (xl_fs * ((float)val))/32767.0;
@@ -185,9 +176,7 @@ float Lsm6ds3::read_gyro(Axis axis, float fs) {
     }
     LSM6DS3_SET_READ_MODE(buf[0]);
 
-    m_cs.reset();
-    m_spi->transfer(buf, 3);
-    m_cs.set();
+    transfer_to_device(buf, 3);
 
     int16_t val = buf[1] | (buf[2] << 8);
     return degrees_to_radians((g_fs * ((float)val))/32767.0);
@@ -199,9 +188,7 @@ void Lsm6ds3::read_all_data(double* xl_data, double* gyro_data) {
     buf[0] = (uint8_t) ImuReg::OUTX_L_G;
     LSM6DS3_SET_READ_MODE(buf[0]);
 
-    m_cs.reset();
-    m_spi->transfer(buf, 13);
-    m_cs.set();
+    transfer_to_device(buf,13);
 
     int16_t temp;
     int ind = 1;
@@ -239,13 +226,7 @@ void Lsm6ds3::soft_reset() {
     buf[0] = ImuReg::CTRL3_C;
     LSM6DS3_SET_READ_MODE(buf[0]);
 
-    // gpio_reset(gpio_fd);
-    // spi_transfer(spi_fd, buf, 2);
-    // gpio_set(gpio_fd);
-
-    m_cs.reset();
-    m_spi->transfer(buf, 2);
-    m_cs.set();
+    transfer_to_device(buf, 2);
 
     uint8_t og_val = buf[1];
     buf[1] |= LSM6DS3_BOOT; // initiate software reset and reboot memory content
@@ -257,9 +238,7 @@ void Lsm6ds3::soft_reset() {
         n ++;
         // spin briefly
     }
-    m_cs.reset();
-    m_spi->transfer(buf, 2);
-    m_cs.set();
+    transfer_to_device(buf, 2);
 
     n = 0;
     for(int i = 0; i < 10000; i++){
@@ -269,7 +248,5 @@ void Lsm6ds3::soft_reset() {
 
     buf[0] = CTRL3_C;
     buf[1] = og_val;
-    m_cs.reset();
-    m_spi->transfer(buf, 2);
-    m_cs.set();
+    transfer_to_device(buf, 2);
 }

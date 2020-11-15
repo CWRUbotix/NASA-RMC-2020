@@ -23,7 +23,7 @@ void QuadEncoder::setup() {
 void QuadEncoder::update() {
     // sent rtr frame to id;
     auto frame = boost::make_shared<hwctrl2::CanFrame>();
-    frame -> can_id = m_id;
+    frame -> can_id = m_can_id;
     m_pub.publish(frame);
 
     m_update = false;
