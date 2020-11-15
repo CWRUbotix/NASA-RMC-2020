@@ -16,7 +16,7 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, TwistWithCovariance, Twist
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
-from hwctrl.msg import Encoders, SensorData
+from hwctrl.msg import Encoders
 
 
 class IMU:

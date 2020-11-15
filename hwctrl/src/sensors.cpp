@@ -232,7 +232,7 @@ void sensors_thread(SensorIf* sensor_if){
                         msg->id = sensor->sys_id;
                         msg->state = (val == 1);
                         msg->timestamp = ros::Time::now();
-                        sensor_if->limit_sw_pub.publish(msg);
+                        sensor_if->limit_sw1_pub.publish(msg);  // TODO this needs to be seperate topics for each switch
                         break;
                     }default:{
                         break;
