@@ -106,7 +106,6 @@ class ObstacleDetectionNode:
 
     def receive_point_cloud(self, msg):
         xyz = ros_numpy.point_cloud2.pointcloud2_to_xyz_array(msg)
-        xyz = xyz[::11]  # decimate to save processing power
         self.detect_obstacles_from_above(xyz, None, msg)
 
     def realsense_callback(self, msg):

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<library path="lib/libpoint_cloud_decimator">
+    <class name="obstacle_detection/PointCloudDecimator" type="obstacle_detection::PointCloudDecimator" base_class_type="nodelet::Nodelet">
+        <description>Decimates a point cloud using a voxel grid.</description>
+    </class>
+</library>

@@ -63,10 +63,11 @@
 
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>nodelet</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-
+    <nodelet plugin="${prefix}/nodelet_plugins.xml"/>
   </export>
 </package>

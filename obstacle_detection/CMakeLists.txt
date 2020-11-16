@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   pcl_conversions
   pcl_ros
+  nodelet
 )
 
 catkin_python_setup()
@@ -24,7 +25,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(point_cloud_decimator src/point_cloud_decimator.cpp)
+add_library(point_cloud_decimator src/point_cloud_decimator.cpp)
 
 target_link_libraries(point_cloud_decimator ${catkin_LIBRARIES})
 
