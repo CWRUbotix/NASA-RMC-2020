@@ -2,6 +2,7 @@
 <launch>
     <!-- "true" if running roscore from the robot -->
     <arg name="on_robot" value="$(eval '192.168.0.100' in optenv('ROS_MASTER_URI'))"/>
+    <arg name="custom_pcl_filter" default="true"/>
 
     <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
 
@@ -19,10 +20,18 @@
 
     <node name="pcl_manager" pkg="nodelet" type="nodelet" args="manager"/>
 
-    <node name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load obstacle_detection/PointCloudDecimator pcl_manager">
+    <node if="$(arg custom_pcl_filter)" name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load obstacle_detection/PointCloudDecimator pcl_manager">
         <remap from="input_cloud" to="/realsense/depth/points_raw"/>
         <remap from="output_cloud" to="/realsense/depth/points"/>
-        <param name="voxel_size" value="0.06"/>
+        <param name="voxel_size" value="0.05"/>
+    </node>
+
+    <node unless="$(arg custom_pcl_filter)" name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid pcl_manager">
+        <remap from="~input" to="/realsense/depth/points_raw"/>
+        <remap from="~output" to="/realsense/depth/points"/>
+        <param name="leaf_size" value="0.05"/>
+        <param name="use_indices" value="false"/>
+        <param name="filter_limit_max" value="5.0"/>
     </node>
 
     <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" output="screen" cwd="node"/>
