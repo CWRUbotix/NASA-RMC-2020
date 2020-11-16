@@ -65,9 +65,12 @@ private:
     ros::Rate          m_loop_rate;
     ros::CallbackQueue m_cb_queue;
 
-    std::vector<Sensor>  m_sensors;
+    using SensorVec = std::vector<boost::shared_ptr<Sensor>>;
+    using SensorVecIter = SensorVec::iterator;
 
-    std::vector<UwbNode> m_uwb_nodes;
+    SensorVec  m_sensors;
+
+    std::vector<boost::shared_ptr<UwbNode>> m_uwb_nodes;
     uint32_t             m_uwb_idx;
     ros::Duration        m_uwb_update_pd;
     ros::Timer           m_uwb_update_timer;

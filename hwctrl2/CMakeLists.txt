@@ -44,11 +44,13 @@ add_executable(hwctrl2
   src/threads/canbus_thread.cpp
   src/threads/motor_thread.cpp
   src/hardware/sensor.cpp
+  src/hardware/motor.cpp
   src/hardware/quad_encoder.cpp
   src/hardware/uwb.cpp
   src/hardware/lsm6ds3.cpp
   src/hardware/ads1120.cpp
   src/hardware/adt7310.cpp
+  src/hardware/vesc.cpp
   src/interface/gpio.cpp
   src/interface/spi.cpp
   src/util.cpp
@@ -60,11 +62,13 @@ add_executable(hwctrl2_cal
   src/threads/canbus_thread.cpp
   src/threads/motor_thread.cpp
   src/hardware/sensor.cpp
+  src/hardware/motor.cpp
   src/hardware/quad_encoder.cpp
   src/hardware/uwb.cpp
   src/hardware/lsm6ds3.cpp
   src/hardware/ads1120.cpp
   src/hardware/adt7310.cpp
+  src/hardware/vesc.cpp
   src/interface/gpio.cpp
   src/interface/spi.cpp
   src/util.cpp

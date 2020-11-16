@@ -59,13 +59,13 @@ public:
     virtual ~Sensor() = default;
 
     // override these
-    virtual void setup()   { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
-    virtual void update()  { ROS_WARN("Override me for %s (id: %d)", m_name.c_str(), m_id); };
+    virtual void setup()  = 0;
+    virtual void update() = 0;
 
     bool ready_to_update() const { return m_update; }
 
     void set_update_flag(const ros::TimerEvent&) { m_update = true; }
-
+    
     void add_calibration(const Calibration& cal);
     boost::optional<const Calibration&> get_calibration_by_name(boost::string_view name) const;
 

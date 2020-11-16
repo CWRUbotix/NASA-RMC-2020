@@ -205,7 +205,7 @@ void fill_data_from_status_packet(uint8_t* rx_buf, VescData* data){
 /**
  * Makes a CanFrame message the will set the RPM of VESC with target ID using CAN_PACKET_SET_RPM packet type
  */
-int set_rpm_frame(int target_id, float rpm, boost::shared_ptr<hwctrl::CanFrame>& frame){
+void set_rpm_frame(int target_id, float rpm, boost::shared_ptr<hwctrl::CanFrame>& frame){
 	int n_rpm = (int)rpm;
 	frame->can_id = (CAN_PACKET_SET_RPM << 8) | target_id | CAN_EFF_FLAG;
 

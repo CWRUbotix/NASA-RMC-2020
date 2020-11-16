@@ -44,14 +44,14 @@ SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000), m_
 		read_calibration(cal_file_path, cals);
 
 		for(auto cal : cals){
-			std::vector<Sensor>::iterator sensor = m_sensors.begin();
+			SensorVecIter sensor = m_sensors.begin();
 			size_t pos = std::string::npos;
 			// if sensor name exists within calibration name
-			while( (pos = cal.name.find(sensor->get_name())) == std::string::npos && sensor != m_sensors.end()){
+			while( (pos = cal.name.find((*sensor)->get_name())) == std::string::npos && sensor != m_sensors.end()){
 				sensor++;
 			}
 			if(pos != std::string::npos){
-				sensor->add_calibration(cal);
+				(*sensor)->add_calibration(cal);
 			}
 		}
 	}
@@ -61,7 +61,7 @@ SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000), m_
 }
 
 void SensorThread::uwb_ping_callback(const ros::TimerEvent&) {
-    m_uwb_nodes.at(m_uwb_idx++).ping();
+    m_uwb_nodes.at(m_uwb_idx++)->ping();
     m_uwb_idx %= m_uwb_nodes.size();
 }
 
@@ -111,7 +111,7 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
 
         auto sensor = create_sensor_from_values(m_nh, name_str, type, can_id, period, std::move(gpio), spi);
         if(sensor != nullptr)
-            m_sensors.push_back(*sensor); 
+            m_sensors.push_back(sensor); 
     }
 }
 
@@ -126,10 +126,7 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
         case SensorType::UWB: {
             // I dont think we want to update all of these at the same time.
             auto node = boost::make_shared<UwbNode>(nh, name, type, sys_id_idx++, "localization_data", 1024, period, can_id);
-            m_uwb_nodes.push_back(*node);
-
-            // return null ptr
-            // return nullptr;
+            m_uwb_nodes.push_back(node);
             sensor = node;
             break;
         }
@@ -186,14 +183,14 @@ void SensorThread::shutdown() {
 }
 
 void SensorThread::setup_sensors() {
-    for(Sensor sensor : m_sensors) {
-        sensor.setup();
+    for(auto sensor : m_sensors) {
+        sensor -> setup();
     }
 }
 
 void SensorThread::update_sensors() {
     for(auto sensor : m_sensors) {
-        if(sensor.ready_to_update()) sensor.update();
+        if(sensor -> ready_to_update()) sensor -> update();
     }
 }
 
