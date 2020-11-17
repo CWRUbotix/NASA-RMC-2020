@@ -4,6 +4,13 @@
 
 #include <linux/spi/spidev.h>
 
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <array>
+#include <algorithm>
+
+#include "util.h"
 
 Lsm6ds3::Lsm6ds3(
     ros::NodeHandle nh, const std::string& name, uint32_t id, const std::string& topic,
@@ -20,11 +27,8 @@ Lsm6ds3::~Lsm6ds3() {
 }
 
 void Lsm6ds3::update() {
-    double xl_data[3] = {};
-    double g_data[3] = {};
-    m_spi->set_speed(m_spi_speed);
-    m_spi->set_mode(m_spi_mode);
-    ros::Duration(0.0005).sleep();
+    std::array<double, 3> xl_data, g_data;
+    config_spi_settings();
     read_all_data(xl_data, g_data);
 
     static uint32_t seq = 0;
@@ -117,7 +121,174 @@ void Lsm6ds3::setup() {
 }
 
 void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
+    std::array<char, 128> buf;
+    // buf.fill(0);
+    std::cout << "Beginning IMU calibration" << std::endl;;
+    std::cout << "Number of samples: ";
+    int sample_depth, start;
+    std::cin >> sample_depth;
+    if(sample_depth <= 0){
+        sample_depth = 2500;
+    }
+    std::cout << "Will collect " << sample_depth << " samples" << std::endl;
+    std::cout << "Press ENTER to start...";
+    getchar();
+
+    using Samples = std::vector<float>;
+    Samples x_xl_samples;
+    Samples y_xl_samples;
+    Samples z_xl_samples;
+
+    x_xl_samples.reserve(sample_depth);
+    y_xl_samples.reserve(sample_depth);
+    z_xl_samples.reserve(sample_depth);
+
+    std::array<double, 3> xl_data, g_data;
+
+    for(int i = 0; i < sample_depth; ++i) {
+        read_all_data(xl_data, g_data);
+        x_xl_samples.push_back((float) xl_data[0]);
+        y_xl_samples.push_back((float) xl_data[1]);
+        z_xl_samples.push_back((float) xl_data[2]);
+        ros::Duration(0.005).sleep();
+        auto len = progress_bar(buf,(float)(1.0 * i / sample_depth));
+        std::cout << "Sampling ";
+        std::copy_n(buf.begin(), len, std::ostream_iterator<char>(std::cout));
+        std::cout << '\r';
+    }
+    std::cout << std::endl << "Done sampling." << std::endl;
+    math::smooth(x_xl_samples, 9);
+    math::smooth(y_xl_samples, 9);
+    math::smooth(x_xl_samples, 9);
+
+    auto max_idx = math::max_index(z_xl_samples);
+    float z_max = x_xl_samples[max_idx];
+    float y_offset = y_xl_samples[max_idx];
+	float x_offset = x_xl_samples[max_idx];
+    float z_offset = z_max - 9.81;
+
+    printf("Max acceleration in Z: %.5g\r\n", z_max);
+    printf("Inferred X offset: %.5g\r\n", x_offset);
+    printf("Inferred Y offset: %.5g\r\n", y_offset);
+    printf("Inferred Z offset: %.5g\r\n", z_offset);
+
+    Calibration z_xl_cal = {
+        .name = std::string("IMU_XL_Z"),
+        .scale = 1.0f,
+        .offset = 0.0f - z_offset,
+        .variance = xl_var
+    };
+    Calibration x_xl_cal = {
+        .name = std::string("IMU_XL_X"),
+        .scale = 1.0f,
+        .offset = 0.0f - x_offset,
+        .variance = xl_var
+    };
+    Calibration y_xl_cal = {
+        .name = std::string("IMU_XL_Y"),
+        .scale = 1.0f,
+        .offset = 0.0f - y_offset,
+        .variance = xl_var
+    };
+
+    for(auto cal = cals.begin(); cal != cals.end(); ++cal){
+        if( (*cal).name.compare("IMU_XL_X") == 0 ||
+            (*cal).name.compare("IMU_XL_Y") == 0 ||
+            (*cal).name.compare("IMU_XL_Z") == 0)
+        {
+            cals.erase(cal);
+        }
+    }
+
+    cals.push_back(z_xl_cal);
+    cals.push_back(x_xl_cal);
+    cals.push_back(y_xl_cal);
+
+    // deallocate these samples to save memory
+    x_xl_samples.clear();
+    y_xl_samples.clear();
+    z_xl_samples.clear();
+
+    x_xl_samples.shrink_to_fit();
+    y_xl_samples.shrink_to_fit();
+    z_xl_samples.shrink_to_fit();
+
+    std::cout << "Press ENTER to start Gyroscope calibration." << std::endl;
+    getchar();
+    std::cout << "Now DON'T MOVE THE BOARD!" << std::endl;
+
+    Samples x_g_samples;
+    Samples y_g_samples;
+    Samples z_g_samples;
+
+    x_g_samples.reserve(sample_depth);
+    y_g_samples.reserve(sample_depth);
+    z_g_samples.reserve(sample_depth);
+
+    for(int i = 0; i < sample_depth; i++){
+        read_all_data(xl_data, g_data);
+        x_g_samples[i] = (float)g_data[0];
+        y_g_samples[i] = (float)g_data[1];
+        z_g_samples[i] = (float)g_data[2];
+        ros::Duration(0.005).sleep();
+        auto len = progress_bar(buf, (float)(1.0*i/sample_depth));
+        std::cout << "Sampling ";
+        std::copy_n(buf.begin(), len, std::ostream_iterator<char>(std::cout));
+        std::cout << '\r';
+    }
+
+    std::cout << std::endl << "Done sampling." << std::endl;
+    // math::smooth(x_xl_samples, 9);
+    // math::smooth(y_xl_samples, 9);
+    // math::smooth(x_xl_samples, 9);
+
+    float x_g_var = std::pow(math::stddev(x_g_samples), 2.0);
+    float y_g_var = std::pow(math::stddev(y_g_samples), 2.0);
+    float z_g_var = std::pow(math::stddev(z_g_samples), 2.0);
+
+    float x_g_offset = math::avg(x_g_samples);
+    float y_g_offset = math::avg(y_g_samples);
+    float z_g_offset = math::avg(z_g_samples);
+
+    printf("Name \tOffset\tVariance\r\n");
+    printf("Gyro X:\t%.5g\t%.5g\r\n", x_g_offset, x_g_var);
+    printf("Gyro Y:\t%.5g\t%.5g\r\n", y_g_offset, y_g_var);
+    printf("Gyro Z:\t%.5g\t%.5g\r\n", z_g_offset, z_g_var);
+
+    Calibration cal_g_x = {
+        .name = std::string("IMU_G_X"),
+        .scale = 1.0f,
+        .offset = 0.0f - x_g_offset,
+        .variance = x_g_var
+    };
+    Calibration cal_g_y = {
+        .name = std::string("IMU_G_Y"),
+        .scale = 1.0f,
+        .offset = 0.0f - y_g_offset,
+        .variance = y_g_var
+    };
+    Calibration cal_g_z = {
+        .name = std::string("IMU_G_Z"),
+        .scale = 1.0f,
+        .offset = 0.0f - z_g_offset,
+        .variance = z_g_var
+    };
     
+    for(auto cal = cals.begin(); cal != cals.end(); ++cal){
+        if( (*cal).name.compare("IMU_G_X") == 0 ||
+            (*cal).name.compare("IMU_G_Y") == 0 ||
+            (*cal).name.compare("IMU_G_Z") == 0)
+        {
+            cals.erase(cal);
+        }
+    }
+
+    cals.push_back(cal_g_x);
+    cals.push_back(cal_g_y);
+    cals.push_back(cal_g_z);
+    std::cout << "Done calibrating IMU. " << std::endl;
+    std::cout << "If you're done calibrating stuff, run \"save\" to write calibration to disk." << std::endl;
+
 }
 
 void Lsm6ds3::power_on_accel(uint8_t config_byte) {
@@ -186,7 +357,7 @@ float Lsm6ds3::read_gyro(Axis axis, float fs) {
     return degrees_to_radians((g_fs * ((float)val))/32767.0);
 }
 
-void Lsm6ds3::read_all_data(double* xl_data, double* gyro_data) {
+void Lsm6ds3::read_all_data(std::array<double, 3>& xl_data, std::array<double, 3>& gyro_data) {
     uint8_t buf[13];
     memset(buf, 0, 13);
     buf[0] = (uint8_t) ImuReg::OUTX_L_G;

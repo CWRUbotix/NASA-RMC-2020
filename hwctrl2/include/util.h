@@ -4,11 +4,103 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <numeric>
+#include <functional>
 #include <cmath>
 #include <cinttypes>
+#include <type_traits>
 
 #include <boost/utility/string_view.hpp>
+#include <boost/math/distributions/normal.hpp>
+using boost::math::normal;
 
+template<size_t buf_size>
+int progress_bar(std::array<char, buf_size>& buf, float progress){
+	int hashes = (int)((progress * 50.0) + 0.5); // fraction of 50, rounded
+	int retval = 0;
+	for(int i = 0; i < 50; i++){
+		if(i < hashes){
+			buf[i] = '#';
+		}else{
+			buf[i] = '.';
+		}
+		retval ++;
+	}
+	// TODO: fix this function
+	retval += sprintf(&buf[retval], " %d%%", (int)((progress*100.0)+0.5));
+}
+
+
+namespace math {
+
+	template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    constexpr T avg(std::vector<T>& vec) {
+        using Iter = typename std::vector<T>::iterator;
+        if(vec.size() != 0)
+            return std::accumulate(vec.begin(), vec.end(), 0, std::plus<T>()) / ((T) vec.size());
+        else
+            return 0.0;
+    }
+
+    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    constexpr T stddev(std::vector<T>& vec) {
+        using Iter = typename std::vector<T>::iterator;
+        T mean = avg(vec);
+        auto f = [=](T sum, T& e) {
+            return (sum + std::pow(e - mean, 2));
+        };
+        if(vec.size() > 1)
+            return std::accumulate(vec.begin(), vec.end(), 0.0f, f) / ((T) (vec.size() - 1));
+        else
+            return 0.0;
+    }
+
+    // returns index of maximum value
+    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    constexpr size_t max_index(std::vector<T>& vec) {
+        return std::distance(vec.begin(), std::max_element(vec.begin(), vec.end()));
+    }
+
+    // smooths data ***INPLACE***
+    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    constexpr void smooth(std::vector<T>& vec, int kernel_size) {
+        std::vector<T> smooth(vec.size(), 0);
+
+        if(kernel_size > vec.size())  {
+            kernel_size = vec.size() - 1;
+        }
+
+        if(kernel_size % 2 == 0) {
+            kernel_size++;
+        }
+
+        T kernel[kernel_size];
+        T range = 2.5;
+        T step  = ((T) kernel_size - 1.0) / (2.0 * range);
+        T x = -range;
+        normal std_norm;
+
+        for (int i = 0; i < kernel_size; i++){
+            kernel[i] = pdf(std_norm, x); // gets the probability at this point in the std normal distribution
+            x += step;
+	    }
+
+        int i, offset = kernel_size / 2;
+        for(i = 0; i < vec.size() - offset; i++){
+            for(int j = 0; j < kernel_size; j++){ // for each point in the kernel
+                smooth[i] += kernel[j] * vec[abs((i - offset) + j)];
+            }
+	    }
+
+        for(i = vec.size() - offset; i < vec.size(); i++){ // copy end over, we'll do better later
+		    smooth[i] = vec[i];
+	    }
+
+        // swap buffers
+        vec.swap(smooth);
+    }
+
+}
 
 namespace csv {
     std::vector<std::vector<std::string>> read_csv(const std::string& fpath);
@@ -49,7 +141,13 @@ namespace crc {
 		0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0 
     };
 
-    uint16_t crc16(unsigned char* buf, uint32_t len);
+    constexpr uint16_t crc16(unsigned char *buf, uint32_t len) {
+		uint16_t cksum = 0;
+		for (uint32_t i = 0; i < len; i++) {
+			cksum = crc16_tab[(((cksum >> 8) ^ *buf++) & 0xFF)] ^ (cksum << 8);
+		}
+		return cksum;
+	}
 
 }
 

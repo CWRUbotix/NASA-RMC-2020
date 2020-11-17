@@ -2,6 +2,9 @@
 
 #include <fstream>
 #include <sstream>
+#include <numeric>
+#include <cmath>
+
 
 namespace csv {
     std::vector<std::vector<std::string>> read_csv(const std::string& fpath){
@@ -52,20 +55,6 @@ namespace csv {
             return false;
         }
     }
-}
-
-
-namespace crc {
-
-uint16_t crc16(unsigned char *buf, uint32_t len) {
-	uint32_t i;
-	uint16_t cksum = 0;
-	for (i = 0; i < len; i++) {
-		cksum = crc16_tab[(((cksum >> 8) ^ *buf++) & 0xFF)] ^ (cksum << 8);
-	}
-	return cksum;
-}
-
 }
 
 namespace buffer {

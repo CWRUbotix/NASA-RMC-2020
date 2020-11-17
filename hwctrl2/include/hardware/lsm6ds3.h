@@ -1,4 +1,4 @@
-#pragma oce
+#pragma once
 
 #include "interface/spi.h"
 #include "interface/gpio.h"
@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <cinttypes>
+#include <array>
 #include <linux/types.h>
 
 //#define LSM6DS3_X_VARIANCE
@@ -181,7 +182,7 @@ private:
 	float read_accel(Axis axis, float fs);
 	float read_gyro(Axis axis, float fs);
 
-	void read_all_data(double* xl_data, double* gyro_data);
+	void read_all_data(std::array<double, 3>& xl_data, std::array<double, 3>& gyro_data);
 
 	void soft_reset();
 
