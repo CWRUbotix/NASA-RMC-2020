@@ -227,9 +227,9 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
 
     for(int i = 0; i < sample_depth; i++){
         read_all_data(xl_data, g_data);
-        x_g_samples[i] = (float)g_data[0];
-        y_g_samples[i] = (float)g_data[1];
-        z_g_samples[i] = (float)g_data[2];
+        x_g_samples[i].push_back((float)g_data[0]);
+        y_g_samples[i].push_back((float)g_data[1]);
+        z_g_samples[i].push_back((float)g_data[2]);
         ros::Duration(0.005).sleep();
         auto len = progress_bar(buf, (float)(1.0*i/sample_depth));
         std::cout << "Sampling ";
