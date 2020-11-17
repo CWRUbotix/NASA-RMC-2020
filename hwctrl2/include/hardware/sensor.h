@@ -63,7 +63,7 @@ public:
     // override these
     virtual void setup()  = 0;
     virtual void update() = 0;
-    virtual void calibrate(std::vector<Calibration>* cals) {}; // should this be pure virtual?
+    virtual void calibrate(std::vector<Calibration>& cals) {}; // should this be pure virtual?
 
     bool ready_to_update() const { return m_update; }
 

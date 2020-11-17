@@ -116,6 +116,10 @@ void Lsm6ds3::setup() {
     // m_is_setup = true;
 }
 
+void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
+    
+}
+
 void Lsm6ds3::power_on_accel(uint8_t config_byte) {
     // power on accel
     uint8_t buf[2] = {};

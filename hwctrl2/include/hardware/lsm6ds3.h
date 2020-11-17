@@ -172,6 +172,7 @@ public:
 
 	virtual void setup()  override final;
 	virtual void update() override final;
+	virtual void calibrate(std::vector<Calibration>& cals) override final;
 private:
 	void power_on_accel(uint8_t config_byte);
 	void power_on_gyro(uint8_t config_byte);

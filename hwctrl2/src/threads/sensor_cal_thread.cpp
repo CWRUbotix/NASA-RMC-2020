@@ -41,9 +41,9 @@ void SensorCalThread::operator()() {
         std::getline(std::cin, line);
 
         if(line.compare("imu") == 0) {
-            calibrate_sensor_with_name("IMU", &cals);
+            calibrate_sensor_with_name("IMU", cals);
         } else if (line.compare("load_cell") == 0) {
-            calibrate_sensor_with_name("LOAD_CELL", &cals);
+            calibrate_sensor_with_name("LOAD_CELL", cals);
         } else if(line.compare("help") == 0){
 			printf("Sensor Calibration App Commands:\r\n");
 			printf("  - %s\t%s\r\n", "help", "display this menu");
@@ -78,7 +78,7 @@ void SensorCalThread::operator()() {
     ros::shutdown();
 }
 
-void SensorCalThread::calibrate_sensor_with_name(boost::string_view name, std::vector<Calibration>* cals) {
+void SensorCalThread::calibrate_sensor_with_name(boost::string_view name, std::vector<Calibration>& cals) {
     bool found = false;
     for(auto sensor : m_sensors) {
         if(name.compare(sensor->get_name()) == 0) {

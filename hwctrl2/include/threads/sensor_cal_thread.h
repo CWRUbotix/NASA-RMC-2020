@@ -14,5 +14,5 @@ public:
 
     virtual void operator()() override final;
 private:
-    void calibrate_sensor_with_name(boost::string_view name, std::vector<Calibration>* cals);
+    void calibrate_sensor_with_name(boost::string_view name, std::vector<Calibration>& cals);
 };
