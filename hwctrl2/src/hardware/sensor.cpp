@@ -14,9 +14,33 @@ void read_calibration(const std::string& path, std::vector<Calibration>& cals) {
     }
 }
 
-bool write_calibration(const std::string& path) {
+bool write_calibration(const std::string& path, std::vector<Calibration>& cals) {
+	std::vector<std::vector<std::string>> data;
+	char word[256];
+	for(auto cal : cals){
+		std::vector<std::string> line;
+		printf("Writing calibration for %s\r\n", cal.name.c_str());
+		line.push_back(cal.name);
+		sprintf(word, "%.6f",cal.scale);
+		line.push_back(std::string(word));
+		sprintf(word, "%.6f",cal.offset);
+		line.push_back(std::string(word));
+		sprintf(word, "%.6g",cal.variance);
+		line.push_back(std::string(word));
+		data.push_back(line); // add the line finally
+	}
+	csv::write_csv(path, data);
+}
 
-    return true;
+std::string print_calibration(Calibration& cal){
+	char buf[256];
+	sprintf(buf, "=== Name: %s ===\r\nScale:\t%.4g\r\nOffset:\t%.4g\r\nVariance:\t%.4g\r\n", 
+		cal.name.c_str(),
+		cal.scale,
+		cal.offset,
+		cal.variance
+		);
+	return std::string(buf);
 }
 
 SensorType get_sensor_type_from_param(boost::string_view type_str) {

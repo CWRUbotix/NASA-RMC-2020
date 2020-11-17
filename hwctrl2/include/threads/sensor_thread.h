@@ -39,7 +39,7 @@ const std::vector<std::string> sensor_param_names{
 class SensorThread {
 public:
     SensorThread(ros::NodeHandle nh);
-    ~SensorThread() = default;
+    virtual ~SensorThread() = default;
 
     void configure_from_server(boost::shared_ptr<Spi> spi);
 
@@ -52,7 +52,7 @@ public:
     void shutdown();
     void sleep();
 
-    void operator()();
+    virtual void operator()();
 private:
     boost::shared_ptr<Sensor> create_sensor_from_values(
         ros::NodeHandle nh, std::string name, SensorType type, uint32_t id,
@@ -60,7 +60,7 @@ private:
     );
 
     void uwb_ping_callback(const ros::TimerEvent&);
-private:
+protected:
     ros::NodeHandle    m_nh;
     ros::Rate          m_loop_rate;
     ros::CallbackQueue m_cb_queue;

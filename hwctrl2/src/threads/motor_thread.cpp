@@ -1,6 +1,7 @@
 #include "threads/motor_thread.h"
 
 #include <ros/spinner.h>
+
 #include <boost/smart_ptr/make_shared.hpp>
 
 #include <string>
@@ -161,6 +162,8 @@ void MotorThread::sleep() {
 }
 
 void MotorThread::operator()() {
+    ros::AsyncSpinner spinner(1, &m_cb_queue);
+    spinner.start();
     // setup_motors();
     while(ros::ok()) {
         update_motors();

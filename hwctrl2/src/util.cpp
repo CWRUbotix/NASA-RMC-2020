@@ -34,7 +34,7 @@ namespace csv {
     }
 
 
-    bool write_csv(std::string fpath, std::vector<std::vector<std::string>> data){
+    bool write_csv(const std::string& fpath, std::vector<std::vector<std::string>> data){
         std::ofstream file;
         file.open(fpath.c_str(), std::ofstream::out);
         if(file.is_open()){

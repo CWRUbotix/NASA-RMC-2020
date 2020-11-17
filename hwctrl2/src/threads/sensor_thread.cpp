@@ -199,7 +199,7 @@ void SensorThread::update_sensors() {
 void SensorThread::operator()() {
     ROS_INFO("Starting sensor_thread");
     ros::AsyncSpinner spinner(1, &m_cb_queue);
-
+    spinner.start();
     setup_sensors();
     
     while(ros::ok()) {
