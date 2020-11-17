@@ -8,14 +8,24 @@
 #include <hwctrl2/LimitSwState.h>
 #include <hwctrl2/MotorData.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
+// #include <boost/shared_ptr.hpp>
+// #include <boost/make_shared.hpp>
 #include <boost/move/unique_ptr.hpp>
 #include <boost/move/make_unique.hpp>
 
 #include <vector>
 
 #include "hardware/motor.h"
+
+const std::vector<std::string> motor_param_names{
+	"port_drive",
+	"starboard_drive",
+	"dep",
+	"exc_belt",
+	"exc_translation",
+	"exc_port_act",
+	"exc_starboard_act"
+};
 
 class MotorThread {
 public:
@@ -49,7 +59,7 @@ private:
     ros::Subscriber  m_sensor_data_sub;
 
     // publishers
-    ros::Publisher   m_motor_data_pub;
+    // ros::Publisher   m_motor_data_pub;
 
     // motors
     using MotorVec = std::vector<boost::shared_ptr<Motor>>;
@@ -57,4 +67,6 @@ private:
 
     MotorVec  m_motors;
     MotorIter m_motor_iter;
+
+    bool m_sys_power_on = false;
 };

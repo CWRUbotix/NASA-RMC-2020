@@ -51,6 +51,7 @@ add_executable(hwctrl2
   src/hardware/ads1120.cpp
   src/hardware/adt7310.cpp
   src/hardware/vesc.cpp
+  src/hardware/bmc.cpp
   src/interface/gpio.cpp
   src/interface/spi.cpp
   src/util.cpp
@@ -69,6 +70,7 @@ add_executable(hwctrl2_cal
   src/hardware/ads1120.cpp
   src/hardware/adt7310.cpp
   src/hardware/vesc.cpp
+  src/hardware/bmc.cpp
   src/interface/gpio.cpp
   src/interface/spi.cpp
   src/util.cpp

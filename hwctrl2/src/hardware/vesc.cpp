@@ -6,19 +6,20 @@
 #include "types.h"
 #include "util.h"
 
-Vesc::Vesc(
-    ros::NodeHandle nh, const std::string& name, uint32_t id,
-    ControlType c_type, ros::Duration update_pd, ros::Duration timeout, uint32_t can_id
-) : CanMotor(nh, name, id, MotorType::Vesc, c_type, update_pd, timeout, can_id) {
+VescMotor::VescMotor(
+    ros::NodeHandle nh, const std::string& name, uint32_t id,  uint32_t can_id,
+    ros::Duration update_pd, float accel_setpoint, float max_accel, 
+    float max_rpm, float gear_reduc, ros::Duration timeout
+) : CanMotor(nh, name, id, can_id, MotorType::Vesc, ControlType::RPM, update_pd, accel_setpoint, max_accel, max_rpm, gear_reduc, timeout) {
 
 }
 
-void Vesc::setup() {
+void VescMotor::setup() {
     // something maybe
     m_is_setup = true;
 }
 
-void Vesc::can_rx_callback(FramePtr frame) {
+void VescMotor::can_rx_callback(FramePtr frame) {
     uint32_t rx_id = (uint32_t) frame->can_id;
     int8_t can_id = (int8_t)(rx_id & 0xFF); // extract only the id
 
@@ -61,7 +62,7 @@ void Vesc::can_rx_callback(FramePtr frame) {
 
 }
 
-void Vesc::update(ros::Time time) {
+void VescMotor::update(ros::Time time) {
     if(!m_online) {
         return;
     }
@@ -97,7 +98,7 @@ void Vesc::update(ros::Time time) {
     m_update = false;
 }
 
-void Vesc::send_rpm_frame(ros::Time time, float rpm) {
+void VescMotor::send_rpm_frame(ros::Time time, float rpm) {
     auto frame = boost::make_shared<hwctrl2::CanFrame>();
 
     int n_rpm = (int)rpm;
@@ -114,7 +115,7 @@ void Vesc::send_rpm_frame(ros::Time time, float rpm) {
     m_last_update_time = time;
 }
 
-void Vesc::send_values_frame(ros::Time time) {
+void VescMotor::send_values_frame(ros::Time time) {
     auto frame = boost::make_shared<hwctrl2::CanFrame>();
 
     frame->can_id = m_can_id | (CanPacketId::CAN_PACKET_PROCESS_SHORT_BUFFER << 8) | CAN_EFF_FLAG;

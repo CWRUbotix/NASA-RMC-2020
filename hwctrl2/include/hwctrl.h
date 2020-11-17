@@ -39,13 +39,3 @@ namespace paths {
 }
 
 const std::string param_base = "/hardware";
-
-const std::vector<std::string> motor_param_names{
-	"port_drive",
-	"starboard_drive",
-	"dep",
-	"exc_belt",
-	"exc_translation",
-	"exc_port_act",
-	"exc_starboard_act"
-};
