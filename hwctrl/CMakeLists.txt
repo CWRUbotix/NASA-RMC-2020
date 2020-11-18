@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(hwctrl)
 
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -17,7 +17,7 @@ catkin_python_setup()
 
 add_message_files(DIRECTORY msg)
 
-add_service_files(DIRECTORY srv)
+# add_service_files(DIRECTORY srv)
 
 generate_messages(
   DEPENDENCIES
@@ -39,35 +39,42 @@ include_directories(
 )
 
 add_executable(hwctrl
-  src/buffer.cpp
-  src/canbus.cpp
-  src/crc.cpp
-  src/gpio.cpp
   src/hwctrl_node.cpp
-  src/hwctrl.cpp
-  src/lsm6ds3.cpp
-  src/motors.cpp
-  src/parse_csv.cpp
-  src/sensors.cpp
-  src/spi.cpp
-  src/uwb.cpp
-  src/vesc.cpp
+  src/threads/sensor_thread.cpp
+  src/threads/canbus_thread.cpp
+  src/threads/motor_thread.cpp
+  src/hardware/sensor.cpp
+  src/hardware/motor.cpp
+  src/hardware/quad_encoder.cpp
+  src/hardware/uwb.cpp
+  src/hardware/lsm6ds3.cpp
+  src/hardware/ads1120.cpp
+  src/hardware/adt7310.cpp
+  src/hardware/vesc.cpp
+  src/hardware/bmc.cpp
+  src/interface/gpio.cpp
+  src/interface/spi.cpp
+  src/util.cpp
 )
 
 add_executable(hwctrl_cal
-  src/buffer.cpp
-  src/canbus.cpp
-  src/crc.cpp
-  src/gpio.cpp
-  src/hwctrl_cal.cpp
-  src/hwctrl.cpp
-  src/lsm6ds3.cpp
-  src/motors.cpp
-  src/parse_csv.cpp
-  src/sensors.cpp
-  src/spi.cpp
-  src/uwb.cpp
-  src/vesc.cpp
+  src/hwctrl_cal_node.cpp
+  src/threads/sensor_thread.cpp
+  src/threads/sensor_cal_thread.cpp
+  src/threads/canbus_thread.cpp
+  src/threads/motor_thread.cpp
+  src/hardware/sensor.cpp
+  src/hardware/motor.cpp
+  src/hardware/quad_encoder.cpp
+  src/hardware/uwb.cpp
+  src/hardware/lsm6ds3.cpp
+  src/hardware/ads1120.cpp
+  src/hardware/adt7310.cpp
+  src/hardware/vesc.cpp
+  src/hardware/bmc.cpp
+  src/interface/gpio.cpp
+  src/interface/spi.cpp
+  src/util.cpp
 )
 
 target_link_libraries(hwctrl ${catkin_LIBRARIES})
