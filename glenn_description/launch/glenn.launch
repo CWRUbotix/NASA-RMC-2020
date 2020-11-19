@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="gui" default="true"/>
+    <arg name="rviz" default="true"/>
+    <arg name="use_steering" default="true"/>
+    <arg name="model" default="$(find glenn_description)/urdf/glenn.urdf.xacro"/>
+    <arg name="world" default="bumpy"/>
+    <arg name="verbose" default="false"/>
+
+    <rosparam command="load" file="$(find glenn_description)/config/diff_drive.yaml"
+              ns="glenn_base" />
+    <rosparam command="load" file="$(find glenn_description)/config/joints.yaml"
+              ns="glenn_joint_state_controller" />
+
+    <include file="$(find glenn_launcher)/launch/rviz/rviz.launch" if="$(arg rviz)"/>
+
+    <include file="$(find glenn_description)/launch/gazebo.launch">
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="model" value="$(arg model)"/>
+        <arg name="world_name" value="$(find glenn_description)/worlds/$(arg world).world"/>
+        <arg name="verbose" value="$(arg verbose)"/>
+    </include>
+
+    <node name="glenn_controller_spawner" pkg="controller_manager" type="controller_manager" output="screen"
+                args="spawn glenn_base glenn_joint_state_controller"/>
+
+    <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering" if="$(arg use_steering)">
+        <param name="default_topic" value="/glenn_base/cmd_vel"/>
+    </node>
+</launch>

@@ -24,9 +24,6 @@ PACKAGES=(
 
     # Needed to calculate point clouds of obstacles
     ros-$ROS_DISTRO-ros-numpy
-
-    # Imu filter, imu plugin for rviz
-    ros-$ROS_DISTRO-imu-tools
 )
 
 sudo apt update # Make sure package list is up to date

@@ -1,9 +1,14 @@
 <?xml version="1.0"?>
 <sdf version='1.6'>
-  <world name='default'>
+  <world name='flat'>
     <!-- A global light source -->
     <include>
       <uri>model://sun</uri>
+    </include>
+
+    <!-- A ground plane -->
+    <include>
+      <uri>model://ground_plane</uri>
     </include>
 
     <physics name='default_physics' default='0' type='ode'>
@@ -34,29 +39,20 @@
       </include>
     </model>
 
-    <model name="ground">
-      <!-- Offset by width/2, height/2, and rotate 180 -->
-      <pose>1.25 3.45 0 0 0 3.14159</pose>
-      <include>
-        <uri>model://ground_holes</uri>
-      </include>
-    </model>
-
     <!-- A rock -->
     <model name="rock_1">
-      <pose>0.5 1.6 0.2 1.57 0 0</pose>
+      <pose>0.79 3.37 0 0 0 0</pose>
       <include>
         <uri>model://rock</uri>
       </include>
     </model>
 
-    <!-- Another rock -->
+    <!-- Another rock-->
     <model name="rock_2">
-      <pose>1.6 3.6 0.2 1.57 0 1</pose>
+      <pose>1.8 2.4 0 0 0 0.5</pose>
       <include>
         <uri>model://rock</uri>
       </include>
     </model>
-
   </world>
 </sdf>
