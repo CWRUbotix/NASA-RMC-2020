@@ -55,7 +55,7 @@ public:
     virtual void operator()();
 private:
     boost::shared_ptr<Sensor> create_sensor_from_values(
-        ros::NodeHandle nh, std::string name, SensorType type, uint32_t id,
+        ros::NodeHandle nh, std::string name, std::string topic, SensorType type, uint32_t id,
         ros::Duration period, unique_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
     );
 

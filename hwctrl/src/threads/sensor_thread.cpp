@@ -71,6 +71,7 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
         const std::string full_name = base + "/" + *name;
 
         const std::string name_param      = full_name + "/name";
+        const std::string topic_param     = full_name + "/topic";
 		const std::string type_param      = full_name + "/type";
 		const std::string can_id_param    = full_name + "/can_id";
 		const std::string period_param    = full_name + "/update_period";
@@ -78,6 +79,7 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
 
         // Sensor sensor;
         std::string name_str;
+        std::string topic_str;
         SensorType type;
         ros::Duration period;
         int can_id;
@@ -86,6 +88,9 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
 
         if(m_nh.hasParam(name_param)) {
             m_nh.getParam(name_param, name_str);
+        }
+        if(m_nh.hasParam(topic_param)) {
+            m_nh.getParam(topic_param, topic_str);
         }
         if(m_nh.hasParam(type_param)) {
             std::string type_str;
@@ -109,14 +114,14 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
             gpio = boost::movelib::make_unique<Gpio>(gpio_path);
 		}
 
-        auto sensor = create_sensor_from_values(m_nh, name_str, type, can_id, period, std::move(gpio), spi);
+        auto sensor = create_sensor_from_values(m_nh, topic_str, name_str, type, can_id, period, std::move(gpio), spi);
         if(sensor != nullptr)
             m_sensors.push_back(sensor); 
     }
 }
 
 boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
-    ros::NodeHandle nh, std::string name, SensorType type, uint32_t can_id, ros::Duration period,
+    ros::NodeHandle nh, std::string name, std::string topic, SensorType type, uint32_t can_id, ros::Duration period,
     unique_ptr<Gpio> gpio, boost::shared_ptr<Spi> spi
 )
 {
@@ -136,9 +141,6 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
             break;
         }
         case SensorType::LIMIT_SW: {
-            static uint8_t idx = 0;
-            std::string topic("limit_sw" + std::to_string(++idx) + "_state");
-            // check the last two arguments, cant find where theyre defined in hwctrl
             auto sw = boost::make_shared<LimitSwitch>(nh, name, type, sys_id_idx++, topic, 128, period, std::move(gpio), 0, 0);
             sensor = sw;
             break;
@@ -164,7 +166,7 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
             break;
         }
         case SensorType::TEMP_SENSE: {
-            auto ts = boost::make_shared<EbayTempSensor>(nh, name, sys_id_idx++, "sensor_data", 128, period, spi, std::move(gpio));
+            auto ts = boost::make_shared<EbayTempSensor>(nh, name, sys_id_idx++, "ebay_temperature", 128, period, spi, std::move(gpio));
             sensor = ts;
             break;
         }

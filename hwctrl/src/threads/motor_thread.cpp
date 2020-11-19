@@ -120,7 +120,7 @@ void MotorThread::read_from_server() {
     }
 }
 
-void MotorThread::set_motor_callback(boost::shared_ptr<hwctrl::SetMotorMsg> msg) {
+void MotorThread::set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg) {
     m_motors.at(msg->id) -> set_setpoint(ros::Time::now(), msg -> setpoint, msg -> acceleration);
 }
 

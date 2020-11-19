@@ -3,7 +3,7 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 
-#include <hwctrl/SetMotorMsg.h>
+#include <hwctrl/MotorCmd.h>
 #include <hwctrl/SensorData.h>
 #include <hwctrl/LimitSwState.h>
 #include <hwctrl/MotorData.h>
@@ -43,7 +43,7 @@ public:
     void operator()();
 
 private: 
-    void set_motor_callback(boost::shared_ptr<hwctrl::SetMotorMsg> msg);
+    void set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg);
     void limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg);
     void sensor_data_callback(boost::shared_ptr<hwctrl::SensorData> msg);
 
