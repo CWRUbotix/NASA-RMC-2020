@@ -64,6 +64,10 @@ hardware:
       type: 'limit'
       gpio: '/sys/class/gpio/gpio117/'
       topic: '/excavation/exc_upper_limit_switch'
+    # power_sense:
+    #   name: "SYSTEM 24V STATE"
+    #   type: "power_sense"
+    #   gpio: '/sys/class/gpio/gpio45/'
 
 # BEGIN MOTOR CONFIGS
   motor:

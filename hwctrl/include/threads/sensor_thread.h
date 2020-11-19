@@ -33,7 +33,8 @@ const std::vector<std::string> sensor_param_names{
 	"limit_1",
 	"limit_2",
 	"limit_3",
-	"limit_4"
+	"limit_4",
+    "power_sense"
 };
 
 class SensorThread {
