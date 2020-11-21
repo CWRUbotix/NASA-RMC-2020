@@ -2,10 +2,9 @@
 #define POINT_CLOUD_DECIMATOR_H
 
 #include <ros/ros.h>
-
 #include <nodelet/nodelet.h>
-
 #include <pcl_conversions/pcl_conversions.h>
+#include <tf2_ros/transform_listener.h>
 
 
 namespace obstacle_detection
@@ -31,6 +30,10 @@ class PointCloudDecimator : public nodelet::Nodelet
 
         // Filter leaf size
         double voxel_size_;
+
+        // tf buffer
+        tf2_ros::Buffer tf_buffer_;
+        tf2_ros::TransformListener *tf_listener_;
 };
 
 }  // namespace obstacle_detection

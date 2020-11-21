@@ -10,7 +10,11 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   nodelet
+  tf2_ros
+  tf2_sensor_msgs
 )
+
+find_package(PCL REQUIRED)
 
 catkin_python_setup()
 
@@ -27,6 +31,7 @@ include_directories(
 )
 
 add_library(point_cloud_decimator src/point_cloud_decimator.cpp)
+add_executable(point_cloud_normal_estimator src/point_cloud_normal_estimator.cpp)
 
-target_link_libraries(point_cloud_decimator ${catkin_LIBRARIES})
-
+target_link_libraries(point_cloud_decimator ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(point_cloud_normal_estimator ${catkin_LIBRARIES} ${PCL_LIBRARIES})

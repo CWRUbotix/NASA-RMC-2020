@@ -64,6 +64,8 @@
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>nodelet</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_sensor_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
