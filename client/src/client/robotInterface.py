@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from hwctrl.msg import SensorData
-from hwctrl.msg import SetMotorMsg
+from hwctrl.msg import MotorCmd
 
 node_name = 'robot_interface'
 motorCommandTopic = 'motor_setpoints'
@@ -48,12 +48,12 @@ sensorValueMap = {
 
 
 def sendMotorCommand(motorID, value, accel=35):
-    motor_msg = SetMotorMsg()
+    motor_msg = MotorCmd()
     motor_msg.id = motorID
     motor_msg.setpoint = value
     motor_msg.acceleration = accel
     try:
-        pub = rospy.Publisher(motorCommandTopic, SetMotorMsg, queue_size=1)
+        pub = rospy.Publisher(motorCommandTopic, MotorCmd, queue_size=1)
         pub.publish(motor_msg)
     except rospy.ROSInterruptException as e:
         print(e.getMessage())
@@ -62,8 +62,8 @@ def sendMotorCommand(motorID, value, accel=35):
 
 
 def sendDriveCommand(direction, value, accel=35):
-    left_msg = SetMotorMsg()
-    right_msg = SetMotorMsg()
+    left_msg = MotorCmd()
+    right_msg = MotorCmd()
     left_msg.id = 0
     right_msg.id = 1
     left_msg.acceleration = accel
@@ -81,7 +81,7 @@ def sendDriveCommand(direction, value, accel=35):
         left_msg.setpoint = -value
         right_msg.setpoint = value
     try:
-        pub = rospy.Publisher(motorCommandTopic, SetMotorMsg, queue_size=2)
+        pub = rospy.Publisher(motorCommandTopic, MotorCmd, queue_size=2)
         pub.publish(left_msg)
         pub.publish(right_msg)
     except rospy.ROSInterruptException as e:
