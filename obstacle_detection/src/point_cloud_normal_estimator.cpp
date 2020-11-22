@@ -19,10 +19,12 @@ class PointCloudNormalEstimator
 
             pnh_.param("search_radius", search_radius_, 0.1);
             pnh_.param("normal_threshold", normal_threshold_, 0.7);
+            pnh_.param("cluster_tolerance", cluster_tolerance_, 0.1);
             pnh_.param("visualize", visualize_, true);
 
             ROS_INFO_STREAM("search radius set to " << search_radius_);
             ROS_INFO_STREAM("normal threshold set to " << normal_threshold_);
+            ROS_INFO_STREAM("cluster_tolerance set to " << cluster_tolerance_);
             ROS_INFO_STREAM("visualize set to " << visualize_);
 
             cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("output_cloud", 1);
@@ -43,8 +45,6 @@ class PointCloudNormalEstimator
         {
             cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
             pcl::fromROSMsg(*msg, *cloud_);
-
-            ROS_INFO_STREAM("Cloud size: " << cloud_->size());
 
             // Create the normal estimation class, and pass the input dataset to it
             pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
@@ -85,27 +85,41 @@ class PointCloudNormalEstimator
             // Extract the clusters
             std::vector<pcl::PointIndices> cluster_indices;
             pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-            ec.setClusterTolerance(0.1); // 2cm
+            ec.setClusterTolerance(cluster_tolerance_);
             ec.setMinClusterSize(10);
-            ec.setMaxClusterSize(1000);
+            ec.setMaxClusterSize(10000);
             ec.setSearchMethod(tree);
             ec.setInputCloud(out_cloud);
             ec.extract(cluster_indices);
 
-            // Split clusters into individual clouds
-            for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+            // Create colored cloud for display purposes
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr out_cloud_colored(new pcl::PointCloud<pcl::PointXYZRGB>);
+            pcl::copyPointCloud(*out_cloud, *out_cloud_colored);
+
+            // Modify colors of cloud to display different clusters
+            int j = 0;
+            float color_palette[10];
+            for(int i = 0; i < 10; ++i)
             {
-                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
-
-                extract.setInputCloud(out_cloud);
-                extract.setIndices(pcl::IndicesPtr(new std::vector<int>((*it).indices)));
-                extract.filter(*cloud_cluster);
-
-                pcl::toROSMsg(*cloud_cluster, out_cloud_ros);
-
-                cloud_pub_.publish(out_cloud_ros);
+                color_palette[i] = 4324.98213 * (i*i + 1);  // Random colors
             }
 
+            for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+            {
+                // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
+                for(std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
+                {
+                    out_cloud_colored->points[*pit].rgb = color_palette[j];
+                }
+                // extract.setInputCloud(out_cloud);
+                // extract.setIndices(pcl::IndicesPtr(new std::vector<int>((*it).indices)));
+                // extract.filter(*cloud_cluster);
+
+                j++;
+            }
+
+            pcl::toROSMsg(*out_cloud_colored, out_cloud_ros);
+            cloud_pub_.publish(out_cloud_ros);
 
             has_update_ = true;
         }
@@ -186,7 +200,9 @@ class PointCloudNormalEstimator
 
         double search_radius_;  // Normal estimation parameter
         double normal_threshold_;  // When a point is determined non-ground
+        double cluster_tolerance_;  // Euclidean clustering tolerance
         bool visualize_;  // Whether or not to display viewer
+
 };
 
 int main(int argc, char** argv)
