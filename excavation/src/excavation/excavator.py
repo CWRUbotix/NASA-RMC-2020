@@ -104,7 +104,7 @@ class Excavator:
 
             elif self.state == State.DUMP:
                 if not self.has_sent_dump_goal:
-                    goal = TestGoal(goal=1)
+                    goal = TestGoal(goal=goal_msg.goal)
                     self.dump_client.send_goal(goal)
                     self.has_sent_dump_goal = True
 
