@@ -6,6 +6,9 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/extract_clusters.h>
+
 
 class PointCloudNormalEstimator
 {
@@ -14,19 +17,23 @@ class PointCloudNormalEstimator
         {
             ROS_INFO("Node initialized");
 
-            viewer_.setBackgroundColor(0.0, 0.0, 0.5);
-            viewer_.addCoordinateSystem(0.5, 0, 0, 0);
-
             pnh_.param("search_radius", search_radius_, 0.1);
             pnh_.param("normal_threshold", normal_threshold_, 0.7);
+            pnh_.param("visualize", visualize_, true);
 
             ROS_INFO_STREAM("search radius set to " << search_radius_);
             ROS_INFO_STREAM("normal threshold set to " << normal_threshold_);
+            ROS_INFO_STREAM("visualize set to " << visualize_);
 
-            cloud_pub_ = nh_.advertise<pcl::PCLPointCloud2>("output_cloud", 1);
+            cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("output_cloud", 1);
             cloud_sub_ = nh_.subscribe("input_cloud", 1, &PointCloudNormalEstimator::receivePointCloud, this);
 
-            viewer_timer_ = nh_.createTimer(ros::Duration(0.1), &PointCloudNormalEstimator::viewerTimerCB, this);
+            if (visualize_) {
+                viewer_.setBackgroundColor(0.0, 0.0, 0.5);
+                viewer_.addCoordinateSystem(0.5, 0, 0, 0);
+
+                viewer_timer_ = nh_.createTimer(ros::Duration(0.1), &PointCloudNormalEstimator::viewerTimerCB, this);
+            }
 
             has_update_ = false;
         }
@@ -34,7 +41,6 @@ class PointCloudNormalEstimator
         // Receives the point cloud message and calculates the normals
         void receivePointCloud(const sensor_msgs::PointCloud2ConstPtr& msg)
         {
-            // ROS_INFO_STREAM("Received cloud of size " << cloud->size());
             cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>);
             pcl::fromROSMsg(*msg, *cloud_);
 
@@ -44,13 +50,62 @@ class PointCloudNormalEstimator
             pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
             ne.setInputCloud(cloud_);
 
-            pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
+            pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
             ne.setSearchMethod(tree);
 
             ne.setRadiusSearch(search_radius_);
             
             cloud_normals_.reset(new pcl::PointCloud<pcl::Normal>);
             ne.compute(*cloud_normals_);
+
+            std::vector<int> indices;
+            for(int i = 0; i < cloud_->size(); ++i){
+                if (fabs(cloud_normals_->points[i].normal_z) < normal_threshold_)
+                {
+                    indices.push_back(i);
+                }
+            }
+
+            obstacle_indices_ = pcl::IndicesPtr(new std::vector<int>(indices));
+
+            pcl::ExtractIndices<pcl::PointXYZ> extract;
+
+            sensor_msgs::PointCloud2 out_cloud_ros;
+            pcl::PointCloud<pcl::PointXYZ>::Ptr out_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+            extract.setInputCloud(cloud_);
+            extract.setIndices(obstacle_indices_);
+            extract.setNegative(false);
+            extract.filter(*out_cloud);
+
+            // Create new tree for euclidean clustering
+            tree.reset(new pcl::search::KdTree<pcl::PointXYZ>);
+            tree->setInputCloud(out_cloud);
+
+            // Extract the clusters
+            std::vector<pcl::PointIndices> cluster_indices;
+            pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+            ec.setClusterTolerance(0.1); // 2cm
+            ec.setMinClusterSize(10);
+            ec.setMaxClusterSize(1000);
+            ec.setSearchMethod(tree);
+            ec.setInputCloud(out_cloud);
+            ec.extract(cluster_indices);
+
+            // Split clusters into individual clouds
+            for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+            {
+                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
+
+                extract.setInputCloud(out_cloud);
+                extract.setIndices(pcl::IndicesPtr(new std::vector<int>((*it).indices)));
+                extract.filter(*cloud_cluster);
+
+                pcl::toROSMsg(*cloud_cluster, out_cloud_ros);
+
+                cloud_pub_.publish(out_cloud_ros);
+            }
+
 
             has_update_ = true;
         }
@@ -127,9 +182,11 @@ class PointCloudNormalEstimator
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;  // The cloud itself
         pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_;  // The cloud's normals
+        pcl::IndicesPtr obstacle_indices_;  // Indices of found obstacles        
 
         double search_radius_;  // Normal estimation parameter
         double normal_threshold_;  // When a point is determined non-ground
+        bool visualize_;  // Whether or not to display viewer
 };
 
 int main(int argc, char** argv)

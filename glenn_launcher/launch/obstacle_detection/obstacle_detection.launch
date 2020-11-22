@@ -37,6 +37,7 @@
     <node name="point_cloud_normal_estimator" pkg="obstacle_detection" type="point_cloud_normal_estimator">
         <remap from="input_cloud" to="/realsense/depth/points"/>
         <param name="search_radius" value="0.07"/>
+        <param name="normal_threshold" value="0.95"/>
     </node>
 
     <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" output="screen" cwd="node"/>
