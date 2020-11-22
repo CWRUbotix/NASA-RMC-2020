@@ -2,6 +2,12 @@
 
 #include "motor.h"
 
+#include <linux/can.h>
+#include <linux/can/raw.h>
+
+#include "types.h"
+#include "util.h"
+
 class VescMotor : public CanMotor {
 public:
     VescMotor(

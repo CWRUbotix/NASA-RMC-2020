@@ -1,11 +1,18 @@
 #pragma once
 
-#include <ros/ros.h>
-#include <ros/callback_queue.h>
-
-#include <boost/utility/string_view.hpp>
-
 #include "threads/sensor_thread.h"
+
+#include <ros/spinner.h>
+
+#include <boost/filesystem.hpp>
+
+#include <string>
+#include <vector>
+#include <iostream>
+#include <thread>
+
+#include "hwctrl.h"
+#include "hardware/sensor.h"
 
 class SensorCalThread : SensorThread {
 public:

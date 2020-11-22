@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <iostream>
 #include <vector>
 #include <array>
@@ -8,6 +9,7 @@
 #include <functional>
 #include <cmath>
 #include <cinttypes>
+#include <sstream>
 #include <type_traits>
 
 #include <boost/utility/string_view.hpp>

@@ -1,6 +1,5 @@
 #include "hardware/sensor.h"
 
-#include "util.h"
 
 void read_calibration(const std::string& path, std::vector<Calibration>& cals) {
     std::vector<std::vector<std::string>> data = csv::read_csv(path);

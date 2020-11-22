@@ -1,6 +1,5 @@
 #include "hardware/adt7310.h"
 
-#include <linux/spi/spidev.h>
 
 EbayTempSensor::EbayTempSensor(
     ros::NodeHandle nh, const std::string& name, uint32_t id, const std::string& topic, uint32_t topic_size, ros::Duration update_period,

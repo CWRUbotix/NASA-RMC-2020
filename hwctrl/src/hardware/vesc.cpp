@@ -1,10 +1,5 @@
 #include "hardware/vesc.h"
 
-#include <linux/can.h>
-#include <linux/can/raw.h>
-
-#include "types.h"
-#include "util.h"
 
 VescMotor::VescMotor(
     ros::NodeHandle nh, const std::string& name, uint32_t id,  uint32_t can_id,

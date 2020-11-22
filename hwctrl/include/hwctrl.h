@@ -1,8 +1,12 @@
 #pragma once
 
+#include <ros/ros.h>
+#include <ros/spinner.h>
 #include <string>
 #include <vector>
 #include <array>
+#include <utility>
+#include <iostream>
 
 #define DEFAULT_MAX_ACCEL 			30.0
 #define DEFAULT_MAX_RPM 			50.0

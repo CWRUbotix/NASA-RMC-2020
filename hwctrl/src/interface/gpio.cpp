@@ -1,19 +1,5 @@
 #include "interface/gpio.h"
 
-#include <ros/ros.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cinttypes>
-#include <cstdlib>
-#include <string>
-#include <cstdio>
-#include <iostream>
-#include <fstream>
-
 constexpr auto k_in_str  = "in";
 constexpr auto k_out_str = "out";
 

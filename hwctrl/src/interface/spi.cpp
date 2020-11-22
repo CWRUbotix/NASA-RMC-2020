@@ -1,13 +1,5 @@
 #include "interface/spi.h"
 
-#include <ros/ros.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <linux/types.h>
-#include <linux/spi/spidev.h>
-
 Spi::Spi(const std::string& fname) {
 	if(init(fname) != 1) {
 		ROS_ERROR("Could not init SPI interface on %s", fname.c_str());
