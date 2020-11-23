@@ -31,6 +31,9 @@ class PointCloudDecimator : public nodelet::Nodelet
         // Filter leaf size
         double voxel_size_;
 
+        // Frame to transform to
+        std::string frame_name_;
+
         // tf buffer
         tf2_ros::Buffer tf_buffer_;
         tf2_ros::TransformListener *tf_listener_;

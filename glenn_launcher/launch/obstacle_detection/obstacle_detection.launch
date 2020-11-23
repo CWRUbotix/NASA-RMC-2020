@@ -24,6 +24,7 @@
         <remap from="input_cloud" to="/realsense/depth/points_raw"/>
         <remap from="output_cloud" to="/realsense/depth/points"/>
         <param name="voxel_size" value="0.05"/>
+        <param name="frame_name" value="realsense_footprint_link"/>
     </node>
 
     <node unless="$(arg custom_pcl_filter)" name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid pcl_manager">
@@ -36,12 +37,16 @@
 
     <node name="point_cloud_normal_estimator" pkg="obstacle_detection" type="point_cloud_normal_estimator">
         <remap from="input_cloud" to="/realsense/depth/points"/>
+        <remap from="output_cloud" to="/realsense/depth/points_obstacles"/>
         <param name="search_radius" value="0.07"/>
         <param name="normal_threshold" value="0.95"/>
         <param name="cluster_tolerance" value="0.1"/>
         <param name="visualize" value="false"/>
     </node>
 
-    <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" output="screen" cwd="node"/>
+    <node name="obstacle_detection" pkg="obstacle_detection" type="obstacle_detection_node.py">
+        <remap from="input_cloud" to="/realsense/depth/points_obstacles"/>
+    </node>
+
     <node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid_node.py" output="screen" cwd="node"/>
 </launch>

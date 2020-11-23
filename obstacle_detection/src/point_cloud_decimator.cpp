@@ -20,7 +20,11 @@ void PointCloudDecimator::onInit()
     pnh_ = getPrivateNodeHandle();
 
     pnh_.param("voxel_size", voxel_size_, 0.05);
+    pnh_.param<std::string>("frame_name", frame_name_, "base_link");
+
     NODELET_INFO_STREAM("voxel_size set to " << voxel_size_);
+    NODELET_INFO_STREAM("frame_name set to " << frame_name_);
+
 
     tf_listener_ = new tf2_ros::TransformListener(tf_buffer_);
 
@@ -42,7 +46,7 @@ void PointCloudDecimator::receive_point_cloud(const pcl::PCLPointCloud2ConstPtr&
   pcl_conversions::moveFromPCL(cloud_filtered, cloud_filtered_2);
 
   try {
-    tf_buffer_.transform(cloud_filtered_2, out_cloud, "base_link", ros::Duration(0.1));
+    tf_buffer_.transform(cloud_filtered_2, out_cloud, frame_name_, ros::Duration(0.1));
   } catch (tf2::TransformException &ex){
     ROS_WARN("%s", ex.what());
     return;
