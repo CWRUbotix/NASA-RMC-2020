@@ -74,7 +74,7 @@ namespace math {
             kernel_size++;
         }
 
-        T kernel[kernel_size];
+        T kernel[kernel_size] = {};
         T range = 2.5;
         T step  = ((T) kernel_size - 1.0) / (2.0 * range);
         T x = -range;
@@ -85,7 +85,7 @@ namespace math {
             x += step;
 	    }
 
-        int i, offset = kernel_size / 2;
+        int i = 0, offset = kernel_size / 2;
         for(i = 0; i < vec.size() - offset; i++){
             for(int j = 0; j < kernel_size; j++){ // for each point in the kernel
                 smooth[i] += kernel[j] * vec[abs((i - offset) + j)];
