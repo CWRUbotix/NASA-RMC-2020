@@ -1,5 +1,6 @@
 #include "hardware/ads1120.h"
 
+#include <linux/spi/spidev.h>
 
 PotentiometerADC::PotentiometerADC(
     ros::NodeHandle nh, const std::string& name, uint32_t id, const std::string& topic,

@@ -1,5 +1,15 @@
 #include "threads/sensor_thread.h"
 
+#include "hwctrl.h"
+
+#include <ros/param.h>
+#include <ros/spinner.h>
+
+#include <string>
+#include <utility>
+
+#include <boost/filesystem.hpp>
+
 
 SensorThread::SensorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000), m_uwb_update_pd(0.01), m_uwb_idx(0) {
     m_sensors  .reserve(MAX_NUMBER_OF_SENSORS);

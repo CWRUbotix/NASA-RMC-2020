@@ -2,9 +2,7 @@
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
-#include <ros/spinner.h>
 
-#include "hwctrl.h"
 #include <hwctrl/MotorCmd.h>
 #include <hwctrl/SensorData.h>
 #include <hwctrl/LimitSwState.h>
@@ -14,17 +12,10 @@
 // #include <boost/make_shared.hpp>
 #include <boost/move/unique_ptr.hpp>
 #include <boost/move/make_unique.hpp>
-#include <boost/smart_ptr/make_shared.hpp>
+
+#include <vector>
 
 #include "hardware/motor.h"
-#include "hardware/vesc.h"
-#include "hardware/bmc.h"
-
-#include <string>
-#include <vector>
-#include <thread>
-
-
 
 const std::vector<std::string> motor_param_names{
 	"port_drive",

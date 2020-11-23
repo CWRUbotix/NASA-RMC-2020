@@ -10,8 +10,6 @@
 
 #include <string>
 #include <vector>
-#include <cmath>
-
 
 #define DEFAULT_MAX_ACCEL 			30.0
 #define DEFAULT_MAX_RPM 			50.0

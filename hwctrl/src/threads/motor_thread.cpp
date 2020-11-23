@@ -1,5 +1,15 @@
 #include "threads/motor_thread.h"
 
+#include <ros/spinner.h>
+
+#include <boost/smart_ptr/make_shared.hpp>
+
+#include <string>
+
+#include "hwctrl.h"
+#include "hardware/motor.h"
+#include "hardware/vesc.h"
+#include "hardware/bmc.h"
 
 MotorThread::MotorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
     m_motors.reserve(16);

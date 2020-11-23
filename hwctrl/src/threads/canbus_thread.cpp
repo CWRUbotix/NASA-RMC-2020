@@ -1,5 +1,16 @@
 #include "threads/canbus_thread.h"
 
+#include <ros/spinner.h>
+
+#include <hwctrl/CanFrame.h>
+
+#include <linux/can.h>
+#include <linux/can/raw.h>
+#include <net/if.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <inttypes.h>
 
 CanbusThread::CanbusThread(ros::NodeHandle nh, std::string iface) : m_nh(nh), m_loop_rate(100), m_iface(iface) {
 

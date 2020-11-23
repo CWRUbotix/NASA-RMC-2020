@@ -1,5 +1,7 @@
 #include <ros/ros.h>
 
+#include <thread>
+
 #include "threads/sensor_thread.h"
 #include "threads/canbus_thread.h"
 #include "threads/motor_thread.h"

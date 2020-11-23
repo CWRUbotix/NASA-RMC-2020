@@ -1,7 +1,5 @@
 #pragma once
 
-#include <ros/ros.h>
-
 #include "interface/spi.h"
 #include "interface/gpio.h"
 
@@ -14,13 +12,6 @@
 #include <cinttypes>
 #include <array>
 #include <linux/types.h>
-#include <linux/spi/spidev.h>
-
-#include <iostream>
-#include <vector>
-#include <algorithm>
-
-#include "util.h"
 
 //#define LSM6DS3_X_VARIANCE
 

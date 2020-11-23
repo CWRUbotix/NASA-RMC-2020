@@ -1,5 +1,7 @@
 #include "hardware/uwb.h"
 
+#include <linux/can.h>
+#include <linux/can/raw.h>
 
 UwbNode::UwbNode(CanSensorArgs)
 : CanSensorArgsPass(PubData), m_anchors()

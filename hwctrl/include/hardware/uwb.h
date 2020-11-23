@@ -2,9 +2,6 @@
 
 #include "sensor.h"
 
-#include <linux/can.h>
-#include <linux/can/raw.h>
-
 #include <vector>
 
 

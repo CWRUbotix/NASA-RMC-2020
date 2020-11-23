@@ -1,21 +1,11 @@
 #pragma once
 
+#include <string>
+
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
-#include <ros/spinner.h>
 
 #include <hwctrl/CanFrame.h>
-
-#include <linux/can.h>
-#include <linux/can/raw.h>
-#include <net/if.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <inttypes.h>
-#include <string>
-#include <thread>
-
 
 static ros::Subscriber can_rx_sub;
 static ros::Publisher  can_tx_pub;

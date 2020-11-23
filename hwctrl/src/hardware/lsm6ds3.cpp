@@ -1,5 +1,16 @@
 #include "hardware/lsm6ds3.h"
 
+#include <ros/ros.h>
+
+#include <linux/spi/spidev.h>
+
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <array>
+#include <algorithm>
+
+#include "util.h"
 
 Lsm6ds3::Lsm6ds3(
     ros::NodeHandle nh, const std::string& name, uint32_t id, const std::string& topic,

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <linux/spi/spidev.h>
-
 #include "interface/gpio.h"
 #include "interface/spi.h"
 

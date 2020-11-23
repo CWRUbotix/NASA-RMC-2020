@@ -3,14 +3,6 @@
 #include <cinttypes>
 #include <string>
 
-#include <ros/ros.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <linux/types.h>
-#include <linux/spi/spidev.h>
-
 #define SPI_DEFAULT_MODE 	SPI_MODE_0
 #define SPI_DEFAULT_SPEED 	2500000
 

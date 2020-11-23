@@ -1,5 +1,15 @@
 #include "threads/sensor_cal_thread.h"
 
+#include <ros/spinner.h>
+
+#include <boost/filesystem.hpp>
+
+#include <string>
+#include <vector>
+#include <iostream>
+
+#include "hwctrl.h"
+#include "hardware/sensor.h"
 
 SensorCalThread::SensorCalThread(ros::NodeHandle nh)
 : SensorThread(nh) {};
