@@ -8,6 +8,9 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
 
 
 class PointCloudNormalEstimator
@@ -126,6 +129,8 @@ class PointCloudNormalEstimator
                 color_palette[i] = 4324.98213 * (i*i + 1);  // Random colors
             }
 
+            obstacle_models_.clear();
+
             // Iterate over clusters
             for (std::vector<pcl::PointIndices>::const_iterator it = clusters.begin(); it != clusters.end(); ++it)
             {
@@ -137,6 +142,26 @@ class PointCloudNormalEstimator
                 extract.setInputCloud(cloud);
                 extract.setIndices(pcl::IndicesPtr(new std::vector<int>((*it).indices)));
                 extract.filter(*cloud_cluster);
+
+                // Find sphere that models points
+                pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+                pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+                // Create the segmentation object
+                pcl::SACSegmentation<pcl::PointXYZ> seg;
+                // Optional
+                seg.setOptimizeCoefficients(false);
+                // Mandatory
+                seg.setModelType(pcl::SACMODEL_SPHERE);
+                seg.setMethodType(pcl::SAC_RANSAC);
+                seg.setDistanceThreshold(0.01);
+                seg.setRadiusLimits(0.1, 0.3);
+                seg.setInputCloud(cloud_cluster);
+                seg.segment(*inliers, *coefficients);
+
+                if (inliers->indices.size() != 0)
+                {
+                    obstacle_models_.push_back(*coefficients);
+                }
 
                 pcl::copyPointCloud(*cloud_cluster, *cloud_cluster_colored);
 
@@ -201,6 +226,12 @@ class PointCloudNormalEstimator
 
                 viewer_->addPointCloudNormals<pcl::PointXYZRGB, pcl::Normal>(color_cloud, cloud_normals_, 1, 0.03, "cloud_normals");
 
+                viewer_->removeAllShapes();
+                for (int i = 0; i < obstacle_models_.size(); ++i)
+                {
+                    viewer_->addSphere(obstacle_models_[i], "sphere_" + std::to_string(i));
+                } 
+
                 viewer_->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "cloud");
             }
 
@@ -225,7 +256,8 @@ class PointCloudNormalEstimator
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;  // The cloud itself
         pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_;  // The cloud's normals
-        pcl::IndicesPtr obstacle_indices_;  // Indices of found obstacles        
+        pcl::IndicesPtr obstacle_indices_;  // Indices of found obstacles
+        std::vector<pcl::ModelCoefficients> obstacle_models_;  // Sphere model parameters for each obstacle  
 
         double search_radius_;  // Normal estimation parameter
         double normal_threshold_;  // When a point is determined non-ground
