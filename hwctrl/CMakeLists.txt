@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.7.2)
 project(hwctrl)
+
+cmake_policy(SET CMP0069 OLD)
 
 include(PrecompiledHeader.cmake)
 
-add_compile_options(-std=c++14 -O2 -Wall)
+add_compile_options(-std=c++14 -O2)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -83,6 +85,9 @@ add_executable(hwctrl_cal
 
 add_precompiled_header(hwctrl include/pch.h SOURCE_CXX src/pch.cpp FORCEINCLUDE)
 add_precompiled_header(hwctrl_cal include/pch.h SOURCE_CXX src/pch.cpp FORCEINCLUDE)
+
+set_property(TARGET hwctrl PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+set_property(TARGET hwctrl_cal PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 
 target_link_libraries(hwctrl ${catkin_LIBRARIES})
 target_link_libraries(hwctrl_cal ${catkin_LIBRARIES})
