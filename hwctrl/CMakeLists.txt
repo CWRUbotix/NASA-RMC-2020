@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.9.0)
 project(hwctrl)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT supported OUTPUT error)
 
 add_compile_options(-std=c++14 -O2)
 
@@ -76,6 +79,14 @@ add_executable(hwctrl_cal
   src/interface/spi.cpp
   src/util.cpp
 )
+
+if( supported )
+  message(STATUS "IPO / LTO enabled")
+  set_property(TARGET hwctrl PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+  set_property(TARGET hwctrl_cal PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+  message(STATUS "IPO / LTO not supported: <${error}>")
+endif()
 
 target_link_libraries(hwctrl ${catkin_LIBRARIES})
 target_link_libraries(hwctrl_cal ${catkin_LIBRARIES})
