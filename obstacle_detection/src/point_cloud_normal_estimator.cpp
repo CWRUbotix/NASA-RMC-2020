@@ -31,8 +31,9 @@ class PointCloudNormalEstimator
             cloud_sub_ = nh_.subscribe("input_cloud", 1, &PointCloudNormalEstimator::receivePointCloud, this);
 
             if (visualize_) {
-                viewer_.setBackgroundColor(0.0, 0.0, 0.5);
-                viewer_.addCoordinateSystem(0.5, 0, 0, 0);
+                viewer_.reset(new pcl::visualization::PCLVisualizer);
+                viewer_->setBackgroundColor(0.0, 0.0, 0.5);
+                viewer_->addCoordinateSystem(0.5, 0, 0, 0);
 
                 viewer_timer_ = nh_.createTimer(ros::Duration(0.1), &PointCloudNormalEstimator::viewerTimerCB, this);
             }
@@ -58,25 +59,11 @@ class PointCloudNormalEstimator
             cloud_normals_.reset(new pcl::PointCloud<pcl::Normal>);
             ne.compute(*cloud_normals_);
 
-            std::vector<int> indices;
-            for(int i = 0; i < cloud_->size(); ++i){
-                if (fabs(cloud_normals_->points[i].normal_z) < normal_threshold_)
-                {
-                    indices.push_back(i);
-                }
-            }
-
-            obstacle_indices_ = pcl::IndicesPtr(new std::vector<int>(indices));
-
-            pcl::ExtractIndices<pcl::PointXYZ> extract;
-
-            sensor_msgs::PointCloud2 out_cloud_ros;
             pcl::PointCloud<pcl::PointXYZ>::Ptr out_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+            sensor_msgs::PointCloud2 out_cloud_ros;
 
-            extract.setInputCloud(cloud_);
-            extract.setIndices(obstacle_indices_);
-            extract.setNegative(false);
-            extract.filter(*out_cloud);
+            // Find obstacle points
+            extractObstaclesFromNormals(cloud_normals_, cloud_, out_cloud);
 
             // Create new tree for euclidean clustering
             tree.reset(new pcl::search::KdTree<pcl::PointXYZ>);
@@ -94,8 +81,43 @@ class PointCloudNormalEstimator
 
             // Create colored cloud for display purposes
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr out_cloud_colored(new pcl::PointCloud<pcl::PointXYZRGB>);
-            pcl::copyPointCloud(*out_cloud, *out_cloud_colored);
 
+            // Extract the clusters into a new cloud and color them
+            createColoredClusterCloud(out_cloud, cluster_indices, out_cloud_colored);
+
+            pcl::toROSMsg(*out_cloud_colored, out_cloud_ros);
+            out_cloud_ros.header = msg->header;
+
+            cloud_pub_.publish(out_cloud_ros);
+
+            has_update_ = true;
+        }
+
+        void extractObstaclesFromNormals(pcl::PointCloud<pcl::Normal>::Ptr normals, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                                         pcl::PointCloud<pcl::PointXYZ>::Ptr out_cloud)
+        {
+            // Find those with a non-upward pointing normal vector
+            std::vector<int> indices;
+            for(int i = 0; i < cloud_->size(); ++i){
+                if (fabs(cloud_normals_->points[i].normal_z) < normal_threshold_)
+                {
+                    indices.push_back(i);
+                }
+            }
+
+            pcl::IndicesPtr obstacle_indices = pcl::IndicesPtr(new std::vector<int>(indices));
+
+            // Extract points from cloud
+            pcl::ExtractIndices<pcl::PointXYZ> extract;
+            extract.setInputCloud(cloud);
+            extract.setIndices(obstacle_indices);
+            extract.setNegative(false);
+            extract.filter(*out_cloud);
+        }
+
+        void createColoredClusterCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const std::vector<pcl::PointIndices> &clusters,
+                                       pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_colored)
+        {
             // Modify colors of cloud to display different clusters
             int j = 0;
             float color_palette[10];
@@ -104,29 +126,36 @@ class PointCloudNormalEstimator
                 color_palette[i] = 4324.98213 * (i*i + 1);  // Random colors
             }
 
-            for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+            // Iterate over clusters
+            for (std::vector<pcl::PointIndices>::const_iterator it = clusters.begin(); it != clusters.end(); ++it)
             {
-                // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
-                for(std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
+                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
+                pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster_colored(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+                // Extract a cluster's points
+                pcl::ExtractIndices<pcl::PointXYZ> extract;
+                extract.setInputCloud(cloud);
+                extract.setIndices(pcl::IndicesPtr(new std::vector<int>((*it).indices)));
+                extract.filter(*cloud_cluster);
+
+                pcl::copyPointCloud(*cloud_cluster, *cloud_cluster_colored);
+
+                // Color those points
+                for(pcl::PointXYZRGB &point : *cloud_cluster_colored)
                 {
-                    out_cloud_colored->points[*pit].rgb = color_palette[j];
+                    point.rgb = color_palette[j];
                 }
-                // extract.setInputCloud(out_cloud);
-                // extract.setIndices(pcl::IndicesPtr(new std::vector<int>((*it).indices)));
-                // extract.filter(*cloud_cluster);
+
+                // Add them to the main cloud
+                *cloud_colored += *cloud_cluster_colored;
 
                 j++;
             }
-
-            pcl::toROSMsg(*out_cloud_colored, out_cloud_ros);
-            cloud_pub_.publish(out_cloud_ros);
-
-            has_update_ = true;
         }
 
         void shutdown()
         {
-            viewer_.close();
+            viewer_->close();
         }
 
         inline float packRGB(uint8_t r, uint8_t g, uint8_t b)
@@ -161,23 +190,23 @@ class PointCloudNormalEstimator
 
                 pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> cloud_color_handle(color_cloud);
 
-                if (!viewer_.contains("cloud"))
+                if (!viewer_->contains("cloud"))
                 {
-                    viewer_.addPointCloud<pcl::PointXYZRGB>(color_cloud, cloud_color_handle);
+                    viewer_->addPointCloud<pcl::PointXYZRGB>(color_cloud, cloud_color_handle);
 
                 } else {
-                    viewer_.updatePointCloud<pcl::PointXYZRGB>(color_cloud, cloud_color_handle);
-                    viewer_.removePointCloud("cloud_normals", 0);
+                    viewer_->updatePointCloud<pcl::PointXYZRGB>(color_cloud, cloud_color_handle);
+                    viewer_->removePointCloud("cloud_normals", 0);
                 }
 
-                viewer_.addPointCloudNormals<pcl::PointXYZRGB, pcl::Normal>(color_cloud, cloud_normals_, 1, 0.03, "cloud_normals");
+                viewer_->addPointCloudNormals<pcl::PointXYZRGB, pcl::Normal>(color_cloud, cloud_normals_, 1, 0.03, "cloud_normals");
 
-                viewer_.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "cloud");
+                viewer_->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "cloud");
             }
 
-            viewer_.spinOnce();
+            viewer_->spinOnce();
 
-            if(viewer_.wasStopped())
+            if(viewer_->wasStopped())
             {
                 ros::shutdown();
             }
@@ -190,7 +219,7 @@ class PointCloudNormalEstimator
         ros::Publisher cloud_pub_;
         ros::Subscriber cloud_sub_;
 
-        pcl::visualization::PCLVisualizer viewer_;  // The pcl viewer
+        pcl::visualization::PCLVisualizer::Ptr viewer_;  // The pcl viewer
         bool has_update_;  // Point cloud has been updated
         ros::Timer viewer_timer_;  // Reference to timer
 
