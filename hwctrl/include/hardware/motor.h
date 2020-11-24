@@ -6,11 +6,6 @@
 #include <hwctrl/CanFrame.h>
 #include <hwctrl/MotorData.h>
 
-#include <boost/utility/string_view.hpp>
-
-#include <string>
-#include <vector>
-
 #define DEFAULT_MAX_ACCEL 			30.0
 #define DEFAULT_MAX_RPM 			50.0
 #define MOTOR_LOOP_PERIOD 			0.005

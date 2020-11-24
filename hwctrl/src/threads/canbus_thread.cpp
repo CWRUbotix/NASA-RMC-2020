@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "threads/canbus_thread.h"
 
 #include <ros/spinner.h>

@@ -9,17 +9,6 @@
 
 #include <sensor_msgs/Imu.h>
 
-#include <memory>
-#include <string>
-#include <vector>
-#include <inttypes.h>
-#include <system_error>
-
-#include <boost/optional.hpp>
-#include <boost/utility/string_view.hpp>
-#include <boost/move/unique_ptr.hpp>
-#include <boost/move/make_unique.hpp>
-
 #include "interface/gpio.h"
 #include "interface/spi.h"
 

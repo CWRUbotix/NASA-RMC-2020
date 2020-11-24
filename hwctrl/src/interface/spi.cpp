@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "interface/spi.h"
 
 #include <ros/ros.h>

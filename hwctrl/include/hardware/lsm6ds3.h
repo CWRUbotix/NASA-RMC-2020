@@ -5,12 +5,6 @@
 
 #include "sensor.h"
 
-#include <boost/array.hpp>
-#include <boost/circular_buffer.hpp>
-
-#include <cmath>
-#include <cinttypes>
-#include <array>
 #include <linux/types.h>
 
 //#define LSM6DS3_X_VARIANCE

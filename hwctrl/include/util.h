@@ -1,17 +1,5 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-#include <array>
-#include <string>
-#include <numeric>
-#include <functional>
-#include <cmath>
-#include <cinttypes>
-#include <type_traits>
-
-#include <boost/utility/string_view.hpp>
-#include <boost/math/distributions/normal.hpp>
 using boost::math::normal;
 
 template<size_t buf_size>

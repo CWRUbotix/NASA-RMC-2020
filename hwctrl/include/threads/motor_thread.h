@@ -8,13 +8,6 @@
 #include <hwctrl/LimitSwState.h>
 #include <hwctrl/MotorData.h>
 
-// #include <boost/shared_ptr.hpp>
-// #include <boost/make_shared.hpp>
-#include <boost/move/unique_ptr.hpp>
-#include <boost/move/make_unique.hpp>
-
-#include <vector>
-
 #include "hardware/motor.h"
 
 const std::vector<std::string> motor_param_names{

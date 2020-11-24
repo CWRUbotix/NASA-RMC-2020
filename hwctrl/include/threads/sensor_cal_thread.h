@@ -3,8 +3,6 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 
-#include <boost/utility/string_view.hpp>
-
 #include "threads/sensor_thread.h"
 
 class SensorCalThread : SensorThread {

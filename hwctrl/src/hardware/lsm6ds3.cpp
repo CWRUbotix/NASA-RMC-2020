@@ -1,14 +1,9 @@
+#include "pch.h"
 #include "hardware/lsm6ds3.h"
 
 #include <ros/ros.h>
 
 #include <linux/spi/spidev.h>
-
-#include <iostream>
-#include <vector>
-#include <cmath>
-#include <array>
-#include <algorithm>
 
 #include "util.h"
 

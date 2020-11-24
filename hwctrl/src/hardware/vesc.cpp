@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "hardware/vesc.h"
 
 #include <linux/can.h>

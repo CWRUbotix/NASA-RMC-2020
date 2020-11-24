@@ -1,6 +1,5 @@
+#include "pch.h"
 #include "hardware/motor.h"
-
-#include <cmath>
 
 MotorType get_motor_type(boost::string_view type_str) {
     if(type_str.compare("vesc") == 0) {

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <string>
-
-
 class Gpio {
 public:
     enum State {

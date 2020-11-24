@@ -1,6 +1,4 @@
-#include <ros/ros.h>
-
-#include <thread>
+#include "pch.h"
 
 #include "threads/sensor_thread.h"
 #include "threads/canbus_thread.h"

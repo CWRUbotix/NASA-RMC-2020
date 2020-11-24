@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "hardware/sensor.h"
 
 #include "util.h"

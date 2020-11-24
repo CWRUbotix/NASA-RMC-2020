@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "hardware/bmc.h"
 
 BMCMotor::BMCMotor(

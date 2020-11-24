@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(hwctrl)
 
+include(PrecompiledHeader.cmake)
+
 add_compile_options(-std=c++14)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -39,6 +41,7 @@ include_directories(
 )
 
 add_executable(hwctrl
+  src/pch.cpp
   src/hwctrl_node.cpp
   src/threads/sensor_thread.cpp
   src/threads/canbus_thread.cpp
@@ -58,6 +61,7 @@ add_executable(hwctrl
 )
 
 add_executable(hwctrl_cal
+  src/pch.cpp
   src/hwctrl_cal_node.cpp
   src/threads/sensor_thread.cpp
   src/threads/sensor_cal_thread.cpp
@@ -76,6 +80,9 @@ add_executable(hwctrl_cal
   src/interface/spi.cpp
   src/util.cpp
 )
+
+add_precompiled_header(hwctrl include/pch.h SOURCE_CXX src/pch.cpp FORCEINCLUDE)
+add_precompiled_header(hwctrl_cal include/pch.h SOURCE_CXX src/pch.cpp FORCEINCLUDE)
 
 target_link_libraries(hwctrl ${catkin_LIBRARIES})
 target_link_libraries(hwctrl_cal ${catkin_LIBRARIES})

@@ -4,12 +4,6 @@
 #include <ros/callback_queue.h>
 #include <ros/timer.h>
 
-#include <boost/utility/string_view.hpp>
-#include <boost/move/unique_ptr.hpp>
-#include <boost/move/make_unique.hpp>
-
-#include <vector>
-
 #include "hardware/sensor.h"
 #include "hardware/quad_encoder.h"
 #include "hardware/uwb.h"

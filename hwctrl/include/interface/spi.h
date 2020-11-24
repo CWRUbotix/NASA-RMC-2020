@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cinttypes>
-#include <string>
-
 #define SPI_DEFAULT_MODE 	SPI_MODE_0
 #define SPI_DEFAULT_SPEED 	2500000
 

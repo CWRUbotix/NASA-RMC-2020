@@ -1,12 +1,6 @@
+#include "pch.h"
+
 #include "hwctrl.h"
-
-#include <ros/ros.h>
-#include <ros/spinner.h>
-
-#include <thread>
-#include <utility>
-#include <string>
-#include <iostream>
 
 #include "threads/sensor_cal_thread.h"
 

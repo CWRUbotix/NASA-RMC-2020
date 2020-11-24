@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "hardware/quad_encoder.h"
 
 QuadEncoder::QuadEncoder(CanSensorArgs, bool inverted)

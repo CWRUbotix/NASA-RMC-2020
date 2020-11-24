@@ -1,10 +1,5 @@
+#include "pch.h"
 #include "util.h"
-
-#include <fstream>
-#include <sstream>
-#include <numeric>
-#include <cmath>
-
 
 namespace csv {
     std::vector<std::vector<std::string>> read_csv(const std::string& fpath){

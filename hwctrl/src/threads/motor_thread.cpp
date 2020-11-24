@@ -1,10 +1,7 @@
+#include "pch.h"
 #include "threads/motor_thread.h"
 
 #include <ros/spinner.h>
-
-#include <boost/smart_ptr/make_shared.hpp>
-
-#include <string>
 
 #include "hwctrl.h"
 #include "hardware/motor.h"

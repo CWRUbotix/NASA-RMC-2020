@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 

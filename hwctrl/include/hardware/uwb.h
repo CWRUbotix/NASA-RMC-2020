@@ -2,9 +2,6 @@
 
 #include "sensor.h"
 
-#include <vector>
-
-
 #define UWB_CAN_HDDR_SIZE 2
 
 enum UwbCanData {

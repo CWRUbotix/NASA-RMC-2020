@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "hardware/ads1120.h"
 
 #include <linux/spi/spidev.h>
