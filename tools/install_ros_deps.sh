@@ -27,6 +27,11 @@ PACKAGES=(
 
     # Imu filter, imu plugin for rviz
     ros-$ROS_DISTRO-imu-tools
+
+    # Navigation packages
+    ros-$ROS_DISTRO-move-base
+    ros-$ROS_DISTRO-global-planner
+    ros-$ROS_DISTRO-dwa-local-planner
 )
 
 sudo apt update # Make sure package list is up to date

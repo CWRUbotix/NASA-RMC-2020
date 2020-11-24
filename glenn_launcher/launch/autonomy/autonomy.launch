@@ -19,8 +19,9 @@
         <node pkg="move_base" type="move_base" name="move_base" output="screen">
             <param name="controller_frequency" value="10.0"/>
 	    <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
+	    <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS"/>
             <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_global.yaml" command="load"/>
-            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_local.yaml" command="load"/>
+	    <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_local.yaml" command="load"/>
             <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/global_trajectory_planner.yaml" command="load"/>
             <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/local_trajectory_planner.yaml" command="load"/>
 
