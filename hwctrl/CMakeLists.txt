@@ -3,7 +3,7 @@ project(hwctrl)
 
 include(PrecompiledHeader.cmake)
 
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++14 -O2 -Wall)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
