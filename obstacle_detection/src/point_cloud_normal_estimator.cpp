@@ -12,6 +12,8 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 
+#include <glenn_msgs/ModelCoefficientsArray.h>
+
 
 class PointCloudNormalEstimator
 {
@@ -31,6 +33,7 @@ class PointCloudNormalEstimator
             ROS_INFO_STREAM("visualize set to " << visualize_);
 
             cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("output_cloud", 1);
+            models_pub_ =  nh_.advertise<glenn_msgs::ModelCoefficientsArray>("output_models", 1);
             cloud_sub_ = nh_.subscribe("input_cloud", 1, &PointCloudNormalEstimator::receivePointCloud, this);
 
             if (visualize_) {
@@ -92,6 +95,19 @@ class PointCloudNormalEstimator
             out_cloud_ros.header = msg->header;
 
             cloud_pub_.publish(out_cloud_ros);
+
+            // Publish model coefficients
+            glenn_msgs::ModelCoefficientsArray models_ros;
+            models_ros.header = msg->header;
+            models_ros.step = 4;  // Sphere has 4 parameters
+
+            // Append all values into one list
+            for(pcl::ModelCoefficients &model : obstacle_models_)
+            {
+                models_ros.values.insert(models_ros.values.end(), model.values.begin(), model.values.end());
+            }
+
+            models_pub_.publish(models_ros);
 
             has_update_ = true;
         }
@@ -248,6 +264,7 @@ class PointCloudNormalEstimator
         ros::NodeHandle pnh_;
 
         ros::Publisher cloud_pub_;
+        ros::Publisher models_pub_; // Obstacle model coefficients
         ros::Subscriber cloud_sub_;
 
         pcl::visualization::PCLVisualizer::Ptr viewer_;  // The pcl viewer

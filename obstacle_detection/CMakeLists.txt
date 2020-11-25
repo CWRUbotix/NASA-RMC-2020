@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   nodelet
   tf2_ros
   tf2_sensor_msgs
+  glenn_msgs
 )
 
 find_package(PCL REQUIRED)
@@ -19,9 +20,20 @@ find_package(PCL REQUIRED)
 catkin_python_setup()
 
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES localization
-  CATKIN_DEPENDS rospy std_msgs geometry_msgs
+  CATKIN_DEPENDS
+    rospy
+    std_msgs
+    geometry_msgs
+    nav_msgs
+    sensor_msgs
+    pcl_conversions
+    pcl_ros
+    nodelet
+    tf2_ros
+    tf2_sensor_msgs
+    glenn_msgs
 #  DEPENDS system_lib
 )
 
@@ -35,3 +47,5 @@ add_executable(point_cloud_normal_estimator src/point_cloud_normal_estimator.cpp
 
 target_link_libraries(point_cloud_decimator ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(point_cloud_normal_estimator ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_dependencies(point_cloud_normal_estimator ${catkin_EXPORTED_TARGETS})

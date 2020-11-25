@@ -2,7 +2,6 @@
 <launch>
     <!-- "true" if running roscore from the robot -->
     <arg name="on_robot" value="$(eval '192.168.0.100' in optenv('ROS_MASTER_URI'))"/>
-    <arg name="custom_pcl_filter" default="true"/>
 
     <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
 
@@ -20,33 +19,34 @@
 
     <node name="pcl_manager" pkg="nodelet" type="nodelet" args="manager"/>
 
-    <node if="$(arg custom_pcl_filter)" name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load obstacle_detection/PointCloudDecimator pcl_manager">
+    <node name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load obstacle_detection/PointCloudDecimator pcl_manager">
         <remap from="input_cloud" to="/realsense/depth/points_raw"/>
         <remap from="output_cloud" to="/realsense/depth/points"/>
+
         <param name="voxel_size" value="0.05"/>
         <param name="frame_name" value="realsense_footprint_link"/>
-    </node>
-
-    <node unless="$(arg custom_pcl_filter)" name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid pcl_manager">
-        <remap from="~input" to="/realsense/depth/points_raw"/>
-        <remap from="~output" to="/realsense/depth/points"/>
-        <param name="leaf_size" value="0.05"/>
-        <param name="use_indices" value="false"/>
-        <param name="filter_limit_max" value="5.0"/>
     </node>
 
     <node name="point_cloud_normal_estimator" pkg="obstacle_detection" type="point_cloud_normal_estimator">
         <remap from="input_cloud" to="/realsense/depth/points"/>
         <remap from="output_cloud" to="/realsense/depth/points_obstacles"/>
+        <remap from="output_models" to="/obstacles/coefficients"/>
+
         <param name="search_radius" value="0.07"/>
         <param name="normal_threshold" value="0.95"/>
         <param name="cluster_tolerance" value="0.1"/>
-        <param name="visualize" value="false"/>
+        <param name="visualize" value="true"/>
+    </node>
+
+    <node name="obstacle_kalman_tracker" pkg="obstacle_detection" type="obstacle_kalman_tracker_node.py">
+        <remap from="input_models" to="/obstacles/coefficients"/>
+        <remap from="output_models" to="/obstacles/coefficients_transformed"/>
     </node>
 
     <node name="obstacle_detection" pkg="obstacle_detection" type="obstacle_detection_node.py">
         <remap from="input_cloud" to="/realsense/depth/points_obstacles"/>
     </node>
+
 
     <node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid_node.py">
         <remap from="input_cloud" to="/realsense/depth/points_obstacles"/>
