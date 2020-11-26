@@ -49,10 +49,7 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>geometry_msgs</build_depend>
   <build_depend>libpcl-all-dev</build_depend>
-  <build_export_depend>geometry_msgs</build_export_depend>
-  <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>libpcl-all</exec_depend>
 
   <depend>rospy</depend>
@@ -62,8 +59,10 @@
   <depend>nodelet</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_sensor_msgs</depend>
+  <depend>pcl_conversions</depend>
+  <depend>pcl_ros</depend>
   <depend>glenn_msgs</depend>
-
+  <depend>geometry_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
