@@ -5,7 +5,7 @@
 	
 	<machine name="robot" address="192.168.0.100" user="cwrubotix" password="cwrubotix" default="never" env-loader="/home/cwrubotix/my_env_setup.sh"/>
 
-    <rosparam command="load" file="$(find glenn_launcher)/params/autonomy/autonomy_glennobi.yaml" ns="autonomy"/>
+    <rosparam command="load" file="$(find glenn_launcher)/params/autonomy/autonomy.yaml" ns="autonomy"/>
 
     <group if="$(arg launch_from_robot)">
         <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>

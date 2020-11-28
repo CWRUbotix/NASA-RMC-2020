@@ -2,8 +2,7 @@
 <sdf version='1.6'>
   <model name='rock'>
     <link name='link_0'>
-      <!-- Mesh is offset -->
-      <pose frame=''>-0.4 -0.6 -0.5 0 -0 0</pose>
+      <pose frame=''>-0 0 0 0 -0 0</pose>
       <gravity>0</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -13,7 +12,7 @@
         <geometry>
           <mesh>
             <uri>model://rock/meshes/rock.dae</uri>
-            <scale>0.5 0.5 0.5</scale>
+            <scale>1 1 1</scale>
           </mesh>
         </geometry>
         <material>
@@ -33,7 +32,7 @@
         <geometry>
           <mesh>
             <uri>model://rock/meshes/rock.dae</uri>
-            <scale>0.5 0.5 0.5</scale>
+            <scale>1 1 1</scale>
           </mesh>
         </geometry>
       </collision>

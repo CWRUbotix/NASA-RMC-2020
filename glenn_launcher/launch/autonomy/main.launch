@@ -3,7 +3,7 @@
     <arg name="bags" default="true"/>
     <arg name="sim" default="false"/>
 
-    <rosparam command="load" file="$(find glenn_launcher)/params/glennobi_params.yaml"/>
+    <rosparam command="load" file="$(find glenn_launcher)/params/glenn_params.yaml"/>
 
     <include file="$(find glenn_launcher)/launch/uwb_localization/localization.launch">
         <arg name="sim" value="$(arg sim)"/>

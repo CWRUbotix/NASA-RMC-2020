@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version='1.6'>
-  <world name='default'>
+  <world name='bumpy'>
     <!-- A global light source -->
     <include>
       <uri>model://sun</uri>
@@ -44,7 +44,7 @@
 
     <!-- A rock -->
     <model name="rock_1">
-      <pose>0.5 1.6 0.2 1.57 0 0</pose>
+      <pose>0.5 1.6 0.2 0 0 0</pose>
       <include>
         <uri>model://rock</uri>
       </include>

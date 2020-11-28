@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <launch>
     <!-- launch gazebo -->
-    <include file="$(find glennobi_description)/launch/glennobi.launch">
+    <include file="$(find glenn_description)/launch/glenn.launch">
         <arg name="use_rviz" value="false"/>
         <arg name="use_steering" value="false"/>
     </include>
 
-    <rosparam command="load" file = "$(find config)/params/glennobi_params.yaml"/>
-    <rosparam command="load" file = "$(find autonomy)/params/autonomy_glennobi.yaml" ns="autonomy"/>
+    <rosparam command="load" file = "$(find config)/params/glenn_params.yaml"/>
+    <rosparam command="load" file = "$(find autonomy)/params/autonomy.yaml" ns="autonomy"/>
 
     <node name="transit_node" pkg="autonomy" type="transit_node.py" respawn="true" launch-prefix="xterm -e"/>
     <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
