@@ -3,17 +3,16 @@ project(hwctrl)
 
 add_compile_options(-std=c++11)
 
+find_package(Boost 1.62 REQUIRED COMPONENTS system filesystem)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   sensor_msgs
   geometry_msgs
-  rospy
   message_generation
   message_runtime
 )
-
-catkin_python_setup()
 
 add_message_files(DIRECTORY msg)
 
@@ -70,8 +69,8 @@ add_executable(hwctrl_cal
   src/vesc.cpp
 )
 
-target_link_libraries(hwctrl ${catkin_LIBRARIES})
-target_link_libraries(hwctrl_cal ${catkin_LIBRARIES})
+target_link_libraries(hwctrl ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(hwctrl_cal ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 # for hwctrl executable
 add_dependencies(hwctrl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
