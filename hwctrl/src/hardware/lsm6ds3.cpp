@@ -7,7 +7,6 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <array>
 #include <algorithm>
 
 #include "util.h"
@@ -31,7 +30,7 @@ void Lsm6ds3::update() {
     config_spi_settings();
     read_all_data(xl_data, g_data);
 
-    static uint32_t seq = 0;
+    static uint64_t seq = 0;
     sensor_msgs::Imu msg;
     msg.header.seq = seq++; // do we really need this?
     msg.header.stamp = ros::Time::now();
@@ -43,6 +42,7 @@ void Lsm6ds3::update() {
     if(m_calibrations.size() > 6) {
         // this seems super inefficient.
         // TODO: make this more efficient (ie: dont search list every iteration)
+        // TODO: handle optionals correctly
         const Calibration& cal_xl_x = get_calibration_by_name("IMU_XL_X").get();
         const Calibration& cal_xl_y = get_calibration_by_name("IMU_XL_Y").get();
         const Calibration& cal_xl_z = get_calibration_by_name("IMU_XL_Z").get();
@@ -77,17 +77,17 @@ void Lsm6ds3::update() {
 
     // this is for recalculating the covariance matrix, dont need to do this for now
     // TODO: wait for software team to get mad at us.
-    // if(m_sample_buf1.full()) {
-    //     // get the average of the values here
-    //     m_rm1 = get_sample_buf_mean(m_sample_buf1);
-    //     m_rm2 = get_sample_buf_mean(m_sample_buf2);
-    //     m_rm3 = get_sample_buf_mean(m_sample_buf3);
-    //     m_rm4 = get_sample_buf_mean(m_sample_buf4);
-    //     m_rm5 = get_sample_buf_mean(m_sample_buf5);
-    //     m_rm6 = get_sample_buf_mean(m_sample_buf6);
+    if(m_sample_buf1.full()) {
+        // get the average of the values here
+        m_rm1 = math::avg(m_sample_buf1.begin(), m_sample_buf1.end());
+        m_rm2 = math::avg(m_sample_buf2.begin(), m_sample_buf2.end());
+        m_rm3 = math::avg(m_sample_buf3.begin(), m_sample_buf3.end());
+        m_rm4 = math::avg(m_sample_buf4.begin(), m_sample_buf4.end());
+        m_rm5 = math::avg(m_sample_buf5.begin(), m_sample_buf5.end());
+        m_rm6 = math::avg(m_sample_buf6.begin(), m_sample_buf6.end());
 
-    //     // recalculate variance matricies
-    // }
+        // recalculate variance matricies
+    }
 
     m_pub.publish(msg);
     m_update = false;
@@ -139,6 +139,7 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
     Samples y_xl_samples;
     Samples z_xl_samples;
 
+    // chonky allocation
     x_xl_samples.reserve(sample_depth);
     y_xl_samples.reserve(sample_depth);
     z_xl_samples.reserve(sample_depth);
@@ -161,7 +162,7 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
     math::smooth(y_xl_samples, 9);
     math::smooth(x_xl_samples, 9);
 
-    auto max_idx = math::max_index(z_xl_samples);
+    auto max_idx = math::max_index(z_xl_samples.begin(), z_xl_samples.end());
     float z_max = x_xl_samples[max_idx];
     float y_offset = y_xl_samples[max_idx];
 	float x_offset = x_xl_samples[max_idx];
@@ -242,13 +243,13 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
     // math::smooth(y_xl_samples, 9);
     // math::smooth(x_xl_samples, 9);
 
-    float x_g_var = std::pow(math::stddev(x_g_samples), 2.0);
-    float y_g_var = std::pow(math::stddev(y_g_samples), 2.0);
-    float z_g_var = std::pow(math::stddev(z_g_samples), 2.0);
+    float x_g_var = std::pow(math::stddev(x_g_samples.begin(), x_g_samples.end()), 2.0);
+    float y_g_var = std::pow(math::stddev(y_g_samples.begin(), y_g_samples.end()), 2.0);
+    float z_g_var = std::pow(math::stddev(z_g_samples.begin(), z_g_samples.end()), 2.0);
 
-    float x_g_offset = math::avg(x_g_samples);
-    float y_g_offset = math::avg(y_g_samples);
-    float z_g_offset = math::avg(z_g_samples);
+    float x_g_offset = math::avg(x_g_samples.begin(), x_g_samples.end());
+    float y_g_offset = math::avg(y_g_samples.begin(), y_g_samples.end());
+    float z_g_offset = math::avg(z_g_samples.begin(), z_g_samples.end());
 
     printf("Name \tOffset\tVariance\r\n");
     printf("Gyro X:\t%.5g\t%.5g\r\n", x_g_offset, x_g_var);

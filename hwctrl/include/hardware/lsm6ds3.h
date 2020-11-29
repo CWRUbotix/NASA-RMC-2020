@@ -159,6 +159,7 @@ public:
 	using SampleBufferIter      = SampleBuffer::iterator;
 	using SampleBufferConstIter = SampleBuffer::const_iterator;
 
+	// these have to be boost arrays for ROS messages :(
 	using OffsetArray           = boost::array<float , 3>;
 
 	// change this to an actual matrix???
@@ -186,7 +187,6 @@ private:
 
 	void soft_reset();
 
-	static float get_sample_buf_mean(const SampleBuffer& buf);
 private:
 	OffsetArray m_xl_offset;
 	OffsetArray m_gyro_offset;

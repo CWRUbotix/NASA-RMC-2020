@@ -7,14 +7,14 @@
 
 
 namespace csv {
-    std::vector<std::vector<std::string>> read_csv(const std::string& fpath){
+    Csv read_csv(const std::string& fpath){
         std::ifstream config_file;
         config_file.open(fpath.c_str(), std::ifstream::in);
         
         std::string line;
         std::string word;
 
-        std::vector<std::vector<std::string>> csv;
+        Csv csv;
 
         int line_num = 0;
         int can_id_ind = -1;
@@ -37,7 +37,7 @@ namespace csv {
     }
 
 
-    bool write_csv(const std::string& fpath, std::vector<std::vector<std::string>> data){
+    bool write_csv(const std::string& fpath, Csv data){
         std::ofstream file;
         file.open(fpath.c_str(), std::ofstream::out);
         if(file.is_open()){

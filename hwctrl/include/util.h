@@ -24,45 +24,60 @@ int progress_bar(std::array<char, buf_size>& buf, float progress){
 		}else{
 			buf[i] = '.';
 		}
-		retval ++;
+		retval++;
 	}
-	// TODO: fix this function
+
 	retval += sprintf(&buf[retval], " %d%%", (int)((progress*100.0)+0.5));
 }
 
 
 namespace math {
 
-	template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    constexpr T avg(std::vector<T>& vec) {
-        using Iter = typename std::vector<T>::iterator;
-        if(vec.size() != 0)
-            return std::accumulate(vec.begin(), vec.end(), 0, std::plus<T>()) / ((T) vec.size());
+    template<
+        typename Iter,
+        typename T = typename Iter::value_type,
+        typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr // make sure inner values are floating point
+    >
+    constexpr T avg(const Iter& begin, const Iter& end) {
+        const auto size = std::distance(begin, end);
+        if(size != 0)
+            return std::accumulate(begin, end, 0, std::plus<T>()) / static_cast<T>(size);
         else
             return 0.0;
     }
 
-    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    constexpr T stddev(std::vector<T>& vec) {
-        using Iter = typename std::vector<T>::iterator;
-        T mean = avg(vec);
+    template<
+        typename Iter,
+        typename T = typename Iter::value_type,
+        typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr // make sure inner values are floating point 
+    >
+    constexpr T stddev(const Iter& begin, const Iter& end) {
+        const auto size = std::distance(begin, end);
+        T mean = avg(begin, end);
         auto f = [=](T sum, T& e) {
             return (sum + std::pow(e - mean, 2));
         };
-        if(vec.size() > 1)
-            return std::accumulate(vec.begin(), vec.end(), 0.0f, f) / ((T) (vec.size() - 1));
+        if(size > 1)
+            return std::accumulate(begin, end, static_cast<T>(0.0f), f) / static_cast<T>(size - 1);
         else
             return 0.0;
     }
 
     // returns index of maximum value
-    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    constexpr size_t max_index(std::vector<T>& vec) {
-        return std::distance(vec.begin(), std::max_element(vec.begin(), vec.end()));
+    template<
+        typename Iter,
+        typename T = typename Iter::value_type, // get inner value 
+        decltype(std::declval<T>() > std::declval<T>())* = nullptr // make sure values are comparable
+    >
+    constexpr size_t max_index(const Iter& begin, const Iter& end) {
+        return std::distance(begin, std::max_element(begin, end));
     }
 
     // smooths data ***INPLACE***
-    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    template<
+        typename T,
+        typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr
+    >
     constexpr void smooth(std::vector<T>& vec, int kernel_size) {
         std::vector<T> smooth(vec.size(), 0);
 
@@ -75,9 +90,10 @@ namespace math {
         }
 
         T kernel[kernel_size] = {};
-        T range = 2.5;
-        T step  = ((T) kernel_size - 1.0) / (2.0 * range);
-        T x = -range;
+        auto range = static_cast<T>(2.5);
+        auto step  = (static_cast<T>(kernel_size) - 1.0) / (2.0 * range);
+        auto x = -range;
+
         normal std_norm;
 
         for (int i = 0; i < kernel_size; i++){
@@ -103,8 +119,10 @@ namespace math {
 }
 
 namespace csv {
-    std::vector<std::vector<std::string>> read_csv(const std::string& fpath);
-    bool write_csv(const std::string& fpath, std::vector<std::vector<std::string>> data);
+    using Csv = std::vector<std::vector<std::string>>;
+
+    Csv read_csv(const std::string& fpath);
+    bool write_csv(const std::string& fpath, Csv data);
 }
 
 namespace crc {
