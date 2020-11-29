@@ -1,6 +1,6 @@
 # Cross Compile Instructions
 
-1. Download docker desktop from here (https://www.docker.com/products/docker-desktop) for windows (WSL 2) and OSX.  If you're using linux, I'm sure theres a way to run docker images too.
+1. Download docker desktop from here (https://www.docker.com/products/docker-desktop) for windows (WSL 2) and OSX.  If you're using linux, I'm sure theres a way to run docker images too.  (following the directions here should work fine: https://docs.docker.com/engine/install/ubuntu/)
 
 2. Run `chmod +x {filename}` on both scripts in this folder
 
