@@ -5,12 +5,12 @@
 void read_calibration(const std::string& path, std::vector<Calibration>& cals) {
     std::vector<std::vector<std::string>> data = csv::read_csv(path);
     for(auto line : data) {
-        Calibration cal;
-        cal.name = line.at(0);
-        cal.scale =    std::stof(line.at(1));
-        cal.offset =   std::stof(line.at(2));
-        cal.variance = std::stof(line.at(3));
-        cals.push_back(cal);
+        cals.emplace_back(
+            std::string(line.at(0)),
+            std::stof(line.at(1)),
+            std::stof(line.at(2)),
+            std::stof(line.at(3))
+        );
     }
 }
 
@@ -30,6 +30,7 @@ bool write_calibration(const std::string& path, std::vector<Calibration>& cals) 
 		data.push_back(line); // add the line finally
 	}
 	csv::write_csv(path, data);
+    return true;
 }
 
 std::string print_calibration(Calibration& cal){
@@ -69,7 +70,7 @@ Sensor::Sensor(SensorBaseArgs)
 : m_nh(nh), m_id(id), m_name(name), m_topic(topic), m_update_period(update_period), m_type(type), m_update(true)
 {
     m_update_timer = m_nh.createTimer(m_update_period, &Sensor::set_update_flag, this);
-};
+}
 
 
 void Sensor::add_calibration(const Calibration& cal)  {
@@ -87,7 +88,7 @@ boost::optional<const Calibration&> Sensor::get_calibration_by_name(boost::strin
 
 template<typename T>
 CanSensor<T>::CanSensor(CanSensorArgs)
-: SensorImplArgsPass(T)
+: SensorImplArgsPass(T), m_can_id(can_id)
 {
     m_can_rx_sub = CanSensor<T>::m_nh.subscribe("can_frames_rx", 128, &CanSensor::can_rx_callback, this);
     m_can_tx_pub = CanSensor<T>::m_nh.template advertise<hwctrl::CanFrame>("can_frames_tx", 128);

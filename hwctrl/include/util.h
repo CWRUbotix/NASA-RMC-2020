@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <vector>
-#include <array>
 #include <string>
 #include <numeric>
 #include <functional>
@@ -10,12 +9,13 @@
 #include <cinttypes>
 #include <type_traits>
 
+#include <boost/array.hpp>
 #include <boost/utility/string_view.hpp>
 #include <boost/math/distributions/normal.hpp>
 using boost::math::normal;
 
 template<size_t buf_size>
-int progress_bar(std::array<char, buf_size>& buf, float progress){
+int progress_bar(boost::array<char, buf_size>& buf, float progress){
 	int hashes = (int)((progress * 50.0) + 0.5); // fraction of 50, rounded
 	int retval = 0;
 	for(int i = 0; i < 50; i++){
@@ -28,6 +28,7 @@ int progress_bar(std::array<char, buf_size>& buf, float progress){
 	}
 
 	retval += sprintf(&buf[retval], " %d%%", (int)((progress*100.0)+0.5));
+    return retval;
 }
 
 
@@ -41,7 +42,7 @@ namespace math {
     constexpr T avg(const Iter& begin, const Iter& end) {
         const auto size = std::distance(begin, end);
         if(size != 0)
-            return std::accumulate(begin, end, 0, std::plus<T>()) / static_cast<T>(size);
+            return std::accumulate(begin, end, static_cast<T>(0.0), std::plus<T>()) / static_cast<T>(size);
         else
             return 0.0;
     }
@@ -53,14 +54,14 @@ namespace math {
     >
     constexpr T stddev(const Iter& begin, const Iter& end) {
         const auto size = std::distance(begin, end);
-        T mean = avg(begin, end);
+        auto mean = avg(begin, end);
         auto f = [=](T sum, T& e) {
-            return (sum + std::pow(e - mean, 2));
+            return (sum + std::pow(e - mean, 2.0));
         };
         if(size > 1)
             return std::accumulate(begin, end, static_cast<T>(0.0f), f) / static_cast<T>(size - 1);
         else
-            return 0.0;
+            return static_cast<T>(0.0);
     }
 
     // returns index of maximum value
@@ -78,7 +79,7 @@ namespace math {
         typename T,
         typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr
     >
-    constexpr void smooth(std::vector<T>& vec, int kernel_size) {
+    constexpr void smooth(std::vector<T>& vec, unsigned int kernel_size) {
         std::vector<T> smooth(vec.size(), 0);
 
         if(kernel_size > vec.size())  {
@@ -89,26 +90,26 @@ namespace math {
             kernel_size++;
         }
 
-        T kernel[kernel_size] = {};
+        std::vector<T> kernel(kernel_size, 0);
         auto range = static_cast<T>(2.5);
         auto step  = (static_cast<T>(kernel_size) - 1.0) / (2.0 * range);
         auto x = -range;
 
         normal std_norm;
 
-        for (int i = 0; i < kernel_size; i++){
+        for (unsigned int i = 0; i < kernel_size; i++){
             kernel[i] = pdf(std_norm, x); // gets the probability at this point in the std normal distribution
             x += step;
 	    }
 
-        int i = 0, offset = kernel_size / 2;
-        for(i = 0; i < vec.size() - offset; i++){
+        int offset = kernel_size / 2;
+        for(int i = 0; i < (vec.size() - offset); i++){
             for(int j = 0; j < kernel_size; j++){ // for each point in the kernel
-                smooth[i] += kernel[j] * vec[abs((i - offset) + j)];
+                smooth[i] += kernel[j] * vec[std::abs((i - offset) + j)];
             }
 	    }
 
-        for(i = vec.size() - offset; i < vec.size(); i++){ // copy end over, we'll do better later
+        for(unsigned int i = vec.size() - offset; i < vec.size(); i++){ // copy end over, we'll do better later
 		    smooth[i] = vec[i];
 	    }
 
@@ -122,7 +123,7 @@ namespace csv {
     using Csv = std::vector<std::vector<std::string>>;
 
     Csv read_csv(const std::string& fpath);
-    bool write_csv(const std::string& fpath, Csv data);
+    bool write_csv(const std::string& fpath, const Csv& data);
 }
 
 namespace crc {

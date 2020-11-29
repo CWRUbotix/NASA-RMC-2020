@@ -10,16 +10,11 @@
 
 #include <cmath>
 #include <cinttypes>
-#include <array>
 #include <linux/types.h>
 
 //#define LSM6DS3_X_VARIANCE
 
 #define IMU_SAMPLES 	5
-
-enum Axis {
-	X = 0x01, Y = 0x02, Z = 0x03
-};
 
 #define LSM6DS3_SPI_SPEED 			5000000
 #define LSM6DS3_SPI_MODE 			SPI_MODE_3
@@ -142,7 +137,7 @@ enum ImuReg {
 
 constexpr double degrees_to_radians(double degrees) {
 	return degrees * (M_PI / 180.0);
-};
+}
 
 constexpr double g_fs  = 250.0;
 constexpr double xl_fs = 9.81 * 2.0;
@@ -155,11 +150,16 @@ constexpr double xl_var   = (double)(xl_rms_noise * xl_fs) * (xl_rms_noise * xl_
 // nh, name, type, id, topic, topic_size, update_period, spi_handle, spi_speed, spi_mode, cs_pin
 class Lsm6ds3 : public SpiSensor<sensor_msgs::Imu> {
 public:
+	enum Axis {
+		X = 0x01, Y = 0x02, Z = 0x03
+	};
+
 	using SampleBuffer          = boost::circular_buffer<float>;
 	using SampleBufferIter      = SampleBuffer::iterator;
 	using SampleBufferConstIter = SampleBuffer::const_iterator;
 
 	// these have to be boost arrays for ROS messages :(
+	using DataArray             = boost::array<double , 3>;
 	using OffsetArray           = boost::array<float , 3>;
 
 	// change this to an actual matrix???
@@ -180,10 +180,10 @@ private:
 	void power_on_gyro(uint8_t config_byte);
 	void power_off();
 
-	float read_accel(Axis axis, float fs);
-	float read_gyro(Axis axis, float fs);
+	float read_accel(Axis axis);
+	float read_gyro(Axis axis);
 
-	void read_all_data(std::array<double, 3>& xl_data, std::array<double, 3>& gyro_data);
+	void read_all_data(DataArray& xl_data, DataArray& gyro_data);
 
 	void soft_reset();
 

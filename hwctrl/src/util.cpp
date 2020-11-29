@@ -16,9 +16,9 @@ namespace csv {
 
         Csv csv;
 
-        int line_num = 0;
-        int can_id_ind = -1;
-        int device_type_ind = -1;
+        // int line_num = 0;
+        // int can_id_ind = -1;
+        // int device_type_ind = -1;
         if(config_file.is_open()){
             while(std::getline(config_file, line)){
                 std::vector<std::string> words; 	// this will be our line
@@ -37,7 +37,7 @@ namespace csv {
     }
 
 
-    bool write_csv(const std::string& fpath, Csv data){
+    bool write_csv(const std::string& fpath, const Csv& data){
         std::ofstream file;
         file.open(fpath.c_str(), std::ofstream::out);
         if(file.is_open()){

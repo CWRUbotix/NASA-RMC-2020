@@ -26,6 +26,10 @@
 #include "util.h"
 
 struct Calibration {
+    Calibration();
+    Calibration(std::string n, float s, float o, float v)
+    : name(n), scale(s), offset(o), variance(v) {}
+
     std::string name;
     float scale;
     float offset;
@@ -50,8 +54,8 @@ enum SensorType {
 
 SensorType get_sensor_type_from_param(boost::string_view type_str);
 
-#define SensorBaseArgs ros::NodeHandle nh, const std::string& name, SensorType type, uint32_t id, const std::string& topic, uint32_t topic_size, ros::Duration update_period
-#define SensorBaseArgsPass Sensor(nh, name, type, id, topic, topic_size, update_period)
+#define SensorBaseArgs ros::NodeHandle nh, const std::string& name, SensorType type, uint32_t id, const std::string& topic, ros::Duration update_period
+#define SensorBaseArgsPass Sensor(nh, name, type, id, topic, update_period)
 
 class Sensor {
 public:
@@ -63,7 +67,7 @@ public:
     // override these
     virtual void setup()  = 0;
     virtual void update() = 0;
-    virtual void calibrate(std::vector<Calibration>& cals) {}; // should this be pure virtual?
+    virtual void calibrate(std::vector<Calibration>&) {};
 
     bool ready_to_update() const { return m_update; }
 
@@ -94,14 +98,14 @@ protected:
     ros::Timer      m_update_timer;
 };
 
+#define SensorImplArgs ros::NodeHandle nh, const std::string& name, SensorType type, uint32_t id, const std::string& topic, uint32_t topic_size, ros::Duration update_period
 #define SensorImplArgsPass(x) SensorImpl<x>(nh, name, type, id, topic, topic_size, update_period)
 
-// TODO: maybe make this fully templated later?
 template<typename T>
 class SensorImpl : public Sensor {
 public:
 
-    SensorImpl(SensorBaseArgs) : SensorBaseArgsPass {
+    SensorImpl(SensorImplArgs) : SensorBaseArgsPass {
         m_pub = m_nh.advertise<T>(m_topic, topic_size);
     }
 
@@ -109,7 +113,7 @@ protected:
     using PubData = T;
 };
 
-#define CanSensorArgs SensorBaseArgs, uint32_t can_id
+#define CanSensorArgs SensorImplArgs, uint32_t can_id
 #define CanSensorArgsPass(x) CanSensor<x>(nh, name, type, id, topic, topic_size, update_period, can_id)
 
 template<typename T>
@@ -131,7 +135,7 @@ protected:
     virtual void can_rx_callback(FramePtr frame) = 0;
 };
 
-#define SpiSensorArgs SensorBaseArgs, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, boost::movelib::unique_ptr<Gpio> cs_pin
+#define SpiSensorArgs SensorImplArgs, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, boost::movelib::unique_ptr<Gpio> cs_pin
 #define SpiSensorArgsPass(x) SpiSensor<x>(nh, name, type, id, topic, topic_size, update_period, spi, spi_speed, spi_mode, std::move(cs_pin))
 
 template<typename T>
@@ -167,7 +171,7 @@ protected:
     boost::movelib::unique_ptr<Gpio>     m_cs;
 };
 
-#define GpioSensorArgs SensorBaseArgs, boost::movelib::unique_ptr<Gpio> gpio
+#define GpioSensorArgs SensorImplArgs, boost::movelib::unique_ptr<Gpio> gpio
 #define GpioSensorArgsPass GpioSensor(nh, name, type, id, topic, topic_size, update_period, std::move(gpio))
 
 template<typename T>

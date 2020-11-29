@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.7.2)
 project(hwctrl)
 
-add_compile_options(-std=c++14 -O2)
+add_compile_options(-std=c++14 -O2 -Wall -Wextra -pedantic)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

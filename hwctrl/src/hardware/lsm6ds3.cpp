@@ -26,7 +26,7 @@ Lsm6ds3::~Lsm6ds3() {
 }
 
 void Lsm6ds3::update() {
-    std::array<double, 3> xl_data, g_data;
+    DataArray xl_data, g_data;
     config_spi_settings();
     read_all_data(xl_data, g_data);
 
@@ -67,6 +67,9 @@ void Lsm6ds3::update() {
     msg.linear_acceleration_covariance = m_cov_xl;
 	msg.angular_velocity_covariance  = m_cov_g;
 
+    // save some cpu until we need this
+    #ifdef FALSE
+
     // add data to buffers
     m_sample_buf1.push_back((float) xl_data[0]);
     m_sample_buf2.push_back((float) xl_data[1]);
@@ -87,7 +90,9 @@ void Lsm6ds3::update() {
         m_rm6 = math::avg(m_sample_buf6.begin(), m_sample_buf6.end());
 
         // recalculate variance matricies
+        // math
     }
+    #endif
 
     m_pub.publish(msg);
     m_update = false;
@@ -121,11 +126,11 @@ void Lsm6ds3::setup() {
 }
 
 void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
-    std::array<char, 128> buf;
+    boost::array<char, 128> buf;
     // buf.fill(0);
     std::cout << "Beginning IMU calibration" << std::endl;;
     std::cout << "Number of samples: ";
-    int sample_depth, start;
+    int sample_depth;
     std::cin >> sample_depth;
     if(sample_depth <= 0){
         sample_depth = 2500;
@@ -144,7 +149,7 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
     y_xl_samples.reserve(sample_depth);
     z_xl_samples.reserve(sample_depth);
 
-    std::array<double, 3> xl_data, g_data;
+    DataArray xl_data, g_data;
 
     for(int i = 0; i < sample_depth; ++i) {
         read_all_data(xl_data, g_data);
@@ -173,24 +178,10 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
     printf("Inferred Y offset: %.5g\r\n", y_offset);
     printf("Inferred Z offset: %.5g\r\n", z_offset);
 
-    Calibration z_xl_cal = {
-        .name = std::string("IMU_XL_Z"),
-        .scale = 1.0f,
-        .offset = 0.0f - z_offset,
-        .variance = xl_var
-    };
-    Calibration x_xl_cal = {
-        .name = std::string("IMU_XL_X"),
-        .scale = 1.0f,
-        .offset = 0.0f - x_offset,
-        .variance = xl_var
-    };
-    Calibration y_xl_cal = {
-        .name = std::string("IMU_XL_Y"),
-        .scale = 1.0f,
-        .offset = 0.0f - y_offset,
-        .variance = xl_var
-    };
+
+    Calibration z_xl_cal = {std::string("IMU_XL_Z"), 1.0f, 0.0f - z_offset, xl_var};
+    Calibration x_xl_cal = {std::string("IMU_XL_X"), 1.0f, 0.0f - x_offset, xl_var};
+    Calibration y_xl_cal = {std::string("IMU_XL_Y"), 1.0f, 0.0f - y_offset, xl_var};
 
     for(auto cal = cals.begin(); cal != cals.end(); ++cal){
         if( (*cal).name.compare("IMU_XL_X") == 0 ||
@@ -256,24 +247,9 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
     printf("Gyro Y:\t%.5g\t%.5g\r\n", y_g_offset, y_g_var);
     printf("Gyro Z:\t%.5g\t%.5g\r\n", z_g_offset, z_g_var);
 
-    Calibration cal_g_x = {
-        .name = std::string("IMU_G_X"),
-        .scale = 1.0f,
-        .offset = 0.0f - x_g_offset,
-        .variance = x_g_var
-    };
-    Calibration cal_g_y = {
-        .name = std::string("IMU_G_Y"),
-        .scale = 1.0f,
-        .offset = 0.0f - y_g_offset,
-        .variance = y_g_var
-    };
-    Calibration cal_g_z = {
-        .name = std::string("IMU_G_Z"),
-        .scale = 1.0f,
-        .offset = 0.0f - z_g_offset,
-        .variance = z_g_var
-    };
+    Calibration cal_g_x = {std::string("IMU_G_X"), 1.0f, 0.0f - x_g_offset, x_g_var};
+    Calibration cal_g_y = {std::string("IMU_G_Y"), 1.0f, 0.0f - y_g_offset, y_g_var};
+    Calibration cal_g_z = {std::string("IMU_G_Z"), 1.0f, 0.0f - z_g_offset, z_g_var};
     
     for(auto cal = cals.begin(); cal != cals.end(); ++cal){
         if( (*cal).name.compare("IMU_G_X") == 0 ||
@@ -310,7 +286,9 @@ void Lsm6ds3::power_on_gyro(uint8_t config_byte) {
     transfer_to_device(buf, 2);
 }
 
-float Lsm6ds3::read_accel(Axis axis, float fs) {
+void Lsm6ds3::power_off() {}
+
+float Lsm6ds3::read_accel(Axis axis) {
     uint8_t buf[3] = {};
     switch(axis) {
         case Axis::X: {
@@ -333,7 +311,7 @@ float Lsm6ds3::read_accel(Axis axis, float fs) {
     return (xl_fs * ((float)val))/32767.0;
 }
 
-float Lsm6ds3::read_gyro(Axis axis, float fs) {
+float Lsm6ds3::read_gyro(Axis axis) {
     uint8_t buf[3] = {};
 
     switch(axis) {
@@ -358,7 +336,7 @@ float Lsm6ds3::read_gyro(Axis axis, float fs) {
     return degrees_to_radians((g_fs * ((float)val))/32767.0);
 }
 
-void Lsm6ds3::read_all_data(std::array<double, 3>& xl_data, std::array<double, 3>& gyro_data) {
+void Lsm6ds3::read_all_data(boost::array<double, 3>& xl_data, boost::array<double, 3>& gyro_data) {
     uint8_t buf[13];
     memset(buf, 0, 13);
     buf[0] = (uint8_t) ImuReg::OUTX_L_G;
