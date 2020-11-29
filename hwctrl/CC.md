@@ -1,6 +1,6 @@
 # Cross Compile Instructions
 
-1. Download docker desktop from here[https://www.docker.com/products/docker-desktop] for windows (WSL 2) and OSX.  If you're using linux, I'm sure theres a way to run docker images too.
+1. Download docker desktop from here (https://www.docker.com/products/docker-desktop) for windows (WSL 2) and OSX.  If you're using linux, I'm sure theres a way to run docker images too.
 
 2. Run `chmod +x {filename}` on both scripts in this folder
 
@@ -16,3 +16,6 @@
 
 #### Note:
 Sometimes theres issues with shared libraries and such on the beaglebone. Usually you just have to simlink some binaries due to differing versions.
+
+### Links:
+https://github.com/ros-tooling/cross_compile
