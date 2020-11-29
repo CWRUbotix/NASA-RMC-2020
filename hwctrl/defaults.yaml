@@ -3,4 +3,4 @@ list:
   packages-up-to: [hwctrl]
 build:
   packages-select: [hwctrl]
-  cmake-args: ["-j4"]
+  cmake-args: ["-j8"]
