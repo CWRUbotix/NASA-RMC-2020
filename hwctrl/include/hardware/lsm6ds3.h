@@ -48,7 +48,7 @@
 /* CTRL9_XL */
 #define LSM6DS3_XL_Z_EN
 
-enum ImuReg {
+enum ImuReg : uint8_t {
 	FUNC_CFG_ACCESS 	= 0x01,
 	SENSOR_SYNC_TIME_FRAME = 0x04,
 	FIFO_CTRL_1 		= 0x06,
@@ -150,7 +150,7 @@ constexpr double xl_var   = (double)(xl_rms_noise * xl_fs) * (xl_rms_noise * xl_
 // nh, name, type, id, topic, topic_size, update_period, spi_handle, spi_speed, spi_mode, cs_pin
 class Lsm6ds3 : public SpiSensor<sensor_msgs::Imu> {
 public:
-	enum Axis {
+	enum class Axis : uint8_t {
 		X = 0x01, Y = 0x02, Z = 0x03
 	};
 

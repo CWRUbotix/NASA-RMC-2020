@@ -7,18 +7,19 @@ public:
     QuadEncoder(CanSensorArgs, bool inverted = false);
     virtual ~QuadEncoder() = default;
 
-    void setup()  override final;
-    void update() override final;
+    virtual void setup()  override final;
+    virtual void update() override final;
+    virtual void calibrate(std::vector<Calibration>&) override final {};
 
-    void can_rx_callback(FramePtr frame) override final;
+    virtual void can_rx_callback(FramePtr frame) override final;
 private:
     bool m_inverted;
 
 public:
-    enum IncomingFrameIdent {
+    enum IncomingFrameIdent : uint8_t {
 
     };
-    enum OutgoingFrameIdent {
+    enum OutgoingFrameIdent : uint8_t {
 
     };
 };

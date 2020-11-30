@@ -1,5 +1,10 @@
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.7.2) # this version of cmake is the max that works on the beaglebone
 project(hwctrl)
+
+if(${CMAKE_VERSION} VERSION_GREATER "3.9.0") 
+    message("Setting CMAKE policy CM0069 to OLD api in order to avoid lto errors.")
+    cmake_policy(SET CMP0069 OLD)
+endif()
 
 add_compile_options(-std=c++14 -O2 -Wall -Wextra -pedantic)
 

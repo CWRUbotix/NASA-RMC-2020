@@ -20,15 +20,15 @@ void VescMotor::setup() {
 }
 
 void VescMotor::can_rx_callback(FramePtr frame) {
-    uint32_t rx_id = (uint32_t) frame->can_id;
-    int8_t can_id = (int8_t)(rx_id & 0xFF); // extract only the id
+    const uint32_t rx_id = (uint32_t) frame->can_id;
+    const uint8_t can_id = (uint8_t)(rx_id & 0xFF); // extract only the id
 
     if(m_can_id != can_id) {
         // not for us
         return;
     }
 
-    uint8_t cmd = (uint8_t)(rx_id >> 8);
+    const uint8_t cmd = (uint8_t)(rx_id >> 8);
 
     switch(cmd) {
         case CanPacketId::CAN_PACKET_STATUS: {

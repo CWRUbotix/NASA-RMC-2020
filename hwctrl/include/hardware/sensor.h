@@ -40,7 +40,7 @@ void read_calibration(const std::string& path, std::vector<Calibration>& cals);
 bool write_calibration(const std::string& path, std::vector<Calibration>& cals);
 std::string print_calibration(Calibration& cal);
 
-enum SensorType {
+enum class SensorType {
 	NONE,
 	UWB,
 	QUAD_ENC,

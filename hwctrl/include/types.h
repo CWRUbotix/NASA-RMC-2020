@@ -2,7 +2,7 @@
 
 // I hate this enum
 // TODO: Get rid of this maybe?
-enum CanPacketId{
+enum CanPacketId : uint8_t {
 	CAN_PACKET_SET_DUTY = 0,
 	CAN_PACKET_SET_CURRENT,
 	CAN_PACKET_SET_CURRENT_BRAKE,
@@ -34,7 +34,7 @@ enum CanPacketId{
 };
 
 // I also hate this one.
-enum CommPacketId {
+enum CommPacketId : uint8_t {
 	COMM_FW_VERSION = 0,
 	COMM_JUMP_TO_BOOTLOADER,
 	COMM_ERASE_NEW_APP,

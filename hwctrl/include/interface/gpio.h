@@ -5,11 +5,11 @@
 
 class Gpio {
 public:
-    enum State {
+    enum class State : uint8_t {
         Reset = 0, Set
     };
 
-    enum Direction {
+    enum class Direction : uint8_t {
         Input = 0, Output
     };
 public:

@@ -7,17 +7,17 @@
 
 #define UWB_CAN_HDDR_SIZE 2
 
-enum UwbCanData {
-  UWB_TIMESTAMP = 0,
-  UWB_X,
-  UWB_Y,
-  UWB_Z,
-  UWB_DISTANCE,
-  UWB_RX_POWER,
-  UWB_FP_POWER,
-  UWB_FP_SNR,
-  UWB_RANGING_DONE,
-  UWB_LEGACY
+enum class UwbCanData {
+  TIMESTAMP = 0,
+  X,
+  Y,
+  Z,
+  DISTANCE,
+  RX_POWER,
+  FP_POWER,
+  FP_SNR,
+  RANGING_DONE,
+  LEGACY
 };
 
 struct Anchor {

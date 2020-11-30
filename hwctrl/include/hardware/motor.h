@@ -15,12 +15,12 @@
 #define DEFAULT_MAX_RPM 			50.0
 #define MOTOR_LOOP_PERIOD 			0.005
 
-enum ControlType {
-    RPM, Position
+enum class ControlType {
+    None, RPM, Position
 };
 
-enum MotorType {
-    Vesc, Sabertooth, BMC
+enum class MotorType {
+    None, Vesc, Sabertooth, BMC
 };
 
 MotorType get_motor_type(boost::string_view);

@@ -100,5 +100,6 @@ Gpio::State Gpio::read_state() const {
         return (Gpio::State) buf;
     } else {
         ROS_WARN("Bad handle in gpio @ %s", m_path.c_str());
+        return Gpio::State::Reset;
     }
 }
