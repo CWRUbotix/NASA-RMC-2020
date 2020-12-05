@@ -145,10 +145,7 @@ public:
     SpiSensor(
         SpiSensorArgs
     );
-    virtual ~SpiSensor() {
-        // make sure we release gpio handle
-        m_cs->release_handle();
-    };
+    virtual ~SpiSensor() = default;
 protected:
     void config_spi_settings() {
         m_spi->set_speed(m_spi_speed);
@@ -181,10 +178,7 @@ public:
         GpioSensorArgs
     ) : SensorImplArgsPass(T), m_gpio(std::move(gpio)) {}
 
-    virtual ~GpioSensor() {
-        // make sure we release gpio handle
-        m_gpio->release_handle();
-    };
+    virtual ~GpioSensor() = default;
 
 protected:
     boost::movelib::unique_ptr<Gpio> m_gpio;
