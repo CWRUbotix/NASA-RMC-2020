@@ -2,7 +2,6 @@
 
 #include <string>
 
-
 class Gpio {
 public:
     enum class State : uint8_t {
@@ -13,29 +12,25 @@ public:
         Input = 0, Output
     };
 public:
+    Gpio(uint32_t num, Direction dir = Direction::Input, State state = State::Reset);
     Gpio(std::string, Direction dir = Direction::Input, State state = State::Reset);
     ~Gpio() = default;
 
-    int init(std::string, Direction, State);
-    
+    void set_direction(Direction) const;
+    Direction get_direction()     const;
 
-    void set_direction(Direction);
-    Direction get_direction() const;
+    inline void in()  { set_direction(Direction::Input); }
+    inline void out() { set_direction(Direction::Output); }
 
-    State read_state() const;
+    State read_state()    const;
+    void set_state(State) const;
 
-    void set_state(State);
-    void set();
-    void reset();
+    inline void set() { set_state(State::Set); }
+    inline void reset() { set_state(State::Reset); }
 
-    void release_handle();
-
-private:
-    int get_handle();
-
+    inline std::string get_path() const { return m_path; }
 private:
     std::string m_path;
-    std::string m_dir_path;
     std::string m_value_path;
-    int m_handle;
+    std::string m_dir_path;
 };

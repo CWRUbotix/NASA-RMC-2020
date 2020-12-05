@@ -8,9 +8,11 @@
 #include <cmath>
 #include <cinttypes>
 #include <type_traits>
+#include <limits>
 
 #include <boost/array.hpp>
 #include <boost/utility/string_view.hpp>
+#include <boost/endian/conversion.hpp>
 #include <boost/math/distributions/normal.hpp>
 using boost::math::normal;
 
@@ -44,7 +46,7 @@ namespace math {
         if(size != 0)
             return std::accumulate(begin, end, static_cast<T>(0.0), std::plus<T>()) / static_cast<T>(size);
         else
-            return 0.0;
+            return std::numeric_limits<T>::quiet_NaN();
     }
 
     template<
@@ -61,7 +63,7 @@ namespace math {
         if(size > 1)
             return std::accumulate(begin, end, static_cast<T>(0.0f), f) / static_cast<T>(size - 1);
         else
-            return static_cast<T>(0.0);
+            return std::numeric_limits<T>::quiet_NaN();
     }
 
     // returns index of maximum value

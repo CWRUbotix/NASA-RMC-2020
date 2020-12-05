@@ -11,95 +11,69 @@
 #include <cstdlib>
 #include <string>
 #include <cstdio>
+
 #include <iostream>
 #include <fstream>
+#include <istream>
+#include <ostream>
 
-constexpr auto k_in_str  = "in";
-constexpr auto k_out_str = "out";
+const std::string in_str  = "in";
+const std::string out_str = "out";
+const std::string default_gpio_path =  "/sys/class/gpio";
+
+Gpio::Gpio(uint32_t num, Direction dir, State state) {
+    std::ostringstream s;
+    s << default_gpio_path << std::to_string(num) << "/";
+    Gpio(s.str(), dir, state);
+}
 
 Gpio::Gpio(std::string path, Direction dir, State state)
 : m_path(path)
 {
     // heap allocation bad
-    m_dir_path   = m_path + "direction";
+    m_dir_path =   m_path + "direction";
     m_value_path = m_path + "value";
 
-    // get handle
-    m_handle = init(path, dir, state);
-}
+    set_direction(dir);
 
-int Gpio::init(std::string path, Direction dir, State state) {
-    if(dir == Direction::Input){
-        set_direction(dir);
-        return get_handle();
-    }else if(dir == Direction::Output){
-        int fd = open(m_value_path.c_str(), O_RDWR);
-        if(state == State::Set){
-            set();
-        }else{
-            reset();
-        }
-        set_direction(Direction::Output);
-        return fd;
-    }else{
-        return -1;
+    if(dir == Direction::Output) {
+        set_state(state);
     }
 }
 
-void Gpio::release_handle() {
-    close(m_handle);
-    m_handle = -1;
-}
-
-
-void Gpio::set_direction(Direction dir)  {
-    std::string dir_str = dir == Direction::Input ? k_in_str : k_out_str;
-    std::ofstream file(m_dir_path, std::ios::out);
-    file << dir_str;
-    file.close();
+void Gpio::set_direction(Direction dir) const  {
+    const std::string dir_str = dir == Direction::Input ? in_str : out_str;
+    std::ofstream f(m_dir_path);
+    if(!f) {
+        ROS_ERROR("");
+    }
+    f << dir_str;
+    f.close();
 }
 
 Gpio::Direction Gpio::get_direction() const {
-    std::string retval;
-    std::ifstream file(m_dir_path, std::ios::in);
-    std::getline(file, retval);
-    file.close();
-    return retval.compare(k_in_str) == 0 ? Gpio::Direction::Input : Gpio::Direction::Output;
-}
-
-int Gpio::get_handle() {
-    Direction dir = get_direction();
-
-    if(dir == Direction::Input)
-        return open(m_value_path.c_str(), O_RDONLY);
-    else
-        return open(m_value_path.c_str(), O_RDWR);
-}
-
-void Gpio::set_state(State state) {
-    if(m_handle > 0) {
-        char b = state == State::Set ? '1' : '0';
-        write(m_handle, &b, 1);
-    } else {
-        ROS_WARN("Bad handle in gpio @ %s", m_path.c_str());
+    char dir;
+    std::ifstream f(m_dir_path);
+    if(!f) {
+        ROS_ERROR("");
     }
+    f.read(&dir, 1);
+    f.close();
+    return (dir == 'i' ? Direction::Input : Direction::Output);
 }
 
-void Gpio::set() {
-    set_state(State::Set);
-}
-
-void Gpio::reset() {
-    set_state(State::Reset);
+void Gpio::set_state(State state) const {
+    const char b = (state == State::Set ? '1' : '0');
+    std::ofstream f(m_value_path);
+    f.write(&b, 1);
+    f.close();
 }
 
 Gpio::State Gpio::read_state() const {
-    if(m_handle > 0) {
-        uint8_t buf = 0;
-        int len = read(m_handle, &buf, 1);
-        return (Gpio::State) buf;
-    } else {
-        ROS_WARN("Bad handle in gpio @ %s", m_path.c_str());
-        return Gpio::State::Reset;
-    }
+    char buf;
+    std::ifstream f(m_value_path);
+    f.read(&buf, 1);
+    f.close();
+    return (Gpio::State) buf;
 }
+

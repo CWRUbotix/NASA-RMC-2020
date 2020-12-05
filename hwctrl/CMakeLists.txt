@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   message_generation
   message_runtime
+  rostest
 )
 
 catkin_python_setup()
@@ -81,6 +82,11 @@ add_executable(hwctrl_cal
   src/interface/spi.cpp
   src/util.cpp
 )
+
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(hwctrl_tests test/testing.cpp src/util.cpp)
+  target_link_libraries(hwctrl_tests ${catkin_LIBRARIES})
+endif()
 
 set_property(TARGET hwctrl PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 set_property(TARGET hwctrl_cal PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
