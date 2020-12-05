@@ -23,7 +23,7 @@ const std::string default_gpio_path =  "/sys/class/gpio";
 
 Gpio::Gpio(uint32_t num, Direction dir, State state) {
     std::ostringstream s;
-    s << default_gpio_path << std::to_string(num) << "/";
+    s << default_gpio_path << "/gpio" << std::to_string(num) << "/";
     Gpio(s.str(), dir, state);
 }
 
