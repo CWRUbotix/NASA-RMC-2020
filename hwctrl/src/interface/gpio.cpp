@@ -30,7 +30,10 @@ Gpio::Gpio(uint32_t num, Direction dir, State state) {
 Gpio::Gpio(std::string path, Direction dir, State state)
 : m_path(path)
 {
-    // heap allocation bad
+    if(*path.end() != '/') {
+        path = path.append("/");
+    }
+    
     m_dir_path =   m_path + "direction";
     m_value_path = m_path + "value";
 
