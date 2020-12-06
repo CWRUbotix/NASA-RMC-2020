@@ -12,8 +12,8 @@ public:
         Input = 0, Output
     };
 public:
-    Gpio(uint32_t num, Direction dir = Direction::Input, State state = State::Reset);
-    Gpio(std::string, Direction dir = Direction::Input, State state = State::Reset);
+    explicit Gpio(uint32_t num, Direction dir = Direction::Input, State state = State::Reset);
+    explicit Gpio(std::string, Direction dir = Direction::Input, State state = State::Reset);
     ~Gpio() = default;
 
     void set_direction(Direction) const;
