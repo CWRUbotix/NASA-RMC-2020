@@ -9,15 +9,15 @@
 constexpr double EPSILON = 0.00001;
 
 TEST(UtilTest, mean_stddev) {
-  std::vector<double> vec = {1.0, 2.0, 3.0};
-  auto avg = math::avg(vec.begin(), vec.end());
-  auto stddev = math::stddev(vec.begin(), vec.end());
+  std::vector<double> vec    = {1.0, 2.0, 3.0};
+  auto                avg    = math::avg(vec.begin(), vec.end());
+  auto                stddev = math::stddev(vec.begin(), vec.end());
   ASSERT_NEAR(avg, 2.0, EPSILON);
   ASSERT_NEAR(stddev, 1.0, EPSILON);
 
   vec.clear();
   for (int i = 0; i < 10; i++) vec.push_back(1.0);
-  avg = math::avg(vec.begin(), vec.end());
+  avg    = math::avg(vec.begin(), vec.end());
   stddev = math::stddev(vec.begin(), vec.end());
   ASSERT_NEAR(avg, 1.0, EPSILON);
   ASSERT_NEAR(stddev, 0.0, EPSILON);

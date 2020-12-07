@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 
   SensorThread sensor_thread(nh);
   CanbusThread canbus_thread(nh);
-  MotorThread motor_thread(nh);
+  MotorThread  motor_thread(nh);
 
   std::thread sensor_thread_obj(std::ref(sensor_thread));
   std::thread canbus_thread_obj(std::ref(canbus_thread));

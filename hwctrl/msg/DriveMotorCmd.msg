@@ -1,3 +1,2 @@
-# Motor commands for left and right wheels
-MotorCmd left
-MotorCmd right
+#Motor commands for left and right wheels
+MotorCmd left MotorCmd right

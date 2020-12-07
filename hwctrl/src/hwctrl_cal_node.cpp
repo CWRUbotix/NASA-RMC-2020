@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   ROS_INFO("Hardware Controller Calibration Node");
   ros::NodeHandle n;
 
-  CanbusThread canbus_thread(n);
+  CanbusThread    canbus_thread(n);
   SensorCalThread sensor_cal_thread(n);
 
   ROS_INFO("Node init success");
