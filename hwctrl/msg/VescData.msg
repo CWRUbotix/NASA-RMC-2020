@@ -1,6 +1,22 @@
-time timestamp string motor_type int8 can_id float32 raw_rpm float32 current
-    float32 duty_cycle float32 temp_mos1 float32 temp_mos2 float32 current_motor
-        float32 current_in float32 avg_id float32 avg_iq float32 duty_now
-            float32 rpm float32 v_in float32 amp_hours float32 amp_hours_charged
-                float32 watt_hours float32 watt_hours_charged int32 tachometer
-                    int32 tachometer_abs int8 fault_code
+time timestamp
+string motor_type
+int8 can_id
+float32 raw_rpm
+float32 current
+float32 duty_cycle
+float32 temp_mos1
+float32 temp_mos2
+float32 current_motor
+float32 current_in
+float32 avg_id
+float32 avg_iq
+float32 duty_now
+float32 rpm
+float32 v_in
+float32 amp_hours
+float32 amp_hours_charged
+float32 watt_hours
+float32 watt_hours_charged
+int32 tachometer
+int32 tachometer_abs
+int8 fault_code
