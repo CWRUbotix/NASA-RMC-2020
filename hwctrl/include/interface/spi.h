@@ -17,6 +17,9 @@ public:
     Spi(const std::string& fname);
     ~Spi();
 
+    Spi(Spi const&) = delete;
+    void operator=(Spi const&) = delete;
+
     int set_speed(uint32_t speed);
     int set_mode(uint32_t mode);
     int cmd(uint8_t cmd, uint8_t* rpy, int rpy_len);

@@ -15,6 +15,7 @@
 
 #include <vector>
 
+#include "hwctrl_thread.h"
 #include "hardware/motor.h"
 
 const std::vector<std::string> motor_param_names{
@@ -27,7 +28,7 @@ const std::vector<std::string> motor_param_names{
 	"exc_starboard_act"
 };
 
-class MotorThread {
+class MotorThread : HwctrlThread {
 public:
     MotorThread(ros::NodeHandle nh);
     ~MotorThread() = default;
@@ -41,7 +42,6 @@ public:
     void shutdown();
 
     void operator()();
-
 private: 
     void set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg);
     void limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg);

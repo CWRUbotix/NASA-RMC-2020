@@ -12,7 +12,7 @@ public:
     SensorCalThread(ros::NodeHandle);
     virtual ~SensorCalThread() = default;
 
-    virtual void operator()() override final;
+    void operator()();
 private:
     void calibrate_sensor_with_name(boost::string_view name, std::vector<Calibration>& cals);
 };

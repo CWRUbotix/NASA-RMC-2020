@@ -35,6 +35,10 @@ public:
     );
     virtual ~Motor() = default;
 
+    // allow moves but not copies
+    Motor(Motor const&) = delete;
+    void operator=(Motor const&) = delete;
+
     virtual void setup()                = 0;
     virtual void update(ros::Time time) = 0; // send the setpoint and return sensor data
 

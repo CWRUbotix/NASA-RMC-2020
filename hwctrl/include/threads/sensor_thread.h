@@ -10,6 +10,8 @@
 
 #include <vector>
 
+#include "hwctrl_thread.h"
+
 #include "hardware/sensor.h"
 #include "hardware/quad_encoder.h"
 #include "hardware/uwb.h"
@@ -37,7 +39,7 @@ const std::vector<std::string> sensor_param_names{
     "power_sense"
 };
 
-class SensorThread {
+class SensorThread : HwctrlThread {
 public:
     SensorThread(ros::NodeHandle nh);
     virtual ~SensorThread() = default;

@@ -7,10 +7,12 @@
 
 #include <hwctrl/CanFrame.h>
 
+#include "hwctrl_thread.h"
+
 static ros::Subscriber can_rx_sub;
 static ros::Publisher  can_tx_pub;
 
-class CanbusThread {
+class CanbusThread : HwctrlThread {
 public:
     CanbusThread(ros::NodeHandle nh, std::string iface = "can1");
     ~CanbusThread() = default;

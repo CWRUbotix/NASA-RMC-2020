@@ -16,6 +16,9 @@ public:
     explicit Gpio(std::string, Direction dir = Direction::Input, State state = State::Reset);
     ~Gpio() = default;
 
+    Gpio(Gpio const&) = delete;
+    void operator=(Gpio const&) = delete;
+
     void set_direction(Direction) const;
     Direction get_direction()     const;
 

@@ -64,6 +64,10 @@ public:
     );
     virtual ~Sensor() = default;
 
+    // allow moves but not copies
+    Sensor(Sensor const&) = delete;
+    void operator=(Sensor const&) = delete; 
+
     // override these
     virtual void setup()  = 0;
     virtual void update() = 0;
