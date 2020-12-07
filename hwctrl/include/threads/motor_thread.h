@@ -1,72 +1,67 @@
 #pragma once
 
-#include <ros/ros.h>
 #include <ros/callback_queue.h>
+#include <ros/ros.h>
 
-#include <hwctrl/MotorCmd.h>
-#include <hwctrl/SensorData.h>
 #include <hwctrl/LimitSwState.h>
+#include <hwctrl/MotorCmd.h>
 #include <hwctrl/MotorData.h>
+#include <hwctrl/SensorData.h>
 
 // #include <boost/shared_ptr.hpp>
 // #include <boost/make_shared.hpp>
-#include <boost/move/unique_ptr.hpp>
 #include <boost/move/make_unique.hpp>
+#include <boost/move/unique_ptr.hpp>
 
 #include <vector>
 
-#include "hwctrl_thread.h"
 #include "hardware/motor.h"
+#include "hwctrl_thread.h"
 
 const std::vector<std::string> motor_param_names{
-	"port_drive",
-	"starboard_drive",
-	"dep",
-	"exc_belt",
-	"exc_translation",
-	"exc_port_act",
-	"exc_starboard_act"
-};
+    "port_drive",   "starboard_drive",  "dep", "exc_belt", "exc_translation",
+    "exc_port_act", "exc_starboard_act"};
 
 class MotorThread : HwctrlThread {
-public:
-    MotorThread(ros::NodeHandle nh);
-    ~MotorThread() = default;
+ public:
+  MotorThread(ros::NodeHandle nh);
+  ~MotorThread() = default;
 
-    void read_from_server();
+  void read_from_server();
 
-    void setup_motors();
-    void update_motors();
+  void setup_motors();
+  void update_motors();
 
-    void sleep();
-    void shutdown();
+  void sleep();
+  void shutdown();
 
-    void operator()();
-private: 
-    void set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg);
-    void limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg);
-    void sensor_data_callback(boost::shared_ptr<hwctrl::SensorData> msg);
+  void operator()();
 
-private:
-    // general ros objects
-    ros::NodeHandle    m_nh;
-    ros::Rate          m_loop_rate;
-    ros::CallbackQueue m_cb_queue;
+ private:
+  void set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg);
+  void limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg);
+  void sensor_data_callback(boost::shared_ptr<hwctrl::SensorData> msg);
 
-    // subscribers
-    ros::Subscriber  m_motor_set_sub;
-    ros::Subscriber  m_limit_sw_sub;
-    ros::Subscriber  m_sensor_data_sub;
+ private:
+  // general ros objects
+  ros::NodeHandle m_nh;
+  ros::Rate m_loop_rate;
+  ros::CallbackQueue m_cb_queue;
 
-    // publishers
-    // ros::Publisher   m_motor_data_pub;
+  // subscribers
+  ros::Subscriber m_motor_set_sub;
+  ros::Subscriber m_limit_sw_sub;
+  ros::Subscriber m_sensor_data_sub;
 
-    // motors
-    using MotorVec = std::vector<boost::shared_ptr<Motor>>;
-    using MotorIter = MotorVec::iterator;
+  // publishers
+  // ros::Publisher   m_motor_data_pub;
 
-    MotorVec  m_motors;
-    MotorIter m_motor_iter;
+  // motors
+  using MotorVec = std::vector<boost::shared_ptr<Motor>>;
+  using MotorIter = MotorVec::iterator;
 
-    bool m_sys_power_on = false;
+  MotorVec m_motors;
+  MotorIter m_motor_iter;
+
+  bool m_sys_power_on = false;
 };

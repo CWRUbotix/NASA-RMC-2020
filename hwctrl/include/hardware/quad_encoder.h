@@ -3,23 +3,24 @@
 #include "sensor.h"
 
 class QuadEncoder : public CanSensor<hwctrl::SensorData> {
-public:
-    QuadEncoder(CanSensorArgs, bool inverted = false);
-    virtual ~QuadEncoder() = default;
+ public:
+  QuadEncoder(CanSensorArgs, bool inverted = false);
+  virtual ~QuadEncoder() = default;
 
-    virtual void setup()  override final;
-    virtual void update() override final;
-    virtual void calibrate(std::vector<Calibration>&) override final {};
+  virtual void setup() override final;
+  virtual void update() override final;
+  virtual void calibrate(std::vector<Calibration>&) override final{};
 
-    virtual void can_rx_callback(FramePtr frame) override final;
-private:
-    bool m_inverted;
+  virtual void can_rx_callback(FramePtr frame) override final;
 
-public:
-    enum IncomingFrameIdent : uint8_t {
+ private:
+  bool m_inverted;
 
-    };
-    enum OutgoingFrameIdent : uint8_t {
+ public:
+  enum IncomingFrameIdent : uint8_t {
 
-    };
+  };
+  enum OutgoingFrameIdent : uint8_t {
+
+  };
 };
