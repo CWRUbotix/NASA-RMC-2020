@@ -19,12 +19,15 @@
 
     <node name="pcl_manager" pkg="nodelet" type="nodelet" args="manager"/>
 
-    <node name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load obstacle_detection/PointCloudDecimator pcl_manager">
-        <remap from="input_cloud" to="/realsense/depth/points_raw"/>
-        <remap from="output_cloud" to="/realsense/depth/points"/>
-
-        <param name="voxel_size" value="0.05"/>
-        <param name="frame_name" value="realsense_footprint_link"/>
+    <node name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid pcl_manager">
+        <remap from="~input" to="/realsense/depth/points_raw"/>
+        <remap from="~output" to="/realsense/depth/points"/>
+        <param name="leaf_size" value="0.05"/>
+        <param name="filter_field_name" value="z"/>
+        <param name="filter_limit_min" value="0.0"/>
+        <param name="filter_limit_max" value="3.0"/>
+        <param name="use_indices" value="false"/>
+        <param name="output_frame" value="realsense_footprint_link"/>
     </node>
 
     <node name="point_cloud_normal_estimator" pkg="obstacle_detection" type="point_cloud_normal_estimator">
@@ -35,6 +38,13 @@
         <param name="search_radius" value="0.07"/>
         <param name="normal_threshold" value="0.95"/>
         <param name="cluster_tolerance" value="0.1"/>
+        <param name="visualize" value="false"/>
+    </node>
+
+    <node name="point_cloud_icp_odometry" pkg="obstacle_detection" type="point_cloud_icp_odometry">
+        <remap from="input_cloud" to="/realsense/depth/points"/>
+
+        <param name="max_iterations" value="10"/>
         <param name="visualize" value="true"/>
     </node>
 
@@ -46,7 +56,6 @@
     <node name="obstacle_detection" pkg="obstacle_detection" type="obstacle_detection_node.py">
         <remap from="input_cloud" to="/realsense/depth/points_obstacles"/>
     </node>
-
 
     <node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid_node.py">
         <remap from="input_cloud" to="/realsense/depth/points_obstacles"/>
