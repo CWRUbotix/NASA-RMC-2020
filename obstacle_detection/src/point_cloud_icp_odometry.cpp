@@ -64,14 +64,13 @@ class PointCloudICPOdometry
             icp.setInputSource(last_cloud_);
             icp.setInputTarget(cloud_);
             icp.align(*last_cloud_);
-            std::cout << "Applied " << max_iterations_ << " ICP iteration(s) in " << time.toc() << " ms" << std::endl;
 
             Eigen::Matrix4d transformation_matrix;
             if (icp.hasConverged ())
             {
-                std::cout << "\nICP has converged, score is " << icp.getFitnessScore () << std::endl;
+                std::cout << "\nICP has converged, in " << time.toc() << " ms, " << "score is " << icp.getFitnessScore () << std::endl;
                 transformation_matrix = icp.getFinalTransformation().cast<double>();
-                print4x4Matrix(transformation_matrix);
+                // print4x4Matrix(transformation_matrix);
             }
             else
             {
@@ -81,7 +80,9 @@ class PointCloudICPOdometry
             total_odom_ = transformation_matrix * total_odom_;
 
             geometry_msgs::PoseWithCovarianceStamped pose_out;
-            matrix4x4ToPose(total_odom_, pose_out);
+            matrix4x4ToPose(total_odom_, pose_out, true);
+            // print4x4Matrix(transformation_matrix);
+
             pose_out.header = msg->header;
             pose_out.header.frame_id = "map";
             odom_pub_.publish(pose_out);
@@ -100,7 +101,7 @@ class PointCloudICPOdometry
           return *reinterpret_cast<float*>(&color_uint);
         }
 
-        void print4x4Matrix (const Eigen::Matrix4d & matrix)
+        void print4x4Matrix(const Eigen::Matrix4d & matrix)
         {
           printf ("Rotation matrix :\n");
           printf ("    | %6.3f %6.3f %6.3f | \n", matrix (0, 0), matrix (0, 1), matrix (0, 2));
@@ -110,22 +111,24 @@ class PointCloudICPOdometry
           printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0, 3), matrix (1, 3), matrix (2, 3));
         }
 
-        void matrix4x4ToPose(const Eigen::Matrix4d &matrix, geometry_msgs::PoseWithCovarianceStamped &pose)
+        void matrix4x4ToPose(const Eigen::Matrix4d &matrix, geometry_msgs::PoseWithCovarianceStamped &pose, bool invert)
         {
+            int mult = invert ? -1 : 1;
+
             Eigen::Matrix3d rot;
             rot(0, 0) = matrix(0, 0); rot(0, 1) = matrix(0, 1); rot(0, 2) = matrix(0, 2);
             rot(1, 0) = matrix(1, 0); rot(1, 1) = matrix(1, 1); rot(1, 2) = matrix(1, 2);
             rot(2, 0) = matrix(2, 0); rot(2, 1) = matrix(2, 1); rot(2, 2) = matrix(2, 2);
             Eigen::Quaterniond rot_quat(rot);
 
-            pose.pose.pose.position.x = matrix(0, 3);
-            pose.pose.pose.position.y = matrix(1, 3);
-            pose.pose.pose.position.z = matrix(2, 3);
+            // pose.pose.pose.position.x = matrix(0, 3) * mult;
+            // pose.pose.pose.position.y = matrix(1, 3) * mult;
+            // pose.pose.pose.position.z = matrix(2, 3) * mult;
 
             pose.pose.pose.orientation.x = rot_quat.x();
             pose.pose.pose.orientation.y = rot_quat.y();
             pose.pose.pose.orientation.z = rot_quat.z();
-            pose.pose.pose.orientation.w = rot_quat.w();
+            pose.pose.pose.orientation.w = rot_quat.w() * mult;
         }
 
         // Handles drawing the pointcloud in the viewer.

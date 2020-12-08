@@ -44,8 +44,11 @@ include_directories(
 
 add_library(point_cloud_decimator src/point_cloud_decimator.cpp)
 add_executable(point_cloud_normal_estimator src/point_cloud_normal_estimator.cpp)
+add_executable(point_cloud_icp_odometry src/point_cloud_icp_odometry.cpp)
 
 target_link_libraries(point_cloud_decimator ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(point_cloud_normal_estimator ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(point_cloud_icp_odometry ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_dependencies(point_cloud_normal_estimator ${catkin_EXPORTED_TARGETS})
+add_dependencies(point_cloud_icp_odometry ${catkin_EXPORTED_TARGETS})
