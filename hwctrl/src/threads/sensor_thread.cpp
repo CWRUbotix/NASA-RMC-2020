@@ -196,7 +196,7 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
       break;
     }
     case SensorType::ESTOP: {
-      auto es = boost::make_shared<EStop>(nh, name, sys_id_idx++, "estop", 128, period, std::move(gpio));
+      auto es = boost::make_shared<EStop>(nh, name, SensorType::ESTOP, sys_id_idx++, "estop", 128, period, std::move(gpio));
       sensor = es;
       break;
     }   

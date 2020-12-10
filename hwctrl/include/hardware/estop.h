@@ -11,7 +11,7 @@
 // This is more or less a duplicate of generic gpio sensor
 // I just dont think we need it to send sensor_data messages.
 // boolean will be fine. Plus we might want to extend this class later
-class EStop : GpioSensor<std_msgs::Bool> {
+class EStop : public GpioSensor<std_msgs::Bool> {
 public:
   EStop(GpioSensorArgs);
   ~EStop() = default;
