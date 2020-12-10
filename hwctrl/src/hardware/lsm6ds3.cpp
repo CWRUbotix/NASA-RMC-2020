@@ -26,7 +26,8 @@ Lsm6ds3::Lsm6ds3(ros::NodeHandle nh, const std::string& name, uint32_t id,
                  boost::movelib::unique_ptr<Gpio> cs, uint32_t samples)
     : SpiSensor<PubData>(
         nh, name, SensorType::LSM6DS3, id, topic, topic_size, update_period, spi, LSM6DS3_SPI_SPEED,
-        LSM6DS3_SPI_MODE, std::move(cs))
+        LSM6DS3_SPI_MODE, std::move(cs)), m_rms(), m_vars(), m_sample_bufs()
+
   {
     for(unsigned int i = 0; i < 6; i++) {
       m_rms.at(i) = 0.0f;
