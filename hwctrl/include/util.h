@@ -35,44 +35,6 @@ int progress_bar(boost::array<char, buf_size>& buf, float progress) {
 
 namespace math {
 
-template <typename Iter, typename T = typename Iter::value_type,
-          typename std::enable_if<std::is_floating_point<T>::value>::type* =
-              nullptr  // make sure inner values are floating point
-          >
-constexpr T avg(const Iter& begin, const Iter& end) {
-  const auto size = std::distance(begin, end);
-  if (size != 0)
-    return std::accumulate(begin, end, static_cast<T>(0.0), std::plus<T>()) /
-           static_cast<T>(size);
-  else
-    return std::numeric_limits<T>::quiet_NaN();
-}
-
-template <typename Iter, typename T = typename Iter::value_type,
-          typename std::enable_if<std::is_floating_point<T>::value>::type* =
-              nullptr  // make sure inner values are floating point
-          >
-constexpr T stddev(const Iter& begin, const Iter& end) {
-  const auto size = std::distance(begin, end);
-  auto       mean = avg(begin, end);
-  auto       f = [=](T sum, T& e) { return (sum + std::pow(e - mean, 2.0)); };
-  if (size > 1)
-    return std::accumulate(begin, end, static_cast<T>(0.0f), f) /
-           static_cast<T>(size - 1);
-  else
-    return std::numeric_limits<T>::quiet_NaN();
-}
-
-// returns index of maximum value
-template <typename Iter,
-          typename T = typename Iter::value_type,  // get inner value
-          decltype(std::declval<T>() > std::declval<T>())* =
-              nullptr  // make sure values are comparable
-          >
-constexpr size_t max_index(const Iter& begin, const Iter& end) {
-  return std::distance(begin, std::max_element(begin, end));
-}
-
 // smooths data ***INPLACE***
 template <typename T, typename std::enable_if<
                           std::is_floating_point<T>::value>::type* = nullptr>

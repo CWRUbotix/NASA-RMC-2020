@@ -9,21 +9,31 @@
 #include <iostream>
 #include <vector>
 
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/mean.hpp>
+#include <boost/accumulators/statistics/error_of_mean.hpp>
+#include <boost/accumulators/statistics/variance.hpp>
+
+#include <boost/bind.hpp>
+#include <boost/ref.hpp>
+
 #include "util.h"
 
 Lsm6ds3::Lsm6ds3(ros::NodeHandle nh, const std::string& name, uint32_t id,
                  const std::string& topic, uint32_t topic_size,
                  ros::Duration update_period, boost::shared_ptr<Spi> spi,
                  boost::movelib::unique_ptr<Gpio> cs, uint32_t samples)
-    : SpiSensor<PubData>(nh, name, SensorType::LSM6DS3, id, topic, topic_size,
-                         update_period, spi, LSM6DS3_SPI_SPEED,
-                         LSM6DS3_SPI_MODE, std::move(cs)),
-      m_sample_buf1(samples),
-      m_sample_buf2(samples),
-      m_sample_buf3(samples),
-      m_sample_buf4(samples),
-      m_sample_buf5(samples),
-      m_sample_buf6(samples) {}
+    : SpiSensor<PubData>(
+        nh, name, SensorType::LSM6DS3, id, topic, topic_size, update_period, spi, LSM6DS3_SPI_SPEED,
+        LSM6DS3_SPI_MODE, std::move(cs))
+  {
+    for(unsigned int i = 0; i < 6; i++) {
+      m_rms.at(i) = 0.0f;
+      m_vars.at(i) = 0.0f;
+      m_sample_bufs.at(i) = boost::circular_buffer<float>(samples);
+    }
+  }
 
 Lsm6ds3::~Lsm6ds3() {
   // do we need something here?
@@ -75,25 +85,22 @@ void Lsm6ds3::update() {
 #ifdef FALSE
 
   // add data to buffers
-  m_sample_buf1.push_back((float)xl_data[0]);
-  m_sample_buf2.push_back((float)xl_data[1]);
-  m_sample_buf3.push_back((float)xl_data[2]);
-  m_sample_buf4.push_back((float)g_data[0]);
-  m_sample_buf5.push_back((float)g_data[1]);
-  m_sample_buf6.push_back((float)g_data[2]);
-
+  for(unsigned int i = 0; i < 3; i++) {
+    m_sample_bufs.at(i).push_back((float)xl_data[i]);
+    m_sample_bufs.at(i + 3).push_back((float)g_data[i]);
+  }
   // this is for recalculating the covariance matrix, dont need to do this for
   // now
   // TODO: wait for software team to get mad at us.
-  if (m_sample_buf1.full()) {
+  if (m_sample_bufs.at(0).full()) {
     // get the average of the values here
-    m_rm1 = math::avg(m_sample_buf1.begin(), m_sample_buf1.end());
-    m_rm2 = math::avg(m_sample_buf2.begin(), m_sample_buf2.end());
-    m_rm3 = math::avg(m_sample_buf3.begin(), m_sample_buf3.end());
-    m_rm4 = math::avg(m_sample_buf4.begin(), m_sample_buf4.end());
-    m_rm5 = math::avg(m_sample_buf5.begin(), m_sample_buf5.end());
-    m_rm6 = math::avg(m_sample_buf6.begin(), m_sample_buf6.end());
-
+    using namespace boost::accumulators;
+    for(unsigned int i = 0; i < m_sample_bufs.size();i++){ 
+      accumulator_set<float, stats<tag::mean, tag::variance>> acc;
+      std::for_each(buf.at(i).begin(), buf.at(i).end(), boost::bind(boost::ref(acc), _1));
+      m_rms.at(i) = extract::mean(acc);
+      m_vars.at(i) = extract::variance(acc);
+    }
     // recalculate variance matricies
     // math
   }
@@ -171,9 +178,9 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
   std::cout << std::endl << "Done sampling." << std::endl;
   math::smooth(x_xl_samples, 9);
   math::smooth(y_xl_samples, 9);
-  math::smooth(x_xl_samples, 9);
+  math::smooth(z_xl_samples, 9);
 
-  auto max_idx = math::max_index(z_xl_samples.begin(), z_xl_samples.end());
+  auto max_idx = std::distance(z_xl_samples.begin(), std::max_element(z_xl_samples.begin(), z_xl_samples.end()));
   float z_max = x_xl_samples[max_idx];
   float y_offset = y_xl_samples[max_idx];
   float x_offset = x_xl_samples[max_idx];
@@ -240,17 +247,25 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
   // math::smooth(x_xl_samples, 9);
   // math::smooth(y_xl_samples, 9);
   // math::smooth(x_xl_samples, 9);
+    
+  using namespace boost::accumulators;
+  using Acc = accumulator_set<float, stats<tag::mean, tag::variance>>;
+  
+  Acc x_acc;
+  Acc y_acc;
+  Acc z_acc;
 
-  float x_g_var =
-      std::pow(math::stddev(x_g_samples.begin(), x_g_samples.end()), 2.0);
-  float y_g_var =
-      std::pow(math::stddev(y_g_samples.begin(), y_g_samples.end()), 2.0);
-  float z_g_var =
-      std::pow(math::stddev(z_g_samples.begin(), z_g_samples.end()), 2.0);
+  std::for_each(x_g_samples.begin(), x_g_samples.end(), boost::bind(boost::ref(x_acc), _1)); 
+  std::for_each(y_g_samples.begin(), y_g_samples.end(), boost::bind(boost::ref(y_acc), _1)); 
+  std::for_each(z_g_samples.begin(), z_g_samples.end(), boost::bind(boost::ref(z_acc), _1));
 
-  float x_g_offset = math::avg(x_g_samples.begin(), x_g_samples.end());
-  float y_g_offset = math::avg(y_g_samples.begin(), y_g_samples.end());
-  float z_g_offset = math::avg(z_g_samples.begin(), z_g_samples.end());
+  float x_g_var = extract::variance(x_acc);
+  float y_g_var = extract::variance(y_acc);
+  float z_g_var = extract::variance(z_acc);
+  
+  float x_g_offset = extract::mean(x_acc);
+  float y_g_offset = extract::mean(y_acc);
+  float z_g_offset = extract::mean(z_acc);
 
   printf("Name \tOffset\tVariance\r\n");
   printf("Gyro X:\t%.5g\t%.5g\r\n", x_g_offset, x_g_var);

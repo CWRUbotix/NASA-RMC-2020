@@ -192,20 +192,10 @@ class Lsm6ds3 : public SpiSensor<sensor_msgs::Imu> {
  private:
   OffsetArray m_xl_offset;
   OffsetArray m_gyro_offset;
-
-  SampleBuffer m_sample_buf1;
-  SampleBuffer m_sample_buf2;
-  SampleBuffer m_sample_buf3;
-  SampleBuffer m_sample_buf4;
-  SampleBuffer m_sample_buf5;
-  SampleBuffer m_sample_buf6;
-
-  float m_rm1;  //...
-  float m_rm2;
-  float m_rm3;
-  float m_rm4;
-  float m_rm5;
-  float m_rm6;
+  
+  boost::array<SampleBuffer, 6> m_sample_bufs;
+  boost::array<float, 6> m_rms;
+  boost::array<float, 6> m_vars;
 
   VarianceMatrix m_cov_xl = {xl_var, 0.0, 0.0, 0.0,   xl_var,
                              0.0,    0.0, 0.0, xl_var};
