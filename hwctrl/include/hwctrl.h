@@ -37,5 +37,5 @@ const std::vector<std::string> sensor_param_names{"uwb_node_1",
                                                   "limit_2",
                                                   "limit_3",
                                                   "limit_4",
-                                                  "power_sense"};
+                                                  "power_sense", "estop"};
 }
