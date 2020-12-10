@@ -13,16 +13,7 @@
 #include <sys/types.h>
 
 CanbusThread::CanbusThread(ros::NodeHandle nh, std::string iface)
-    : m_nh(nh), m_loop_rate(100), m_iface(iface) {
-  m_nh.setCallbackQueue(&m_cb_queue);  // have this copy use this callback queue
-
-  int canbus_init = init();  // do setup things
-
-  if (canbus_init != 0) {
-    ROS_ERROR("Canbus init failed: Error code %d", canbus_init);
-  } else {
-    ROS_DEBUG("Canbus init success");
-  }
+ : HwctrlThread("canbus_thread", nh, 1000), m_iface(iface) {
 
   // PUBLISHERS
   m_can_rx_pub = m_nh.advertise<hwctrl::CanFrame>("can_frames_rx", 128);
@@ -32,7 +23,7 @@ CanbusThread::CanbusThread(ros::NodeHandle nh, std::string iface)
                                 &CanbusThread::can_tx_callback, this);
 }
 
-int CanbusThread::init() {
+void CanbusThread::setup() {
   struct sockaddr_can addr;
   struct ifreq ifr;
   struct timeval tv;
@@ -43,7 +34,7 @@ int CanbusThread::init() {
   if ((m_sock = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
     ROS_ERROR("Error while opening CAN socket");
     m_sock_ready = false;
-    return -1;
+    return;
   }
 
   strcpy(ifr.ifr_name, m_iface.c_str());
@@ -60,10 +51,10 @@ int CanbusThread::init() {
   if (bind(m_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
     ROS_ERROR("Error in CAN socket bind");
     m_sock_ready = false;
-    return -2;
+    return;
   }
   m_sock_ready = true;
-  return 0;  // success
+  ROS_DEBUG("Canbus init success");
 }
 
 void CanbusThread::can_tx_callback(boost::shared_ptr<hwctrl::CanFrame> frame) {
@@ -80,10 +71,9 @@ void CanbusThread::can_tx_callback(boost::shared_ptr<hwctrl::CanFrame> frame) {
   }
 }
 
-int CanbusThread::read_can_frames() {
-  if (!m_sock_ready) {
-    return -1;
-  }
+void CanbusThread::update(ros::Time) {
+  if (!m_sock_ready)
+    return;
   int retval = 0, nbytes = 0;
   struct can_frame rx_frame;
   while ((nbytes = read(m_sock, &rx_frame, sizeof(struct can_frame))) > 0) {
@@ -97,26 +87,10 @@ int CanbusThread::read_can_frames() {
     m_can_rx_pub.publish(frame_msg);  // publish message immediately
     retval++;
   }
-
-  return retval;
+  
+  if(retval > 0)
+    ROS_INFO("Sent %d can frames.", retval);
 }
-
-void CanbusThread::sleep() { m_loop_rate.sleep(); }
 
 void CanbusThread::shutdown() { close(m_sock); }
 
-void CanbusThread::operator()() {
-  ROS_DEBUG("Starting canbus_thread");
-  ros::AsyncSpinner spinner(1, &m_cb_queue);
-  spinner.start();
-
-  while (ros::ok()) {
-    int frames_sent = read_can_frames();
-    if (frames_sent > 0) {
-      ROS_INFO("Read %d CAN frames", frames_sent);
-    }
-    sleep();
-  }
-  shutdown();
-  ROS_DEBUG("Exiting canbus_thread");
-}

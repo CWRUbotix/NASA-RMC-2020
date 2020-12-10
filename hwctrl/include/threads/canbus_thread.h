@@ -12,23 +12,18 @@
 static ros::Subscriber can_rx_sub;
 static ros::Publisher can_tx_pub;
 
-class CanbusThread : HwctrlThread {
+class CanbusThread : public HwctrlThread {
  public:
   CanbusThread(ros::NodeHandle nh, std::string iface = "can1");
   ~CanbusThread() = default;
-
-  int init();
-  void sleep();
-  void shutdown();
-
-  void operator()();
+  
+  virtual void setup() override final;
+  virtual void update(ros::Time) override final;
+  virtual void shutdown() override final;
 
  private:
-  ros::NodeHandle m_nh;
-  ros::Rate m_loop_rate;
   ros::Publisher m_can_rx_pub;
   ros::Subscriber m_can_tx_sub;
-  ros::CallbackQueue m_cb_queue;
 
   std::string m_iface;
   int m_sock;

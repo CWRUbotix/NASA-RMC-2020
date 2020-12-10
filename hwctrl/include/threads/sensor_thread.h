@@ -20,20 +20,16 @@
 using boost::movelib::make_unique;
 using boost::movelib::unique_ptr;
 
-class SensorThread : HwctrlThread {
+class SensorThread : public HwctrlThread {
  public:
   SensorThread(ros::NodeHandle nh);
   virtual ~SensorThread() = default;
 
   void configure_from_server(boost::shared_ptr<Spi> spi);
-
-  void setup_sensors();
-  void update_sensors();
-
-  void shutdown();
-  void sleep();
-
-  virtual void operator()();
+  
+  virtual void setup() override final;
+  virtual void update(ros::Time) override final;
+  virtual void shutdown() override final;
 
  private:
   boost::shared_ptr<Sensor> create_sensor_from_values(
@@ -44,10 +40,6 @@ class SensorThread : HwctrlThread {
   void uwb_ping_callback(const ros::TimerEvent&);
 
  protected:
-  ros::NodeHandle m_nh;
-  ros::Rate m_loop_rate;
-  ros::CallbackQueue m_cb_queue;
-
   using SensorVec = std::vector<boost::shared_ptr<Sensor>>;
   using SensorVecIter = SensorVec::iterator;
 

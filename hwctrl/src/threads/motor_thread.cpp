@@ -14,7 +14,7 @@
 #include "hardware/vesc.h"
 #include "hwctrl.h"
 
-MotorThread::MotorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
+MotorThread::MotorThread(ros::NodeHandle nh) : HwctrlThread("motor_thread", nh, 1000) {
   m_motor_set_sub = m_nh.subscribe("motor_setpoints", 128,
                                    &MotorThread::set_motor_callback, this);
   m_estop_sub = m_nh.subscribe("estop", 128, &MotorThread::estop_callback, this);
@@ -197,8 +197,11 @@ void MotorThread::setup_motors() {
     motor->setup();
 }
 
-void MotorThread::update_motors() {
-  auto time = ros::Time::now();
+void MotorThread::setup() {
+  // this does nothing at the moment. Motors are setup when system power comes on
+}
+
+void MotorThread::update(ros::Time time) {
   for (auto motor : m_motors | boost::adaptors::map_values) {
     if (motor->ready_to_update()) {
       motor->update(time);
@@ -212,17 +215,3 @@ void MotorThread::shutdown() {
     motor->stop();
 }
 
-void MotorThread::sleep() { m_loop_rate.sleep(); }
-
-void MotorThread::operator()() {
-  ROS_INFO("Starting motor_thread");
-  m_nh.setCallbackQueue(&m_cb_queue);
-  ros::AsyncSpinner spinner(1, &m_cb_queue);
-  spinner.start();
-  // setup_motors();
-  while (ros::ok()) {
-    update_motors();
-    sleep();
-  }
-  shutdown();
-}

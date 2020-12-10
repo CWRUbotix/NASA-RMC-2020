@@ -27,12 +27,10 @@ class MotorThread : public HwctrlThread {
   void read_from_server();
   
   void setup_motors();
-  void update_motors();
-
-  void sleep();
-  void shutdown();
-
-  void operator()();
+  
+  virtual void setup() override final;
+  virtual void update(ros::Time time) override final;
+  virtual void shutdown() override final;
 
  private:
   std::vector<std::string> get_limit_switch_topics();
@@ -41,10 +39,6 @@ class MotorThread : public HwctrlThread {
   void limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg);
   void estop_callback(boost::shared_ptr<std_msgs::Bool> msg);
  private:
-  // general ros objects
-  ros::NodeHandle m_nh;
-  ros::Rate m_loop_rate;
-  ros::CallbackQueue m_cb_queue;
 
   // subscribers
   ros::Subscriber m_motor_set_sub;

@@ -19,11 +19,9 @@
 #include <boost/filesystem.hpp>
 
 SensorThread::SensorThread(ros::NodeHandle nh)
-    : m_nh(nh), m_loop_rate(1000), m_uwb_update_pd(0.01), m_uwb_idx(0) {
+    : HwctrlThread("sensor_thread", nh, 1000), m_uwb_update_pd(0.01), m_uwb_idx(0) {
   m_sensors.reserve(MAX_NUMBER_OF_SENSORS);
   m_uwb_nodes.reserve(4);
-
-  m_nh.setCallbackQueue(&m_cb_queue);
 
   // initalize spi
   // needs to be available to all sensors since all sensors are on same spi line
@@ -210,34 +208,19 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
   }
 }
 
-void SensorThread::sleep() { m_loop_rate.sleep(); }
-
 void SensorThread::shutdown() {
   // something maybe?
 }
 
-void SensorThread::setup_sensors() {
+void SensorThread::setup() {
   for (auto sensor : m_sensors) {
     sensor->setup();
   }
 }
 
-void SensorThread::update_sensors() {
+void SensorThread::update(ros::Time time) {
   for (auto sensor : m_sensors) {
     if (sensor->ready_to_update()) sensor->update();
   }
 }
 
-// // run thread
-void SensorThread::operator()() {
-  ROS_INFO("Starting sensor_thread");
-  ros::AsyncSpinner spinner(1, &m_cb_queue);
-  spinner.start();
-  setup_sensors();
-
-  while (ros::ok()) {
-    update_sensors();
-    sleep();
-  }
-  shutdown();
-}
