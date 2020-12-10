@@ -16,6 +16,7 @@ class BMCMotor : CanMotor {
 
   virtual void setup() override final;
   virtual void update(ros::Time time) override final;
+  virtual void stop() override final;
 
   virtual void can_rx_callback(FramePtr frame) override final;
 

@@ -26,6 +26,9 @@ class Gpio {
 
   State read_state() const;
   void set_state(State) const;
+    
+  inline bool is_set() const { return read_state() == State::Set; }
+  inline bool is_reset() const { return !is_set(); }
 
   inline void set() { set_state(State::Set); }
   inline void reset() { set_state(State::Reset); }

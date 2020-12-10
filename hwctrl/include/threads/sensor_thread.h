@@ -10,32 +10,15 @@
 
 #include <vector>
 
+#include "hwctrl.h"
+
 #include "hwctrl_thread.h"
 
-#include "hardware/ads1120.h"
-#include "hardware/adt7310.h"
-#include "hardware/lsm6ds3.h"
-#include "hardware/quad_encoder.h"
 #include "hardware/sensor.h"
 #include "hardware/uwb.h"
 
 using boost::movelib::make_unique;
 using boost::movelib::unique_ptr;
-
-const std::vector<std::string> sensor_param_names{"uwb_node_1",
-                                                  "uwb_node_2",
-                                                  "uwb_node_3",
-                                                  "uwb_node_4",
-                                                  "ebay_temperature",
-                                                  "quad_encoder_1",
-                                                  "imu",
-                                                  "adc_1",
-                                                  "adc_2",
-                                                  "limit_1",
-                                                  "limit_2",
-                                                  "limit_3",
-                                                  "limit_4",
-                                                  "power_sense"};
 
 class SensorThread : HwctrlThread {
  public:

@@ -46,7 +46,7 @@ void Gpio::set_direction(Direction dir) const {
   const std::string dir_str = dir == Direction::Input ? in_str : out_str;
   std::ofstream f(m_dir_path);
   if (!f) {
-    ROS_ERROR("");
+    ROS_ERROR("Could not open gpio handle: %s", m_dir_path.c_str());
   }
   f << dir_str;
   f.close();
@@ -56,7 +56,7 @@ Gpio::Direction Gpio::get_direction() const {
   char dir;
   std::ifstream f(m_dir_path);
   if (!f) {
-    ROS_ERROR("");
+    ROS_ERROR("Could not open gpio handle: %s", m_dir_path.c_str());
   }
   f.read(&dir, 1);
   f.close();
@@ -66,6 +66,9 @@ Gpio::Direction Gpio::get_direction() const {
 void Gpio::set_state(State state) const {
   const char b = (state == State::Set ? '1' : '0');
   std::ofstream f(m_value_path);
+	if(!f) {
+    ROS_ERROR("Could not open gpio handle: %s", m_value_path.c_str());
+	}
   f.write(&b, 1);
   f.close();
 }
@@ -73,7 +76,12 @@ void Gpio::set_state(State state) const {
 Gpio::State Gpio::read_state() const {
   char buf;
   std::ifstream f(m_value_path);
-  f.read(&buf, 1);
+ 	if(!f) {
+    ROS_ERROR("Could not open gpio handle: %s", m_value_path.c_str());
+	} 
+	f.read(&buf, 1);
   f.close();
   return (Gpio::State)buf;
 }
+
+

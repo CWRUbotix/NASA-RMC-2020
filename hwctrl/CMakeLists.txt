@@ -8,6 +8,8 @@ endif()
 
 add_compile_options(-std=c++14 -O2 -Wall -Wextra -pedantic)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
@@ -56,6 +58,7 @@ add_executable(hwctrl
   src/hardware/lsm6ds3.cpp
   src/hardware/ads1120.cpp
   src/hardware/adt7310.cpp
+  src/hardware/estop.cpp
   src/hardware/vesc.cpp
   src/hardware/bmc.cpp
   src/interface/gpio.cpp
@@ -75,6 +78,7 @@ add_executable(hwctrl_cal
   src/hardware/uwb.cpp
   src/hardware/lsm6ds3.cpp
   src/hardware/ads1120.cpp
+  src/hardware/estop.cpp
   src/hardware/adt7310.cpp
   src/hardware/vesc.cpp
   src/hardware/bmc.cpp

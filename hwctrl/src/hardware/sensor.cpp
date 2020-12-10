@@ -56,6 +56,8 @@ SensorType get_sensor_type_from_param(boost::string_view type_str) {
     return SensorType::LOAD_CELL;
   } else if (type_str.compare("power_sense") == 0) {
     return SensorType::POWER_SENSE;
+  } else if(type_str.compare("estop") == 0) {
+    return SensorType::ESTOP;
   } else {
     return SensorType::NONE;
   }

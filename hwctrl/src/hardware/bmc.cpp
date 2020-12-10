@@ -18,4 +18,9 @@ void BMCMotor::update(ros::Time time) {
   m_update = false;
 }
 
+void BMCMotor::stop() {
+  // TODO: Make this actually work
+  set_setpoint(ros::Time::now(), 0.0);
+}
+
 void BMCMotor::can_rx_callback(FramePtr frame) {}

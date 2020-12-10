@@ -32,7 +32,7 @@ void SensorCalThread::operator()() {
   if (*(home_path.end()) != '/') {
     home_path.push_back('/');
   }
-  std::string cal_file_path = home_path.append(paths::cal_file_default);
+  std::string cal_file_path = home_path.append(hwctrl::cal_file_default);
 
   while (ros::ok() && !done) {
     // get command from user

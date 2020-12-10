@@ -67,3 +67,4 @@ saved_frames/*
 # vscode
 .vscode
 .vscode/*
+.clangd

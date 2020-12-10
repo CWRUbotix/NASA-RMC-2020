@@ -13,26 +13,52 @@
 
 MotorThread::MotorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
   m_motors.reserve(16);
-  // m_cb_queue = ros::CallbackQueue();
-
-  m_nh.setCallbackQueue(&m_cb_queue);
-
-  // m_motor_data_pub = m_nh.advertise<hwctrl::MotorData>("motor_data", 128);
 
   m_motor_set_sub = m_nh.subscribe("motor_setpoints", 128,
                                    &MotorThread::set_motor_callback, this);
-  m_sensor_data_sub = m_nh.subscribe("sensor_data", 128,
-                                     &MotorThread::sensor_data_callback, this);
-  // m_limit_sw_sub  = m_nh.subscribe("");
+  m_estop_sub = m_nh.subscribe("estop", 128, &MotorThread::estop_callback, this);
+  // Get all limit switch topics. Doesnt matter which one as long as they specify
+  // which motor theyre addressing within the message
+  auto ls_topics = get_limit_switch_topics();
+  
+  // subscribe to all limitswitch messages and send them to our callback
+  m_ls_subs.reserve(ls_topics.size());
+  for(auto name : ls_topics)
+    m_ls_subs.push_back(m_nh.subscribe(name, 128, &MotorThread::limit_switch_callback, this));
 
   read_from_server();
 }
 
+std::vector<std::string> MotorThread::get_limit_switch_topics() {
+  std::vector<std::string> topics;
+  const std::string base = hwctrl::param_base + "/sensor/";
+
+  for (auto name : hwctrl::sensor_param_names) {
+    const std::string full_base = base + name;
+    const std::string topic_path = full_base + "/topic";
+    const std::string type_path = full_base + "/type";
+    if(m_nh.hasParam(topic_path)) {
+      std::string type_str;
+      m_nh.getParam(type_path, type_str);
+      if(type_str.compare("limit") != 0) {
+        continue;
+      }
+    } else continue;
+
+    if(m_nh.hasParam(topic_path)) {
+      std::string temp;
+      m_nh.getParam(topic_path, temp);
+      topics.push_back(temp);
+    }
+  }
+  return topics;
+}
+
 void MotorThread::read_from_server() {
   ROS_INFO("Reading motor configs from param server...");
-  const std::string base = param_base + "/motor";
+  const std::string base = hwctrl::param_base + "/motor";
   uint32_t sys_id_idx = 0;
-  for (auto name = motor_param_names.begin(); name != motor_param_names.end();
+  for (auto name = hwctrl::motor_param_names.begin(); name != hwctrl::motor_param_names.end();
        ++name) {
     const std::string full_name = base + "/" + *name;
     ROS_INFO("Checking for parameters under %s/...", full_name.c_str());
@@ -96,12 +122,6 @@ void MotorThread::read_from_server() {
       ROS_INFO(" - Found motor update period: %.3fs", pd);
     }
 
-    // ros::NodeHandle nh, const std::string& name, uint32_t id,  uint32_t
-    // can_id, ros::Duration update_pd = ros::Duration(MOTOR_LOOP_PERIOD), float
-    // accel_setpoint = DEFAULT_MAX_ACCEL, float max_accel = DEFAULT_MAX_ACCEL,
-    // float max_rpm = DEFAULT_MAX_RPM, float gear_reduc = 1.0f, ros::Duration
-    // timeout = ros::Duration(2.0)
-
     switch (type) {
       case MotorType::Vesc: {
         auto temp = boost::make_shared<VescMotor>(
@@ -134,25 +154,33 @@ void MotorThread::set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg) {
                                      msg->acceleration);
 }
 
-void MotorThread::sensor_data_callback(
-    boost::shared_ptr<hwctrl::SensorData> msg) {
-  // determine if this sensor is useful to us;
-  if (msg->name.compare("SYSTEM 24V STATE") == 0) {
-    if (msg->value == 1.0f) {
-      if (!m_sys_power_on) {
-        setup_motors();  // sys power has just come on, so initialize motors
-      }
-      m_sys_power_on = true;
-    } else {
-      m_sys_power_on = false;
+void MotorThread::estop_callback(boost::shared_ptr<std_msgs::Bool> msg) {
+  // If estop is not enabled, powerup the motors
+  if (!msg->data) {
+    if(!m_sys_power_on) {
+      setup_motors();
     }
+    m_sys_power_on = true;
+  } else {
+    m_sys_power_on = false;
   }
 }
 
+void MotorThread::limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg) {
+  // TODO: Fix this
+  // This should not just stop the motors, it should
+  // check which directioon is allowed before stopping
+  auto id = msg->motor_id;
+  auto allowed_dir = msg->allowed_dir;
+
+  // check setpoint before stopping?
+
+  m_motors.at(id)->stop();
+}
+
 void MotorThread::setup_motors() {
-  for (auto motor : m_motors) {
+  for (auto motor : m_motors)
     motor->setup();
-  }
 }
 
 void MotorThread::update_motors() {
@@ -166,11 +194,15 @@ void MotorThread::update_motors() {
 
 void MotorThread::shutdown() {
   // stop motors maybe?
+  for(auto motor : m_motors)
+    motor->stop();
 }
 
 void MotorThread::sleep() { m_loop_rate.sleep(); }
 
 void MotorThread::operator()() {
+  ROS_INFO("Starting motor_thread");
+  m_nh.setCallbackQueue(&m_cb_queue);
   ros::AsyncSpinner spinner(1, &m_cb_queue);
   spinner.start();
   // setup_motors();

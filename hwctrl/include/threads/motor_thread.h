@@ -3,13 +3,13 @@
 #include <ros/callback_queue.h>
 #include <ros/ros.h>
 
+#include <std_msgs/Bool.h>
+
 #include <hwctrl/LimitSwState.h>
 #include <hwctrl/MotorCmd.h>
 #include <hwctrl/MotorData.h>
 #include <hwctrl/SensorData.h>
 
-// #include <boost/shared_ptr.hpp>
-// #include <boost/make_shared.hpp>
 #include <boost/move/make_unique.hpp>
 #include <boost/move/unique_ptr.hpp>
 
@@ -18,17 +18,13 @@
 #include "hardware/motor.h"
 #include "hwctrl_thread.h"
 
-const std::vector<std::string> motor_param_names{
-    "port_drive",   "starboard_drive",  "dep", "exc_belt", "exc_translation",
-    "exc_port_act", "exc_starboard_act"};
-
 class MotorThread : HwctrlThread {
  public:
   MotorThread(ros::NodeHandle nh);
   ~MotorThread() = default;
-
+   
   void read_from_server();
-
+  
   void setup_motors();
   void update_motors();
 
@@ -38,10 +34,11 @@ class MotorThread : HwctrlThread {
   void operator()();
 
  private:
+  std::vector<std::string> get_limit_switch_topics();
+
   void set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg);
   void limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg);
-  void sensor_data_callback(boost::shared_ptr<hwctrl::SensorData> msg);
-
+  void estop_callback(boost::shared_ptr<std_msgs::Bool> msg);
  private:
   // general ros objects
   ros::NodeHandle m_nh;
@@ -50,9 +47,9 @@ class MotorThread : HwctrlThread {
 
   // subscribers
   ros::Subscriber m_motor_set_sub;
-  ros::Subscriber m_limit_sw_sub;
-  ros::Subscriber m_sensor_data_sub;
-
+  ros::Subscriber m_estop_sub;
+  std::vector<ros::Subscriber> m_ls_subs;
+  
   // publishers
   // ros::Publisher   m_motor_data_pub;
 

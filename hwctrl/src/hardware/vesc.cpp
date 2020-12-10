@@ -98,6 +98,11 @@ void VescMotor::update(ros::Time time) {
   m_update = false;
 }
 
+void VescMotor::stop() {
+  // TODO: Make this actually work
+  set_setpoint(ros::Time::now(), 0.0);
+}
+
 void VescMotor::send_rpm_frame(ros::Time time, float rpm) {
   auto frame = boost::make_shared<hwctrl::CanFrame>();
 

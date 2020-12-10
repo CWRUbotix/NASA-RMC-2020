@@ -8,6 +8,14 @@
 #include <string>
 #include <utility>
 
+#include "hardware/ads1120.h"
+#include "hardware/adt7310.h"
+#include "hardware/lsm6ds3.h"
+#include "hardware/quad_encoder.h"
+#include "hardware/sensor.h"
+#include "hardware/uwb.h"
+#include "hardware/estop.h"
+
 #include <boost/filesystem.hpp>
 
 SensorThread::SensorThread(ros::NodeHandle nh)
@@ -19,13 +27,13 @@ SensorThread::SensorThread(ros::NodeHandle nh)
 
   // initalize spi
   // needs to be available to all sensors since all sensors are on same spi line
-  ROS_DEBUG("Initializing SPI bus from %s...", paths::spidev_path.c_str());
-  auto spi = boost::make_shared<Spi>(paths::spidev_path);
+  ROS_DEBUG("Initializing SPI bus from %s...", hwctrl::spidev_path.c_str());
+  auto spi = boost::make_shared<Spi>(hwctrl::spidev_path);
   if (spi->has_error()) {
     ROS_ERROR("SPI init failed :(");
   } else {
     ROS_INFO("SPI bus initialization on %s presumed successful",
-             paths::spidev_path.c_str());
+             hwctrl::spidev_path.c_str());
   }
 
   configure_from_server(spi);
@@ -37,7 +45,7 @@ SensorThread::SensorThread(ros::NodeHandle nh)
   if (*(cal_file_path.end()) != '/') {
     cal_file_path.push_back('/');
   }
-  cal_file_path.append(paths::cal_file_default.c_str());
+  cal_file_path.append(hwctrl::cal_file_default.c_str());
 
   if (boost::filesystem::exists(cal_file_path.c_str())) {
     ROS_INFO("Loading sensor calibrations from %s...", cal_file_path.c_str());
@@ -70,8 +78,8 @@ void SensorThread::uwb_ping_callback(const ros::TimerEvent&) {
 }
 
 void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
-  const std::string base = param_base + "/sensor";
-  for (auto name = sensor_param_names.begin(); name != sensor_param_names.end();
+  const std::string base = hwctrl::param_base + "/sensor";
+  for (auto name = hwctrl::sensor_param_names.begin(); name != hwctrl::sensor_param_names.end();
        ++name) {
     const std::string full_name = base + "/" + *name;
 
@@ -187,6 +195,11 @@ boost::shared_ptr<Sensor> SensorThread::create_sensor_from_values(
       sensor = ts;
       break;
     }
+    case SensorType::ESTOP: {
+      auto es = boost::make_shared<EStop>(nh, name, sys_id_idx++, "estop", 128, period, std::move(gpio));
+      sensor = es;
+      break;
+    }   
     default:
       break;
   };

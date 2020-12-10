@@ -34,9 +34,6 @@ CanbusThread::CanbusThread(ros::NodeHandle nh, std::string iface)
 
 int CanbusThread::init() {
   struct sockaddr_can addr;
-  struct can_frame frame;
-  struct can_frame rx_frame;
-  struct can_frame tx_frame;
   struct ifreq ifr;
   struct timeval tv;
   tv.tv_sec = 0;

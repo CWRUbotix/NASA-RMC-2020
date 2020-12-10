@@ -50,6 +50,7 @@ enum class SensorType {
   TEMP_SENSE,
   LSM6DS3,
   POWER_SENSE,
+  ESTOP
 };
 
 SensorType get_sensor_type_from_param(boost::string_view type_str);
