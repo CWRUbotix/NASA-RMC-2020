@@ -22,14 +22,14 @@ using boost::movelib::unique_ptr;
 
 class SensorThread : public HwctrlThread {
  public:
-  SensorThread(ros::NodeHandle nh);
+  SensorThread(ros::NodeHandle nh, std::string name = "sensor_thread");
   virtual ~SensorThread() = default;
 
   void configure_from_server(boost::shared_ptr<Spi> spi);
   
-  virtual void setup() override final;
-  virtual void update(ros::Time) override final;
-  virtual void shutdown() override final;
+  virtual void setup() override;
+  virtual void update(ros::Time) override;
+  virtual void shutdown() override;
 
  private:
   boost::shared_ptr<Sensor> create_sensor_from_values(

@@ -1,20 +1,30 @@
 #pragma once
 
-#include <ros/callback_queue.h>
-#include <ros/ros.h>
+#include <ros/node_handle.h>
 
 #include <boost/utility/string_view.hpp>
 
+#include <string>
+#include <vector>
+
+#include "hwctrl.h"
 #include "threads/sensor_thread.h"
 
-class SensorCalThread : SensorThread {
+class SensorCalThread : public SensorThread {
  public:
   SensorCalThread(ros::NodeHandle);
   virtual ~SensorCalThread() = default;
-
-  void operator()();
+  
+  virtual void setup() override final;
+  virtual void update(ros::Time) override final;
+  virtual void shutdown() override final;
 
  private:
-  void calibrate_sensor_with_name(boost::string_view name,
-                                  std::vector<Calibration>& cals);
+  void calibrate_sensor_with_name(boost::string_view name);
+ private:
+  std::string m_line;
+  std::string m_cal_path;
+  std::vector<Calibration> m_cals;
+  bool m_done = false;
+
 };

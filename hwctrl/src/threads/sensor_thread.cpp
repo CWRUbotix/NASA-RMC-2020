@@ -18,8 +18,8 @@
 
 #include <boost/filesystem.hpp>
 
-SensorThread::SensorThread(ros::NodeHandle nh)
-    : HwctrlThread("sensor_thread", nh, 1000), m_uwb_update_pd(0.01), m_uwb_idx(0) {
+SensorThread::SensorThread(ros::NodeHandle nh, std::string name)
+    : HwctrlThread(name, nh, 1000), m_uwb_update_pd(0.01), m_uwb_idx(0) {
   m_sensors.reserve(MAX_NUMBER_OF_SENSORS);
   m_uwb_nodes.reserve(4);
 
