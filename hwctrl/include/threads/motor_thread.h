@@ -14,6 +14,7 @@
 #include <boost/move/unique_ptr.hpp>
 
 #include <vector>
+#include <map>
 
 #include "hardware/motor.h"
 #include "hwctrl_thread.h"
@@ -35,7 +36,7 @@ class MotorThread : HwctrlThread {
 
  private:
   std::vector<std::string> get_limit_switch_topics();
-
+  
   void set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg);
   void limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg);
   void estop_callback(boost::shared_ptr<std_msgs::Bool> msg);
@@ -49,16 +50,9 @@ class MotorThread : HwctrlThread {
   ros::Subscriber m_motor_set_sub;
   ros::Subscriber m_estop_sub;
   std::vector<ros::Subscriber> m_ls_subs;
-  
-  // publishers
-  // ros::Publisher   m_motor_data_pub;
 
   // motors
-  using MotorVec = std::vector<boost::shared_ptr<Motor>>;
-  using MotorIter = MotorVec::iterator;
-
-  MotorVec m_motors;
-  MotorIter m_motor_iter;
+  std::map<uint32_t, boost::shared_ptr<Motor>> m_motors;
 
   bool m_sys_power_on = false;
 };

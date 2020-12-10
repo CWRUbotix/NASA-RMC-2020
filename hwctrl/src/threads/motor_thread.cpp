@@ -3,8 +3,10 @@
 #include <ros/spinner.h>
 
 #include <boost/smart_ptr/make_shared.hpp>
+#include <boost/range/adaptor/map.hpp>
 
 #include <string>
+#include <map>
 
 #include "hardware/bmc.h"
 #include "hardware/motor.h"
@@ -12,8 +14,6 @@
 #include "hwctrl.h"
 
 MotorThread::MotorThread(ros::NodeHandle nh) : m_nh(nh), m_loop_rate(1000) {
-  m_motors.reserve(16);
-
   m_motor_set_sub = m_nh.subscribe("motor_setpoints", 128,
                                    &MotorThread::set_motor_callback, this);
   m_estop_sub = m_nh.subscribe("estop", 128, &MotorThread::estop_callback, this);
@@ -64,6 +64,7 @@ void MotorThread::read_from_server() {
     ROS_INFO("Checking for parameters under %s/...", full_name.c_str());
     const std::string name_param = full_name + "/name";
     const std::string type_param = full_name + "/type";
+    const std::string id_param = full_name + "/id";
     const std::string can_id_param = full_name + "/can_id";
     const std::string gear_reduc_param = full_name + "/gear_reduction";
     const std::string max_rpm_param = full_name + "/max_rpm";
@@ -73,6 +74,7 @@ void MotorThread::read_from_server() {
     std::string name_str;
     MotorType type;
     ControlType c_type;
+    int id;
     int can_id;
     double gearing;
     double max_rpm;
@@ -93,6 +95,11 @@ void MotorThread::read_from_server() {
       m_nh.getParam(type_param, type_str);
       ROS_INFO(" - Found motor type: %s", type_str.c_str());
       type = get_motor_type(type_str);
+      found++;
+    }
+    if(m_nh.hasParam(id_param)) {
+      m_nh.getParam(id_param, id);
+      ROS_INFO(" - Found system id: %d", id);
       found++;
     }
     if (m_nh.hasParam(can_id_param)) {
@@ -125,7 +132,7 @@ void MotorThread::read_from_server() {
     switch (type) {
       case MotorType::Vesc: {
         auto temp = boost::make_shared<VescMotor>(
-            m_nh, name_str, sys_id_idx++, (uint32_t)can_id, update_pd,
+            m_nh, name_str, id, (uint32_t)can_id, update_pd,
             (float)max_acc, (float)max_acc, (float)max_rpm, (float)gearing,
             timeout);
         motor = temp;
@@ -133,7 +140,7 @@ void MotorThread::read_from_server() {
       }
       case MotorType::BMC: {
         auto temp = boost::make_shared<BMCMotor>(
-            m_nh, name_str, sys_id_idx++, (uint32_t)can_id, update_pd,
+            m_nh, name_str, id, (uint32_t)can_id, update_pd,
             (float)max_acc, (float)max_acc, (float)max_rpm, (float)gearing,
             timeout);
         break;
@@ -145,7 +152,7 @@ void MotorThread::read_from_server() {
         break;
     }
 
-    if (found > 0 && motor != nullptr) m_motors.push_back(motor);
+    if (found > 0 && motor != nullptr) m_motors.insert({id, motor});
   }
 }
 
@@ -174,18 +181,17 @@ void MotorThread::limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> 
   auto allowed_dir = msg->allowed_dir;
 
   // check setpoint before stopping?
-
   m_motors.at(id)->stop();
 }
 
 void MotorThread::setup_motors() {
-  for (auto motor : m_motors)
+  for (auto motor : m_motors | boost::adaptors::map_values)
     motor->setup();
 }
 
 void MotorThread::update_motors() {
   auto time = ros::Time::now();
-  for (auto motor : m_motors) {
+  for (auto motor : m_motors | boost::adaptors::map_values) {
     if (motor->ready_to_update()) {
       motor->update(time);
     }
@@ -193,8 +199,8 @@ void MotorThread::update_motors() {
 }
 
 void MotorThread::shutdown() {
-  // stop motors maybe?
-  for(auto motor : m_motors)
+  // stop motors maybe
+  for(auto motor : m_motors | boost::adaptors::map_values)
     motor->stop();
 }
 

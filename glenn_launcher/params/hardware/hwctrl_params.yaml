@@ -81,11 +81,6 @@ hardware:
       name: "ESTOP"
       type: "estop"
       gpio: "/sys/class/gpio/gpio45"
-    # power_sense:
-    #   id: 12
-    #   name: "SYSTEM 24V STATE"
-    #   type: "power_sense"
-    #   gpio: '/sys/class/gpio/gpio45/'
 
 # BEGIN MOTOR CONFIGS
   motor:
