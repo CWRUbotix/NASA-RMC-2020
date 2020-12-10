@@ -207,7 +207,7 @@ class GenericGpioSensor : public GpioSensor<hwctrl::SensorData> {
 
 class LimitSwitch : public GpioSensor<hwctrl::LimitSwState> {
  public:
-  LimitSwitch(GpioSensorArgs, uint32_t motor_id, uint32_t allowed_dir);
+  LimitSwitch(GpioSensorArgs, uint32_t motor_id, int32_t allowed_dir);
   virtual ~LimitSwitch() = default;
 
   virtual void setup() override final;
@@ -215,5 +215,5 @@ class LimitSwitch : public GpioSensor<hwctrl::LimitSwState> {
 
  protected:
   uint32_t m_motor_id;
-  uint32_t m_allowed_dir;
+  int32_t  m_allowed_dir;
 };

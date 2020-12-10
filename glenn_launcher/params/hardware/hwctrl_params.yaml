@@ -58,24 +58,32 @@ hardware:
       type: 'limit'
       gpio: '/sys/class/gpio/gpio60/'
       topic: '/dumper/dep_bottom_limit_switch'
+      motor_id: 2
+      allowed_dir: 1
     limit_2:
       id: 9
       name: 'LIMIT DEP UPPER'
       type: 'limit'
       gpio: '/sys/class/gpio/gpio48/'
       topic: '/dumper/top_limit_switch'
+      motor_id: 2
+      allowed_dir: 1
     limit_3:
       id: 10
       name: 'LIMIT EXC TRANS LOWER'
       type: 'limit'
       gpio: '/sys/class/gpio/gpio49/'
       topic: '/excavation/exc_lower_limit_switch'
+      motor_id: 2
+      allowed_dir: 1
     limit_4:
       id: 11
       name: 'LIMIT EXC TRANS UPPER'
       type: 'limit'
       gpio: '/sys/class/gpio/gpio117/'
       topic: '/excavation/exc_upper_limit_switch'
+      motor_id: 2
+      allowed_dir: 1
     estop:
       id: 12
       name: "ESTOP"

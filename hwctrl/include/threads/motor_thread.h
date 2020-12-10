@@ -19,7 +19,7 @@
 #include "hardware/motor.h"
 #include "hwctrl_thread.h"
 
-class MotorThread : HwctrlThread {
+class MotorThread : public HwctrlThread {
  public:
   MotorThread(ros::NodeHandle nh);
   ~MotorThread() = default;

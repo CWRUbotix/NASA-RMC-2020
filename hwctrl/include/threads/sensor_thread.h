@@ -27,9 +27,6 @@ class SensorThread : HwctrlThread {
 
   void configure_from_server(boost::shared_ptr<Spi> spi);
 
-  // Dont think we need this anymore
-  // void configure_from_csv();
-
   void setup_sensors();
   void update_sensors();
 

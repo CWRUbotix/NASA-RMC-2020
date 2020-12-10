@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include <stdexcept>
 
 #include "hardware/bmc.h"
 #include "hardware/motor.h"
@@ -157,8 +158,12 @@ void MotorThread::read_from_server() {
 }
 
 void MotorThread::set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg) {
-  m_motors.at(msg->id)->set_setpoint(ros::Time::now(), msg->setpoint,
+  try {
+    m_motors.at(msg->id)->set_setpoint(ros::Time::now(), msg->setpoint,
                                      msg->acceleration);
+  } catch(std::out_of_range&) {
+    ROS_WARN("Motor with ID %d is not defined.", msg->id);
+  }
 }
 
 void MotorThread::estop_callback(boost::shared_ptr<std_msgs::Bool> msg) {
@@ -181,9 +186,12 @@ void MotorThread::limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> 
   auto allowed_dir = msg->allowed_dir;
 
   // check setpoint before stopping?
-  m_motors.at(id)->stop();
+  try {
+    m_motors.at(id)->stop();
+  } catch(std::out_of_range&) {
+    ROS_WARN("Motor with ID %d is not defined.", msg->id);
+  }
 }
-
 void MotorThread::setup_motors() {
   for (auto motor : m_motors | boost::adaptors::map_values)
     motor->setup();

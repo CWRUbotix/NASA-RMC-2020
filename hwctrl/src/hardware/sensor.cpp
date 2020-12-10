@@ -131,7 +131,7 @@ void GenericGpioSensor::update() {
 }
 
 LimitSwitch::LimitSwitch(GpioSensorArgs, uint32_t motor_id,
-                         uint32_t allowed_dir)
+                         int32_t allowed_dir)
     : GpioSensorArgsPass, m_motor_id(motor_id), m_allowed_dir(allowed_dir) {}
 
 void LimitSwitch::setup() {
