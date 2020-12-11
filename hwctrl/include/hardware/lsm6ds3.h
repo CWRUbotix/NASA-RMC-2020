@@ -149,19 +149,17 @@ constexpr double gyro_var =
     (double)(degrees_to_radians(g_rms_noise) * degrees_to_radians(g_rms_noise));
 constexpr double xl_var =
     (double)(xl_rms_noise * xl_fs) * (xl_rms_noise * xl_fs);
-// nh, name, type, id, topic, topic_size, update_period, spi_handle, spi_speed,
-// spi_mode, cs_pin
-class Lsm6ds3 : public SpiSensor<sensor_msgs::Imu> {
+
+ class Lsm6ds3 : public SpiSensor<sensor_msgs::Imu> {
  public:
   enum class Axis : uint8_t { X = 0x01, Y = 0x02, Z = 0x03 };
 
   using SampleBuffer = boost::circular_buffer<float>;
-  using SampleBufferIter = SampleBuffer::iterator;
-  using SampleBufferConstIter = SampleBuffer::const_iterator;
 
   // these have to be boost arrays for ROS messages :(
   using DataArray = boost::array<double, 3>;
   using OffsetArray = boost::array<float, 3>;
+  using ScaleArray  = boost::array<float, 3>;
 
   // change this to an actual matrix???
   using VarianceMatrix = boost::array<double, 9>;
@@ -171,7 +169,7 @@ class Lsm6ds3 : public SpiSensor<sensor_msgs::Imu> {
           const std::string& topic, uint32_t topic_size,
           ros::Duration update_period, boost::shared_ptr<Spi> spi,
           boost::movelib::unique_ptr<Gpio> cs, uint32_t samples = 5);
-  virtual ~Lsm6ds3();
+  virtual ~Lsm6ds3() = default;
 
   virtual void setup() override final;
   virtual void update() override final;
@@ -190,9 +188,16 @@ class Lsm6ds3 : public SpiSensor<sensor_msgs::Imu> {
   void soft_reset();
 
  private:
-  OffsetArray m_xl_offset;
-  OffsetArray m_gyro_offset;
+  // set offsets to 0 and scales to 1.0. This is
+  // the default before we read the calibration files
+  OffsetArray m_xl_offset = { 0.0f, 0.0f, 0.0f };
+  ScaleArray  m_xl_scale  = { 1.0f, 1.0f, 1.0f };
   
+  OffsetArray m_gyro_offset = { 0.0f, 0.0f, 0.0f };
+  ScaleArray  m_gyro_scale  = { 1.0f, 1.0f, 1.0f };
+
+  bool m_read_cals = false;
+
   boost::array<SampleBuffer, 6> m_sample_bufs;
   boost::array<float, 6> m_rms;
   boost::array<float, 6> m_vars;

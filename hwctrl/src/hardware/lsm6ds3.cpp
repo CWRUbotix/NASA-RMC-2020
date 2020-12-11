@@ -12,7 +12,6 @@
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/mean.hpp>
-#include <boost/accumulators/statistics/error_of_mean.hpp>
 #include <boost/accumulators/statistics/variance.hpp>
 
 #include <boost/bind.hpp>
@@ -27,18 +26,13 @@ Lsm6ds3::Lsm6ds3(ros::NodeHandle nh, const std::string& name, uint32_t id,
     : SpiSensor<PubData>(
         nh, name, SensorType::LSM6DS3, id, topic, topic_size, update_period, spi, LSM6DS3_SPI_SPEED,
         LSM6DS3_SPI_MODE, std::move(cs)), m_rms(), m_vars(), m_sample_bufs()
-
   {
     for(unsigned int i = 0; i < 6; i++) {
       m_rms.at(i) = 0.0f;
       m_vars.at(i) = 0.0f;
-      m_sample_bufs.at(i) = boost::circular_buffer<float>(samples);
+      m_sample_bufs.at(i) = SampleBuffer(samples);
     }
   }
-
-Lsm6ds3::~Lsm6ds3() {
-  // do we need something here?
-}
 
 void Lsm6ds3::update() {
   DataArray xl_data, g_data;
@@ -53,38 +47,46 @@ void Lsm6ds3::update() {
 
   // do not set for now
   msg.orientation_covariance[0] = -1.0;
+  
+  // we only want this to run once
+  if (m_calibrations.size() >= 6 && !m_read_cals) {
+    bool cals_ok = false;
+    // get calibrations as optionals
+    auto cal_xl_x = get_calibration_by_name("IMU_XL_X");
+    auto cal_xl_y = get_calibration_by_name("IMU_XL_Y");
+    auto cal_xl_z = get_calibration_by_name("IMU_XL_Z");
+    auto cal_g_x =  get_calibration_by_name("IMU_G_X");
+    auto cal_g_y =  get_calibration_by_name("IMU_G_Y");
+    auto cal_g_z =  get_calibration_by_name("IMU_G_Z");
+    // If all the calibrations exist, we can proceed to set the imu offsets
+    if(cal_xl_x && cal_xl_y && cal_xl_z && cal_g_x && cal_g_y && cal_g_z)
+      cals_ok = true;
+    
+    // set parameters if calibrations exist
+    if(cals_ok) {
+      m_xl_scale   = { cal_xl_x->scale, cal_xl_y->scale, cal_xl_z->scale };
+      m_gyro_scale = { cal_g_x->scale , cal_g_y->scale , cal_g_z->scale  };
+    
+      m_xl_offset  = { cal_xl_x->offset, cal_xl_y->offset, cal_xl_z->offset };
+      m_gyro_scale = { cal_g_x->offset , cal_g_y->offset , cal_g_z->offset  };
 
-  if (m_calibrations.size() > 6) {
-    // this seems super inefficient.
-    // TODO: make this more efficient (ie: dont search list every iteration)
-    // TODO: handle optionals correctly
-    const Calibration& cal_xl_x = get_calibration_by_name("IMU_XL_X").get();
-    const Calibration& cal_xl_y = get_calibration_by_name("IMU_XL_Y").get();
-    const Calibration& cal_xl_z = get_calibration_by_name("IMU_XL_Z").get();
-    const Calibration& cal_g_x = get_calibration_by_name("IMU_G_X").get();
-    const Calibration& cal_g_y = get_calibration_by_name("IMU_G_Y").get();
-    const Calibration& cal_g_z = get_calibration_by_name("IMU_G_Z").get();
-    msg.linear_acceleration.x = cal_xl_x.scale * xl_data[0] + cal_xl_x.offset;
-    msg.linear_acceleration.y = cal_xl_y.scale * xl_data[1] + cal_xl_y.offset;
-    msg.linear_acceleration.z = cal_xl_z.scale * xl_data[2] + cal_xl_z.offset;
-    msg.angular_velocity.x = cal_g_x.scale * g_data[0] + cal_g_x.offset;
-    msg.angular_velocity.y = cal_g_y.scale * g_data[1] + cal_g_y.offset;
-    msg.angular_velocity.z = cal_g_z.scale * g_data[2] + cal_g_z.offset;
-  } else {
-    msg.linear_acceleration.x = xl_data[0];
-    msg.linear_acceleration.y = xl_data[1];
-    msg.linear_acceleration.z = xl_data[2];
-    msg.angular_velocity.x = g_data[0];
-    msg.angular_velocity.y = g_data[1];
-    msg.angular_velocity.z = g_data[2];
+      m_read_cals = true;
+    }
   }
+  
+  // proceed with message calculations
+  msg.linear_acceleration.x = m_xl_scale[0]    * xl_data[0] + m_xl_offset[0];
+  msg.linear_acceleration.y = m_xl_scale[1]    * xl_data[1] + m_xl_offset[1];
+  msg.linear_acceleration.z = m_xl_scale[2]    * xl_data[2] + m_xl_offset[2];
+  msg.angular_velocity.x    = m_gyro_scale[0]  * g_data[0]  + m_gyro_offset[0];
+  msg.angular_velocity.y    = m_gyro_scale[1]  * g_data[1]  + m_gyro_offset[1];
+  msg.angular_velocity.z    = m_gyro_scale[2]  * g_data[2]  + m_gyro_offset[2];
 
   msg.linear_acceleration_covariance = m_cov_xl;
   msg.angular_velocity_covariance = m_cov_g;
 
 // save some cpu until we need this
 #ifdef FALSE
-
   // add data to buffers
   for(unsigned int i = 0; i < 3; i++) {
     m_sample_bufs.at(i).push_back((float)xl_data[i]);
@@ -92,7 +94,6 @@ void Lsm6ds3::update() {
   }
   // this is for recalculating the covariance matrix, dont need to do this for
   // now
-  // TODO: wait for software team to get mad at us.
   if (m_sample_bufs.at(0).full()) {
     // get the average of the values here
     using namespace boost::accumulators;
@@ -102,8 +103,6 @@ void Lsm6ds3::update() {
       m_rms.at(i) = extract::mean(acc);
       m_vars.at(i) = extract::variance(acc);
     }
-    // recalculate variance matricies
-    // math
   }
 #endif
 
@@ -135,14 +134,11 @@ void Lsm6ds3::setup() {
   } else {
     ROS_ERROR("IMU setup failed :(, read [%x , %x]...", buf[0], buf[1]);
   }
-  // m_is_setup = true;
 }
 
 void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
   boost::array<char, 128> buf;
-  // buf.fill(0);
   std::cout << "Beginning IMU calibration" << std::endl;
-  ;
   std::cout << "Number of samples: ";
   int sample_depth;
   std::cin >> sample_depth;
@@ -245,9 +241,6 @@ void Lsm6ds3::calibrate(std::vector<Calibration>& cals) {
   }
 
   std::cout << std::endl << "Done sampling." << std::endl;
-  // math::smooth(x_xl_samples, 9);
-  // math::smooth(y_xl_samples, 9);
-  // math::smooth(x_xl_samples, 9);
     
   using namespace boost::accumulators;
   using Acc = accumulator_set<float, stats<tag::mean, tag::variance>>;
@@ -417,7 +410,6 @@ void Lsm6ds3::soft_reset() {
   LSM6DS3_SET_WRITE_MODE(
       buf[0]);  // write to the same register, now with modification
 
-  // TODO: is there a better way to "spin briefly". nop operation maybe?
   int n = 0;
   for (int i = 0; i < 10000; i++) {
     n++;
