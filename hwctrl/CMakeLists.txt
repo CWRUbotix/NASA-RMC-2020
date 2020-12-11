@@ -6,7 +6,16 @@ if(${CMAKE_VERSION} VERSION_GREATER "3.9.0")
     cmake_policy(SET CMP0069 OLD)
 endif()
 
-add_compile_options(-std=c++14 -O2 -Wall -Wextra -pedantic)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message("Setting build type to debug, since no value was provided")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-std=c++14 -O2)
+else()
+    add_compile_options(-std=c++14 -Wall -Wextra -pedantic -g)
+endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
@@ -92,8 +101,16 @@ if(CATKIN_ENABLE_TESTING)
   target_link_libraries(hwctrl_tests ${catkin_LIBRARIES})
 endif()
 
-set_property(TARGET hwctrl PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-set_property(TARGET hwctrl_cal PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+# we only want lto if we are in release mode
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message("Enabling LTO")
+    set_property(TARGET hwctrl PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+    set_property(TARGET hwctrl_cal PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+else()
+    message("Disabling LTO")
+    set_property(TARGET hwctrl PROPERTY INTERPROCEDURAL_OPTIMIZATION False)
+    set_property(TARGET hwctrl_cal PROPERTY INTERPROCEDURAL_OPTIMIZATION False)
+endif()
 
 target_link_libraries(hwctrl ${catkin_LIBRARIES})
 target_link_libraries(hwctrl_cal ${catkin_LIBRARIES})

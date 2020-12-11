@@ -10,6 +10,7 @@ MotorType get_motor_type(boost::string_view type_str) {
   } else if (type_str.compare("sbrth") == 0) {
     return MotorType::Sabertooth;
   }
+  return MotorType::None;
 }
 
 Motor::Motor(ros::NodeHandle nh, const std::string& name, uint32_t id,

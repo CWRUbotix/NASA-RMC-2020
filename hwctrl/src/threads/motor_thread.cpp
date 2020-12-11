@@ -175,9 +175,6 @@ void MotorThread::estop_callback(boost::shared_ptr<std_msgs::Bool> msg) {
     }
     m_sys_power_on = true;
   } else {
-    if(m_sys_power_on) {
-      stop_motors(); 
-    }
     m_sys_power_on = false;
   }
 }
