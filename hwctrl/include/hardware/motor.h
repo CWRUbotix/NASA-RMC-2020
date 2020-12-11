@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include "sensor.h"
+
 #define DEFAULT_MAX_ACCEL 			30.0
 #define DEFAULT_MAX_RPM 			50.0
 #define MOTOR_LOOP_PERIOD 			0.005
@@ -41,6 +43,7 @@ public:
     virtual void setup()                = 0;
     virtual void update(ros::Time time) = 0; // send the setpoint and return sensor data
     virtual void stop()                 = 0;
+    virtual void limit_stop(LimitSwitch::Direction direction) {};
 
     void set_setpoint(ros::Time time, float setpoint = 0.0f, float acceleration = 0.0f);
 

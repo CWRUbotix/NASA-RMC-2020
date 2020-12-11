@@ -8,6 +8,7 @@
 #include <string>
 #include <map>
 #include <stdexcept>
+#include <cmath>
 
 #include "hardware/bmc.h"
 #include "hardware/motor.h"
@@ -20,7 +21,7 @@ MotorThread::MotorThread(ros::NodeHandle nh) : HwctrlThread("motor_thread", nh, 
   m_estop_sub = m_nh.subscribe("estop", 128, &MotorThread::estop_callback, this);
   // Get all limit switch topics. Doesnt matter which one as long as they specify
   // which motor theyre addressing within the message
-  auto ls_topics = get_limit_switch_topics();
+  const auto ls_topics = get_limit_switch_topics();
   
   // subscribe to all limitswitch messages and send them to our callback
   m_ls_subs.reserve(ls_topics.size());
@@ -174,27 +175,40 @@ void MotorThread::estop_callback(boost::shared_ptr<std_msgs::Bool> msg) {
     }
     m_sys_power_on = true;
   } else {
+    if(m_sys_power_on) {
+      stop_motors(); 
+    }
     m_sys_power_on = false;
   }
 }
 
 void MotorThread::limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg) {
-  // TODO: Fix this
-  // This should not just stop the motors, it should
-  // check which directioon is allowed before stopping
-  auto id = msg->motor_id;
-  auto allowed_dir = msg->allowed_dir;
+  
+  const auto id = msg->motor_id;
+  const auto dir = msg->allowed_dir > 0 ? LimitSwitch::Direction::Forward : LimitSwitch::Direction::Backward;
 
-  // check setpoint before stopping?
+  boost::shared_ptr<Motor> motor;
   try {
-    m_motors.at(id)->stop();
+    motor = m_motors.at(msg->motor_id);
   } catch(std::out_of_range&) {
-    ROS_WARN("Motor with ID %d is not defined.", msg->id);
+    ROS_WARN("Motor with ID %d does not exist.", msg->id);
+    return;
   }
+  
+  // stop the motor here
+  if(motor)
+    motor->limit_stop(dir);
 }
+
 void MotorThread::setup_motors() {
   for (auto motor : m_motors | boost::adaptors::map_values)
     motor->setup();
+}
+
+void MotorThread::stop_motors() {
+  ROS_INFO("Stopping motors....");
+  for(auto motor : m_motors | boost::adaptors::map_values)
+    motor->stop();
 }
 
 void MotorThread::setup() {
@@ -211,7 +225,6 @@ void MotorThread::update(ros::Time time) {
 
 void MotorThread::shutdown() {
   // stop motors maybe
-  for(auto motor : m_motors | boost::adaptors::map_values)
-    motor->stop();
+  stop_motors();
 }
 

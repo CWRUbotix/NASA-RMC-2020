@@ -213,6 +213,10 @@ class LimitSwitch : public GpioSensor<hwctrl::LimitSwState> {
   virtual void setup() override final;
   virtual void update() override final;
 
+  enum class Direction {
+    None = 0, Forward, Backward
+  };
+
  protected:
   uint32_t m_motor_id;
   int32_t  m_allowed_dir;

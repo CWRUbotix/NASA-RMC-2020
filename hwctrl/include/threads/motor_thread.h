@@ -27,6 +27,7 @@ class MotorThread : public HwctrlThread {
   void read_from_server();
   
   void setup_motors();
+  void stop_motors();
   
   virtual void setup() override final;
   virtual void update(ros::Time time) override final;
