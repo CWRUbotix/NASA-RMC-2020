@@ -409,19 +409,13 @@ void Lsm6ds3::soft_reset() {
   buf[1] |= LSM6DS3_BOOT;  // initiate software reset and reboot memory content
   LSM6DS3_SET_WRITE_MODE(
       buf[0]);  // write to the same register, now with modification
-
-  int n = 0;
-  for (int i = 0; i < 10000; i++) {
-    n++;
-    // spin briefly
-  }
+  
+  // spin briefly
+  SPIN(10000);
   transfer_to_device(buf, 2);
 
-  n = 0;
-  for (int i = 0; i < 10000; i++) {
-    n++;
-    // spin briefly
-  }
+  // spin briefly
+  SPIN(10000);
 
   buf[0] = CTRL3_C;
   buf[1] = og_val;

@@ -16,6 +16,12 @@
 #include <boost/utility/string_view.hpp>
 using boost::math::normal;
 
+// macro for busy loop
+// we need this because the compiler will
+// optimize these loops away otherwise.
+// (the asm statement prevents optimization)
+#define SPIN(times) for(unsigned int i = 0; i < times; i++) asm("")
+
 template <size_t buf_size>
 int progress_bar(boost::array<char, buf_size>& buf, float progress) {
   int hashes = (int)((progress * 50.0) + 0.5);  // fraction of 50, rounded
