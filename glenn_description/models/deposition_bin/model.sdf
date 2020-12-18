@@ -15,15 +15,13 @@
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
-        <!--
         <material>
           <lighting>1</lighting>
-          <ambient>0.36 0.38 0.36 1</ambient>
+          <ambient> .75 .75 .75 1 </ambient>
           <diffuse>0.36 0.38 0.36 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
         </material>
-        -->
         <transparency>0</transparency>
         <cast_shadows>1</cast_shadows>
       </visual>
