@@ -26,27 +26,30 @@ sensorValueTopic = 'sensor_value'
 # ---------------------------------------------------
 
 class MyPlugin(Plugin):
-
+    
     def __init__(self, context):
         super(MyPlugin, self).__init__(context)
+       
         # Give QObjects reasonable names
         self.setObjectName('MyPlugin')
 
         # Process standalone plugin command-line arguments
         from argparse import ArgumentParser
         parser = ArgumentParser()
+
         # Add argument(s) to the parser.
         parser.add_argument("-q", "--quiet", action="store_true",
                       dest="quiet",
                       help="Put plugin in silent mode")
+       
         args, unknowns = parser.parse_known_args(context.argv())
+       
         if not args.quiet:
             print 'arguments: ', args
             print 'unknowns: ', unknowns
 
         # ROS Publisher
         self._publisher = None
-
         robotInterface.initializeRobotInterface()
 
         # Service Proxy and Subscriber
@@ -58,8 +61,10 @@ class MyPlugin(Plugin):
 
         # Get path to UI file which should be in the "resource" folder of this package
         ui_file = os.path.join(rospkg.RosPack().get_path('client'), 'resource', 'MyPlugin.ui')
+       
         # Extend the widget with all attributes and children from UI file
         loadUi(ui_file, self._widget)
+        
         # Give QObjects reasonable names
         self._widget.setObjectName('MyPluginUi')
         
@@ -101,22 +106,6 @@ class MyPlugin(Plugin):
             32:self._widget.sensor32_lineedit,
         }
 
-        # Assigned zeros for values that indicate motor speed
-        # Motors 4 and 5 are set to the most recent position from SensorValues
-        self.zero_values = {
-            0:0,
-            1:0,
-            2:0,
-            3:0,
-            6:0,
-            7:0
-        }
-        #print(self.motor_widgets)
-        # Hook Qt UI Elements up
-        """
-        self._widget.vertical_add_button.pressed.connect(self.increase_linear_speed_pressed)
-        self._widget.vertical_subtract_button.pressed.connect(self.decrease_linear_speed_pressed)
-        """
         self.ENABLE_DEBUGGING = False
 
         self._widget.motor0_spinbox.valueChanged.connect(self.motor0_spinbox_changed)
@@ -157,6 +146,7 @@ class MyPlugin(Plugin):
 
         if context.serial_number() > 1:
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        
         # Add widget to the user interface
         context.add_widget(self._widget)
         self._widget.setFocusPolicy(0x8)
@@ -170,13 +160,6 @@ class MyPlugin(Plugin):
         self._update_translate_timer = QTimer(self)
         self._update_attitude_timer = QTimer(self)
         self._update_sensors_timer = QTimer(self)
-        """
-        self._update_parameter_timer = QTimer(self)
-        self._update_parameter_timer.timeout.connect(
-            self._on_parameter_changed)
-        self._update_parameter_timer.start(100)
-        self.zero_cmd_sent = False
-        """
         
     def debugging_checkbox_checked(self):
         debugging_status = self._widget.debug_checkbox.isChecked()
@@ -190,16 +173,12 @@ class MyPlugin(Plugin):
         motor_speed = self.get_general_motor_val()
         #print("general motor value is: %s" % motor_speed)
         if event.key() == Qt.Key_W:
-            #print("W down")
             self.w_pressed(motor_speed)
         elif event.key() == Qt.Key_S:
-            #print("S down")
             self.s_pressed(motor_speed)
         elif event.key() == Qt.Key_A:
-            #print("A down")
             self.a_pressed(motor_speed)
         elif event.key() == Qt.Key_D:
-            #print("D down")
             self.d_pressed(motor_speed)
         # Emergency stop, triggers for all motors. Can include one explicitly defined for locomotion though
         elif event.key() == Qt.Key_E:
@@ -219,11 +198,6 @@ class MyPlugin(Plugin):
             print("Key down")
             self._widget.general_speed_spinbox.setValue(motor_speed - 1)
 
-    # Generalize sending spinbox value, handle print/error here
-    def send_spinbox_value(self, motorNum, value):
-        resp = robotInterface.sendMotorCommand(motorNum, value)
-        print("For motor %s sent value %s successfully: %s" % (motorNum, value, resp))
-
     # Currently only geared toward locomotion
 
     def keyReleaseEvent(self, event):
@@ -233,9 +207,14 @@ class MyPlugin(Plugin):
                 robotInterface.sendDriveCommand(0, 0)
 
     def set_locomotion_speeds(self, port_speed, starboard_speed):
-        respPort = robotInterface.sendMotorCommand(0, port_speed)
-        respStarboard = robotInterface.sendMotorCommand(1, starboard_speed)
+        pass
+        '''
+        port and starboard are motors 0 and 1. Ignore for now
+        respPort = robotInterface.sendWheelSpeed(port_speed)
+        respStarboard = robotInterface.sendWheelSpeed(starboard_speed)
         print("Set locomotion speeds: %s" % (respPort and respStarboard))
+        '''
+        
 
     def zero_locomotion_speeds(self):
         self.motor_widgets.get(0).setValue(0)
@@ -279,36 +258,21 @@ class MyPlugin(Plugin):
         print("ESTOP: Attempting to stop all motors...")
         
         # Set all known motors to value 0
-        for motor_id, zero_value in self.zero_values.items():
-            #ui_widget.setValue(0)
-            robotInterface.sendMotorCommand(motor_id, 0)
-
-        # Motors 4 and 5 are set by position
+        robotInterface.sendWheelSpeed(0)
+        robotInterface.sendConveyorSpeed(0)
+        robotInterface.sendDepositionBucketSpeed(0)
+        
+        # Excavation depth and conveyor angle are set to the most recent position from SensorValues
         translationPos = robotInterface.sensorValueMap.get(4)
         bcAttitudePos = robotInterface.sensorValueMap.get(5)
 
         print("ESTOP: Setting translation position: %s and attitude: %s" % (translationPos, bcAttitudePos) )
 
-        robotInterface.sendMotorCommand(4, translationPos)
-        robotInterface.sendMotorCommand(5, bcAttitudePos)
+        robotInterface.sendExcavationDepth(translationPos)
+        robotInterface.sendConveyorAngle(bcAttitudePos)
 
         # Stop any updated changes to the translation system
         self._update_translate_timer = QTimer(self)
-
-    # ROS Connection things
-    """
-    @Slot(str)
-    def _on_topic_changed(self, topic):
-        topic = str(topic)
-        self._unregister_publisher()
-        print("trying topic: ", topic)
-        if topic == '':
-            return
-        try:
-            self._publisher = rospy.Publisher(topic, Twist, queue_size = 10)
-        except TypeError:
-            self._publisher = rospy.Publisher(topic, Twist)
-    """
 
     """
     Unregister ROS publisher
@@ -332,30 +296,29 @@ class MyPlugin(Plugin):
     """
     Individual Motor Change Functions
     """
-
     def motor0_spinbox_changed(self):
         val = int(self.motor_widgets.get(0).value())
-        self.send_spinbox_value(0, val)
+        pass #Ignore motor 0 for now
 
     def motor1_spinbox_changed(self):
         val = int(self.motor_widgets.get(1).value())
-        self.send_spinbox_value(1, val)
+        pass #Ignore motor 1 for now
 
     def motor2_spinbox_changed(self):
         val = int(self.motor_widgets.get(2).value())
-        self.send_spinbox_value(2, val)
+        robotInterface.sendDepositionBucketSpeed(val)
 
     def motor3_spinbox_changed(self):
         val = int(self.motor_widgets.get(3).value())
-        self.send_spinbox_value(3, val)
+        robotInterface.sendConveyorSpeed(val)
 
     def motor4_spinbox_changed(self):
         val = int(self.motor_widgets.get(4).value())
-        self.send_spinbox_value(4, val)
+        robotInterface.sendExcavationDepth(val)
 
     def motor5_spinbox_changed(self):
         val = int(self.motor_widgets.get(5).value())
-        self.send_spinbox_value(5, val)
+        robotInterface.sendConveyorAngle(val)
         self._widget.attitude_slider.setValue(val)
 
     def motor5_slider_changed(self):
@@ -365,10 +328,13 @@ class MyPlugin(Plugin):
 
     def motor6_spinbox_changed(self):
         val = int(self.motor_widgets.get(6).value())
-        self.send_spinbox_value(6, val)
+        #self.send_spinbox_value(6, val)
+        #Ignore motor 6 for now
+
     def motor7_spinbox_changed(self):
         val = int(self.motor_widgets.get(7).value())
-        self.send_spinbox_value(7, val)
+        #self.send_spinbox_value(7, val)
+        #Ignore motor 7 for now
 
     ### Translation timer-updated shift to some specified value
     def setup_translate_shift_timer(self):
@@ -436,31 +402,15 @@ class MyPlugin(Plugin):
         self._widget.general_speed_spinbox.setValue(sliderValue)
         #print("Slider value is: %s" % sliderValue)
     
-    """
-    Update sensor values
-    """
-    
 
-    """
-     Sending messages
-    """
     # Iteratively send values
     def _on_parameter_changed(self):
-        for motor_id, ui_widget in self.motor_widgets.items():
-            # If widget is spinbox,
-            val = int(ui_widget.value())
-            resp = self._send_motor_command(motor_id, val)
-            print("on motor: %s" % motor_id + ", value: %s" % val + "sending result: %s" % resp)
-
-    """
-    Sends a single commanded value (0-100) to a specified motor id
-    """
-    def _send_motor_command(self, motor_id, val):
-        try:
-            robotInterface.sendMotorCommand(motor_id, val)
-            print("Sent motor command for motor: %s" % motor_id + " with value: %s" % val)
-        except Exception as exc:
-            print("There was a problem sending the motor command: " + str(exc))
+        #Ignore motors 0 and 1 for now
+        robotInterface.sendDepositionBucketSpeed(int(self.motor_widgets.get(2).value()))
+        robotInterface.sendConveyorSpeed(int(self.motor_widgets.get(3).value()))
+        robotInterface.sendExcavationDepth(int(self.motor_widgets.get(4).value()))
+        robotInterface.sendConveyorAngle(int(self.motor_widgets.get(5).value()))
+        #Ignore motors 6 and 7 for now
 
     """
     Sensor value updating 
