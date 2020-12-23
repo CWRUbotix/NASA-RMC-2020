@@ -45,8 +45,8 @@ class MyPlugin(Plugin):
         args, unknowns = parser.parse_known_args(context.argv())
        
         if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
+            print('arguments: ', args)
+            print('unknowns: ', unknowns)
 
         # ROS Publisher
         self._publisher = None
@@ -171,7 +171,7 @@ class MyPlugin(Plugin):
     """
     def keyPressEvent(self, event):
         motor_speed = self.get_general_motor_val()
-        #print("general motor value is: %s" % motor_speed)
+        #rospy.loginfo("general motor value is: %s" % motor_speed)
         if event.key() == Qt.Key_W:
             self.w_pressed(motor_speed)
         elif event.key() == Qt.Key_S:
@@ -182,20 +182,20 @@ class MyPlugin(Plugin):
             self.d_pressed(motor_speed)
         # Emergency stop, triggers for all motors. Can include one explicitly defined for locomotion though
         elif event.key() == Qt.Key_E:
-            print("Emergency Stopping")
+            rospy.loginfo("Emergency Stopping")
             self.estop_pressed()
         
         # Deposition keys
         elif event.key() == Qt.Key_U:
-            print("Press U key")
+            rospy.loginfo("Press U key")
 
         # Arrow keys to manipulate the general spinbox speed
         elif event.key() == Qt.Key_Up:
-            print("Key up")
+            rospy.loginfo("Key up")
             self._widget.general_speed_spinbox.setValue(motor_speed + 1)
 
         elif event.key() == Qt.Key_Down:
-            print("Key down")
+            rospy.loginfo("Key down")
             self._widget.general_speed_spinbox.setValue(motor_speed - 1)
 
     # Currently only geared toward locomotion
@@ -203,7 +203,7 @@ class MyPlugin(Plugin):
     def keyReleaseEvent(self, event):
         if event.key() in (Qt.Key_W, Qt.Key_S, Qt.Key_A, Qt.Key_D):
             if not event.isAutoRepeat():
-                print("Key released")
+                rospy.loginfo("Key released")
                 robotInterface.sendDriveCommand(0, 0)
 
     def set_locomotion_speeds(self, port_speed, starboard_speed):
@@ -212,7 +212,7 @@ class MyPlugin(Plugin):
         port and starboard are motors 0 and 1. Ignore for now
         respPort = robotInterface.sendWheelSpeed(port_speed)
         respStarboard = robotInterface.sendWheelSpeed(starboard_speed)
-        print("Set locomotion speeds: %s" % (respPort and respStarboard))
+        rospy.loginfo("Set locomotion speeds: %s" % (respPort and respStarboard))
         '''
         
 
@@ -230,7 +230,7 @@ class MyPlugin(Plugin):
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(0, motor_speed)
         if self.ENABLE_DEBUGGING:
-            print("w key pressed")
+            rospy.loginfo("w key pressed")
 
     def a_pressed(self, motor_speed=None):
         if motor_speed is None:
@@ -238,24 +238,24 @@ class MyPlugin(Plugin):
 
         robotInterface.sendDriveCommand(3, motor_speed)
         if self.ENABLE_DEBUGGING:
-            print("a key pressed")
+            rospy.loginfo("a key pressed")
 
     def s_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(1, motor_speed)
         if self.ENABLE_DEBUGGING:
-            print("s key pressed")
+            rospy.loginfo("s key pressed")
 
     def d_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(2, motor_speed)
         if self.ENABLE_DEBUGGING:
-            print("d key pressed")
+            rospy.loginfo("d key pressed")
 
     def estop_pressed(self):
-        print("ESTOP: Attempting to stop all motors...")
+        rospy.loginfo("ESTOP: Attempting to stop all motors...")
         
         # Set all known motors to value 0
         robotInterface.sendWheelSpeed(0)
@@ -266,7 +266,7 @@ class MyPlugin(Plugin):
         translationPos = robotInterface.sensorValueMap.get(4)
         bcAttitudePos = robotInterface.sensorValueMap.get(5)
 
-        print("ESTOP: Setting translation position: %s and attitude: %s" % (translationPos, bcAttitudePos) )
+        rospy.loginfo("ESTOP: Setting translation position: %s and attitude: %s" % (translationPos, bcAttitudePos) )
 
         robotInterface.sendExcavationDepth(translationPos)
         robotInterface.sendConveyorAngle(bcAttitudePos)
@@ -353,7 +353,7 @@ class MyPlugin(Plugin):
             return
         else:
             delta = (targetValue - currentValue)/abs(targetValue - currentValue)
-            #print(delta)
+            #rospy.loginfo(delta)
             self._widget.motor4_spinbox.setValue(currentValue + delta)
             self._widget.translate_cancel_button.setEnabled(True)
 
@@ -400,7 +400,7 @@ class MyPlugin(Plugin):
     def general_slider_changed(self):
         sliderValue = int(self._widget.general_speed_slider.value())
         self._widget.general_speed_spinbox.setValue(sliderValue)
-        #print("Slider value is: %s" % sliderValue)
+        #rospy.loginfo("Slider value is: %s" % sliderValue)
     
 
     # Iteratively send values
@@ -432,7 +432,7 @@ class MyPlugin(Plugin):
                 sensorVal = robotInterface.sensorValueMap.get(sensor_id)
                 sensor_widget.setText(str(sensorVal))
         except Exception as exc:
-            print("There was an unusual problem updating sensors: " + str(exc))
+            rospy.logwarn("There was an unusual problem updating sensors: %s", exc.getMessage())
 
 
     def _set_status_text(self, text):

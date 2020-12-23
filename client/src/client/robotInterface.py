@@ -10,6 +10,13 @@ sensorValueTopic = 'sensor_value'
 
 motorCommandPub = None
 driveCommandPub = None
+angular_vel_factor = 1
+
+dep_bucket_speed_pub = rospy.Publisher('/dumper/motor_cmd', MotorCmd, queue_size=1)
+conveyor_speed_pub = rospy.Publisher('/excavation/conveyor_cmd', MotorCmd, queue_size=1)
+excavation_depth_pub = rospy.Publisher('/excavation/depth_cmd', MotorCmd, queue_size=1)
+conveyor_angle_pub = rospy.Publisher('/excavation/angle_cmd', MotorCmd, queue_size=1)
+drive_command_pub = rospy.Publisher('/glenn_base/cmd_vel', Twist, queue_size=1)
 
 sensorValueMap = {
     0:0,
@@ -47,43 +54,28 @@ sensorValueMap = {
     32:0
 }
 
-def sendDepositionBucketSpeed(value, accel = 35):
-    motor_msg = MotorCmd()
-    motor_msg.setpoint = value
-    motor_msg.acceleration = accel
-    sendMotorCommand("/dumper/motor_cmd", motor_msg, "deposition bucket speed")
+def sendDepositionBucketSpeed(value, accel=35):
+    sendMotorCommand(dep_bucket_speed_pub, value, accel, "deposition bucket speed")
 
-def sendConveyorSpeed(value, accel = 35):
-    motor_msg = MotorCmd()
-    motor_msg.setpoint = value
-    motor_msg.acceleration = accel
-    sendMotorCommand("/excavation/conveyor_cmd", motor_msg, "conveyor speed")
+def sendConveyorSpeed(value, accel=35):
+    sendMotorCommand(conveyor_speed_pub, value, accel, "conveyor speed")
 
-def sendExcavationDepth(value, accel = 35):
-    motor_msg = MotorCmd()
-    motor_msg.setpoint = value
-    motor_msg.acceleration = accel
-    sendMotorCommand("/excavation/depth_cmd", motor_msg, "excavation depth")
+def sendExcavationDepth(value, accel=35):
+    sendMotorCommand(excavation_depth_pub, value, accel, "excavation depth")
 
-def sendConveyorAngle(value, accel = 35):
-    motor_msg = MotorCmd()
-    motor_msg.setpoint = value
-    motor_msg.acceleration = accel
-    sendMotorCommand("/excavation/angle_cmd", motor_msg, "conveyor angle")
+def sendConveyorAngle(value, accel=35):
+    sendMotorCommand(conveyor_angle_pub, value, accel, "conveyor angle")
 
 def sendWheelSpeed(forward_vel):
     motor_msg = Twist()
     motor_msg.linear = Vector3(forward_vel, 0, 0)
 
     try:
-        pub = rospy.Publisher('/glenn_base/cmd_vel', Twist, queue_size=1)
-        pub.publish(motor_msg)
+        drive_command_pub.publish(motor_msg)
     except rospy.ROSInterruptException as e:
-        print(e.getMessage())
-        pass
-    return True
+        rospy.logwarn(e.getMessage())
 
-def sendDriveCommand(direction, forward_vel, angular_vel = 35):
+def sendDriveCommand(direction, forward_vel):
     motor_msg = Twist()
 
     if direction == 0:  # forward
@@ -94,36 +86,33 @@ def sendDriveCommand(direction, forward_vel, angular_vel = 35):
         motor_msg.angular = Vector3(0, 0, 0)
     elif direction == 2:  # right
         motor_msg.linear = Vector3(0, 0, 0)
-        motor_msg.angular = Vector3(0, 0, -angular_vel)
+        motor_msg.angular = Vector3(0, 0, -forward_vel * angular_vel_factor)
     elif direction == 3:  # left
         motor_msg.linear = Vector3(0, 0, 0)
-        motor_msg.angular = Vector3(0, 0, angular_vel)
+        motor_msg.angular = Vector3(0, 0, forward_vel * angular_vel_factor)
     try:
-        pub = rospy.Publisher('/glenn_base/cmd_vel', Twist, queue_size=1)
-        pub.publish(motor_msg)
+        drive_command_pub.publish(motor_msg)
     except rospy.ROSInterruptException as e:
-        print(e.getMessage())
-        pass
-    return True
+        rospy.logwarn(e.getMessage())
 
-#Sends a MotorCmd message on the given topic 
-def sendMotorCommand(topic, motor_msg, msg_for):
+#Publishes a MotorCmd message on the given publisher 
+def sendMotorCommand(pub, value, accel, msg_for):
+    motor_msg = MotorCmd()
+    motor_msg.setpoint = value
+    motor_msg.acceleration = accel
+
     try:
-        pub = rospy.Publisher(topic, MotorCmd, queue_size = 1)
         pub.publish(motor_msg)
-        print("Sent motor command for ", msg_for, "with value: ", motor_msg.setpoint)
+        rospy.loginfo("Sent motor command for %s with value: %d", msg_for, motor_msg.setpoint)
     except rospy.ROSInterruptException as e:
-        print("There was a problem sending the motor command ", e.getMessage())
-        pass
-    return True
-
+        rospy.logwarn("There was a problem sending the motor command %s", e.getMessage())
 
 def sensorValueCallback(data):
     rospy.loginfo("Sensor %u has value %f", data.sensor_id, data.value)
-    sensorValueMap[data.sensor_id] = data.value;
+    sensorValueMap[data.sensor_id] = data.value
 
 def getSensorValue(sensor_id):
-    return sensorValueMap(sensor_id);
+    return sensorValueMap(sensor_id)
 
 def initializeRobotInterface():
     #rospy.init_node(node_name,disable_signals=True)
