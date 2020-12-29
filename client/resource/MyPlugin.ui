@@ -53,7 +53,7 @@
       </property>
       <property name="text">
        <string>Manual Control Client 
- v1.0.0 
+ v1.0.1
  CWRUbotix Software Team</string>
       </property>
      </widget>
@@ -300,7 +300,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Min: -0.6</string>
+    <string>Min: 0</string>
    </property>
   </widget>
   <widget class="QDoubleSpinBox" name="motor0_spinbox">

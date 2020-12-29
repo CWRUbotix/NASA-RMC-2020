@@ -164,11 +164,11 @@ class MyPlugin(Plugin):
         
         ''' drive speed is from -0.6 to 0.6
             can also used to control all other motor spinbox values'''
-        self._widget.general_speed_spinbox.setRange(-0.6, 0.6)
+        self._widget.general_speed_spinbox.setRange(0, 0.6)
         self._widget.general_speed_spinbox.setSingleStep(0.1)
 
         #Configure the slider counterpart 
-        self._widget.general_speed_slider.setRange(-6, 6) 
+        self._widget.general_speed_slider.setRange(0, 6)
         self._widget.general_speed_slider.setSingleStep(1)
 
         self._widget.general_speed_spinbox.valueChanged.connect(self.general_spinbox_changed)
