@@ -13,9 +13,9 @@ driveCommandPub = None
 angular_vel_factor = 1
 
 dep_bucket_speed_pub = rospy.Publisher('/dumper/motor_cmd', MotorCmd, queue_size=1)
-conveyor_speed_pub = rospy.Publisher('/excavation/conveyor_cmd', MotorCmd, queue_size=1)
+excavation_speed_pub = rospy.Publisher('/excavation/conveyor_cmd', MotorCmd, queue_size=1)
 excavation_depth_pub = rospy.Publisher('/excavation/depth_cmd', MotorCmd, queue_size=1)
-conveyor_angle_pub = rospy.Publisher('/excavation/angle_cmd', MotorCmd, queue_size=1)
+excavation_angle_pub = rospy.Publisher('/excavation/angle_cmd', MotorCmd, queue_size=1)
 drive_command_pub = rospy.Publisher('/glenn_base/cmd_vel', Twist, queue_size=1)
 
 sensorValueMap = {
@@ -57,14 +57,14 @@ sensorValueMap = {
 def sendDepositionBucketSpeed(value, accel=35):
     sendMotorCommand(dep_bucket_speed_pub, value, accel, "deposition bucket speed")
 
-def sendConveyorSpeed(value, accel=35):
-    sendMotorCommand(conveyor_speed_pub, value, accel, "conveyor speed")
+def sendExcavationSpeed(value, accel=35):
+    sendMotorCommand(excavation_speed_pub, value, accel, "excavation speed")
 
 def sendExcavationDepth(value, accel=35):
     sendMotorCommand(excavation_depth_pub, value, accel, "excavation depth")
 
-def sendConveyorAngle(value, accel=35):
-    sendMotorCommand(conveyor_angle_pub, value, accel, "conveyor angle")
+def sendExcavationAngle(value, accel=35):
+    sendMotorCommand(excavation_angle_pub, value, accel, "excavation angle")
 
 def sendWheelSpeed(forward_vel):
     motor_msg = Twist()
@@ -103,7 +103,7 @@ def sendMotorCommand(pub, value, accel, msg_for):
 
     try:
         pub.publish(motor_msg)
-        rospy.loginfo("Sent motor command for %s with value: %d", msg_for, motor_msg.setpoint)
+        rospy.loginfo("Sent motor command for %s with value: %f", msg_for, motor_msg.setpoint)
     except rospy.ROSInterruptException as e:
         rospy.logwarn("There was a problem sending the motor command %s", e.getMessage())
 

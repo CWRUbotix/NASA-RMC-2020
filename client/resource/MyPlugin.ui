@@ -87,9 +87,6 @@
    <property name="focusPolicy">
     <enum>Qt::WheelFocus</enum>
    </property>
-   <property name="maximum">
-    <number>100</number>
-   </property>
    <property name="orientation">
     <enum>Qt::Vertical</enum>
    </property>
@@ -290,7 +287,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Max: 100</string>
+    <string>Max: 0.6</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_vertical_min">
@@ -303,10 +300,10 @@
     </rect>
    </property>
    <property name="text">
-    <string>Min: 0</string>
+    <string>Min: -0.6</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="motor0_spinbox">
+  <widget class="QDoubleSpinBox" name="motor0_spinbox">
    <property name="geometry">
     <rect>
      <x>50</x>
@@ -318,14 +315,8 @@
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
    </property>
-   <property name="minimum">
-    <number>-130</number>
-   </property>
-   <property name="maximum">
-    <number>130</number>
-   </property>
   </widget>
-  <widget class="QSpinBox" name="motor1_spinbox">
+  <widget class="QDoubleSpinBox" name="motor1_spinbox">
    <property name="geometry">
     <rect>
      <x>150</x>
@@ -337,14 +328,8 @@
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
    </property>
-   <property name="minimum">
-    <number>-130</number>
-   </property>
-   <property name="maximum">
-    <number>130</number>
-   </property>
   </widget>
-  <widget class="QSpinBox" name="motor2_spinbox">
+  <widget class="QDoubleSpinBox" name="motor2_spinbox">
    <property name="geometry">
     <rect>
      <x>250</x>
@@ -356,14 +341,8 @@
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
    </property>
-   <property name="minimum">
-    <number>-100</number>
-   </property>
-   <property name="maximum">
-    <number>100</number>
-   </property>
   </widget>
-  <widget class="QSpinBox" name="motor3_spinbox">
+  <widget class="QDoubleSpinBox" name="motor3_spinbox">
    <property name="geometry">
     <rect>
      <x>50</x>
@@ -374,12 +353,6 @@
    </property>
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
-   </property>
-   <property name="minimum">
-    <number>-100</number>
-   </property>
-   <property name="maximum">
-    <number>200</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_5">
@@ -541,7 +514,7 @@ Starboard</string>
     <string>General Speed Value</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="general_speed_spinbox">
+  <widget class="QDoubleSpinBox" name="general_speed_spinbox">
    <property name="geometry">
     <rect>
      <x>810</x>
@@ -558,12 +531,6 @@ Starboard</string>
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
    </property>
-   <property name="minimum">
-    <number>0</number>
-   </property>
-   <property name="maximum">
-    <number>100</number>
-   </property>
   </widget>
   <widget class="QLabel" name="label_12">
    <property name="geometry">
@@ -579,7 +546,7 @@ Starboard</string>
 bcTranslation</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="motor4_spinbox">
+  <widget class="QDoubleSpinBox" name="motor4_spinbox">
    <property name="geometry">
     <rect>
      <x>180</x>
@@ -590,12 +557,6 @@ bcTranslation</string>
    </property>
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
-   </property>
-   <property name="minimum">
-    <number>-999</number>
-   </property>
-   <property name="maximum">
-    <number>1000</number>
    </property>
    <property name="singleStep">
     <number>1</number>
@@ -615,7 +576,7 @@ bcTranslation</string>
 bcAttitude</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="motor5_spinbox">
+  <widget class="QDoubleSpinBox" name="motor5_spinbox">
    <property name="geometry">
     <rect>
      <x>340</x>
@@ -626,12 +587,6 @@ bcAttitude</string>
    </property>
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
-   </property>
-   <property name="minimum">
-    <number>-10</number>
-   </property>
-   <property name="maximum">
-    <number>140</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_14">
@@ -695,7 +650,7 @@ portLooky</string>
 starboardLooky</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="motor6_spinbox">
+  <widget class="QDoubleSpinBox" name="motor6_spinbox">
    <property name="geometry">
     <rect>
      <x>40</x>
@@ -704,14 +659,8 @@ starboardLooky</string>
      <height>26</height>
     </rect>
    </property>
-   <property name="minimum">
-    <number>-150</number>
-   </property>
-   <property name="maximum">
-    <number>150</number>
-   </property>
   </widget>
-  <widget class="QSpinBox" name="motor7_spinbox">
+  <widget class="QDoubleSpinBox" name="motor7_spinbox">
    <property name="geometry">
     <rect>
      <x>150</x>
@@ -719,12 +668,6 @@ starboardLooky</string>
      <width>81</width>
      <height>26</height>
     </rect>
-   </property>
-   <property name="minimum">
-    <number>-150</number>
-   </property>
-   <property name="maximum">
-    <number>150</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_17">
@@ -816,7 +759,7 @@ Attitude:o/l</string>
     <string>Shift to Value</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="target_translate_spinbox">
+  <widget class="QDoubleSpinBox" name="target_translate_spinbox">
    <property name="geometry">
     <rect>
      <x>180</x>
@@ -845,7 +788,7 @@ Attitude:o/l</string>
     <string>Steps/Sec:</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="steps_per_sec_spinbox">
+  <widget class="QDoubleSpinBox" name="steps_per_sec_spinbox">
    <property name="geometry">
     <rect>
      <x>180</x>
@@ -856,12 +799,6 @@ Attitude:o/l</string>
    </property>
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
-   </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>50</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_21">
@@ -909,7 +846,7 @@ Attitude:o/l</string>
     <enum>Qt::Vertical</enum>
    </property>
   </widget>
-  <widget class="QSpinBox" name="target_attitude_spinbox">
+  <widget class="QDoubleSpinBox" name="target_attitude_spinbox">
    <property name="geometry">
     <rect>
      <x>340</x>
@@ -921,11 +858,8 @@ Attitude:o/l</string>
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
    </property>
-   <property name="maximum">
-    <number>100</number>
-   </property>
   </widget>
-  <widget class="QSpinBox" name="steps_attitude_spinbox">
+  <widget class="QDoubleSpinBox" name="steps_attitude_spinbox">
    <property name="geometry">
     <rect>
      <x>340</x>
@@ -936,12 +870,6 @@ Attitude:o/l</string>
    </property>
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
-   </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>30</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_22">
