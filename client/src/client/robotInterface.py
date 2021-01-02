@@ -2,13 +2,21 @@
 import rospy
 from hwctrl.msg import SensorData
 from hwctrl.msg import MotorCmd
+from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Vector3
 
 node_name = 'robot_interface'
-motorCommandTopic = 'motor_setpoints'
 sensorValueTopic = 'sensor_value'
 
 motorCommandPub = None
 driveCommandPub = None
+angular_vel_factor = 1
+
+dep_bucket_speed_pub = rospy.Publisher('/dumper/motor_cmd', MotorCmd, queue_size=1)
+excavation_speed_pub = rospy.Publisher('/excavation/conveyor_cmd', MotorCmd, queue_size=1)
+excavation_depth_pub = rospy.Publisher('/excavation/depth_cmd', MotorCmd, queue_size=1)
+excavation_angle_pub = rospy.Publisher('/excavation/angle_cmd', MotorCmd, queue_size=1)
+drive_command_pub = rospy.Publisher('/glenn_base/cmd_vel', Twist, queue_size=1)
 
 sensorValueMap = {
     0:0,
@@ -46,55 +54,65 @@ sensorValueMap = {
     32:0
 }
 
+def sendDepositionBucketSpeed(value, accel=35):
+    sendMotorCommand(dep_bucket_speed_pub, value, accel, "deposition bucket speed")
 
-def sendMotorCommand(motorID, value, accel=35):
+def sendExcavationSpeed(value, accel=35):
+    sendMotorCommand(excavation_speed_pub, value, accel, "excavation speed")
+
+def sendExcavationDepth(value, accel=35):
+    sendMotorCommand(excavation_depth_pub, value, accel, "excavation depth")
+
+def sendExcavationAngle(value, accel=35):
+    sendMotorCommand(excavation_angle_pub, value, accel, "excavation angle")
+
+def sendWheelSpeed(forward_vel):
+    motor_msg = Twist()
+    motor_msg.linear = Vector3(forward_vel, 0, 0)
+
+    try:
+        drive_command_pub.publish(motor_msg)
+    except rospy.ROSInterruptException as e:
+        rospy.logwarn(e.getMessage())
+
+def sendDriveCommand(direction, forward_vel):
+    motor_msg = Twist()
+
+    if direction == 0:  # forward
+        motor_msg.linear = Vector3(forward_vel, 0, 0)
+        motor_msg.angular = Vector3(0, 0, 0)
+    elif direction == 1:  # backward
+        motor_msg.linear = Vector3(-forward_vel, 0, 0)
+        motor_msg.angular = Vector3(0, 0, 0)
+    elif direction == 2:  # right
+        motor_msg.linear = Vector3(0, 0, 0)
+        motor_msg.angular = Vector3(0, 0, -forward_vel * angular_vel_factor)
+    elif direction == 3:  # left
+        motor_msg.linear = Vector3(0, 0, 0)
+        motor_msg.angular = Vector3(0, 0, forward_vel * angular_vel_factor)
+    try:
+        drive_command_pub.publish(motor_msg)
+    except rospy.ROSInterruptException as e:
+        rospy.logwarn(e.getMessage())
+
+#Publishes a MotorCmd message on the given publisher 
+def sendMotorCommand(pub, value, accel, msg_for):
     motor_msg = MotorCmd()
-    motor_msg.id = motorID
     motor_msg.setpoint = value
     motor_msg.acceleration = accel
+
     try:
-        pub = rospy.Publisher(motorCommandTopic, MotorCmd, queue_size=1)
         pub.publish(motor_msg)
+        rospy.loginfo("Sent motor command for %s with value: %f", msg_for, motor_msg.setpoint)
     except rospy.ROSInterruptException as e:
-        print(e.getMessage())
-        pass
-    return True
-
-
-def sendDriveCommand(direction, value, accel=35):
-    left_msg = MotorCmd()
-    right_msg = MotorCmd()
-    left_msg.id = 0
-    right_msg.id = 1
-    left_msg.acceleration = accel
-    right_msg.acceleration = accel
-    if direction == 0:  # forward
-        left_msg.setpoint = value
-        right_msg.setpoint = value
-    elif direction == 1:  # backward
-        left_msg.setpoint = -value
-        right_msg.setpoint = -value
-    elif direction == 2:  # right
-        left_msg.setpoint = value
-        right_msg.setpoint = -value
-    elif direction == 3:  # left
-        left_msg.setpoint = -value
-        right_msg.setpoint = value
-    try:
-        pub = rospy.Publisher(motorCommandTopic, MotorCmd, queue_size=2)
-        pub.publish(left_msg)
-        pub.publish(right_msg)
-    except rospy.ROSInterruptException as e:
-        print(e.getMessage())
-        pass
-    return True
+        rospy.logwarn("There was a problem sending the motor command %s", e.getMessage())
 
 def sensorValueCallback(data):
     rospy.loginfo("Sensor %u has value %f", data.sensor_id, data.value)
-    sensorValueMap[data.sensor_id] = data.value;
+    sensorValueMap[data.sensor_id] = data.value
 
 def getSensorValue(sensor_id):
-    return sensorValueMap(sensor_id);
+    return sensorValueMap(sensor_id)
 
 def initializeRobotInterface():
     #rospy.init_node(node_name,disable_signals=True)
