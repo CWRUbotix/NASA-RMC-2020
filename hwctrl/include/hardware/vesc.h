@@ -25,4 +25,5 @@ class VescMotor : public CanMotor {
 
  private:
   bool m_vesc_pending_update = true;
+  boost::array<uint8_t, 1024> m_rx_buf; //A kb should be fine
 };

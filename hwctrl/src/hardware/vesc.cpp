@@ -23,22 +23,29 @@ void VescMotor::can_rx_callback(FramePtr frame) {
   const uint32_t rx_id = (uint32_t)frame->can_id;
   const uint8_t can_id = (uint8_t)(rx_id & 0xFF);  // extract only the id
 
-  if (m_can_id != can_id) {
-    // not for us
+  if((rx_id & ~0xFF) == 0) {
     return;
   }
 
   const uint8_t cmd = (uint8_t)(rx_id >> 8);
+  uint8_t* frame_data = frame->data.data();
 
   switch (cmd) {
     case CanPacketId::CAN_PACKET_STATUS: {
+      if(m_id != can_id) {
+        break;
+      }
+      
       m_online = true;
 
       float rpm;
+      float current_in;
+      float duty_now;
       {
-        int idx = 0;
-        rpm = buffer::get_float16(frame->data.data(), 1.0f, &idx);
-        // maybe grab some other data too?
+        size_t idx = 0;
+        rpm = buffer::get_floating<float, int32_t>(frame_data, 1.0, idx);
+        current_in = buffer::get_floating<float, int16_t>(frame_data, 10.0f, idx);
+        duty_now = buffer::get_floating<float, int16_t>(frame_data, 1000.0, idx);
       }
 
       // publish rpm data
@@ -47,13 +54,79 @@ void VescMotor::can_rx_callback(FramePtr frame) {
       msg.id = m_id;
       msg.value = rpm / m_rpm_coef;
       msg.timestamp = ros::Time::now();
-      // ROS_INFO("Publish to motor_data");
       m_motor_data_pub.publish(msg);
 
       break;
     }
-    case CanPacketId::CAN_PACKET_FILL_RX_BUFFER:
-    case CanPacketId::CAN_PACKET_PROCESS_RX_BUFFER:
+    case CanPacketId::CAN_PACKET_FILL_RX_BUFFER: {
+      if (can_id != 0) {
+        break;
+      }
+      std::memcpy(&m_rx_buf + frame_data[0], frame_data + 1, frame->can_dlc - 1);
+      break;
+    }
+    case CanPacketId::CAN_PACKET_PROCESS_RX_BUFFER: {
+        if(can_id != 0) {
+          break; 
+        }
+        int idx = 0;
+        uint16_t packet_len;
+        uint16_t crc;
+
+        int vesc_id = frame_data[idx++];
+
+        if(vesc_id != m_id) {
+          std::memset(&m_rx_buf, 0, 1024);
+          break;
+        }
+
+        int n_commands = frame_data[idx++];
+        packet_len = (frame_data[idx++] << 8);
+        packet_len |= frame_data[idx++];
+        crc = (frame_data[idx++] << 8);
+        crc |= frame_data[idx++];
+
+        const auto chk_crc = crc::crc16(m_rx_buf.data(), packet_len);
+
+        if(crc != chk_crc) {
+          ROS_WARN("Error: Vesc checksum doesnt match");
+          break;
+        }
+
+        idx = 0;
+        int comm_cmd = m_rx_buf[idx++];
+        switch(comm_cmd) {
+          case COMM_GET_VALUES: {
+            auto msg = boost::make_shared<hwctrl::MotorData>();
+            msg->data_type = msg->RPM;
+            msg->id = m_id;
+            
+            // eventually we may want to do something with this data
+            float temp_mos1 = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
+            float temp_mos2 = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
+            float current_motor = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
+            float current_in = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
+            float avg_id = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
+            float avg_iq = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
+            float duty_now = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 1000.0, idx);
+            float rpm = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 1.0, idx);
+            float v_in = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
+            float amp_hours = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
+            float amp_hours_charged = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
+            float watt_hours = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
+            float watt_hours_charged = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
+            int32_t tachometer = buffer::get<int32_t>(m_rx_buf.data(), idx);
+            int32_t tachometer_abs = buffer::get<int32_t>(m_rx_buf.data(), idx); 
+            int8_t fault_code = (int8_t) m_rx_buf[idx++];
+
+            msg->timestamp = ros::Time::now();
+            msg->value = rpm / m_rpm_coef;
+            m_motor_data_pub.publish(msg);
+            break;
+          }
+        }
+      break;
+    }
     default:
       // These are depreciated
       ROS_DEBUG("Vesc (id: %d) recieved depreciated frames", m_id);

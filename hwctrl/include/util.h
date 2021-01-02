@@ -139,19 +139,60 @@ constexpr uint16_t crc16(unsigned char* buf, uint32_t len) {
 
 // we dont need all of these but I'm too lazy to copy them individually
 namespace buffer {
-void append_int16(uint8_t* buffer, int16_t number, int32_t* index);
-void append_uint16(uint8_t* buffer, uint16_t number, int32_t* index);
-void append_int32(uint8_t* buffer, int32_t number, int32_t* index);
-void append_uint32(uint8_t* buffer, uint32_t number, int32_t* index);
-void append_float16(uint8_t* buffer, float number, float scale, int32_t* index);
-void append_float32(uint8_t* buffer, float number, float scale, int32_t* index);
+  
+  // swaps byte order of any instance of type T
+  template <typename T>
+    T swap_endian(T u) {
+      constexpr auto size = sizeof(std::declval<T>());
+        static_assert(CHAR_BIT == 8, "CHAR_BIT != 8");
 
-int16_t  get_int16(const uint8_t* buffer, int32_t* index);
-uint16_t get_uint16(const uint8_t* buffer, int32_t* index);
-int32_t  get_int32(const uint8_t* buffer, int32_t* index);
-uint32_t get_uint32(const uint8_t* buffer, int32_t* index);
-float    get_float16(const uint8_t* buffer, float scale, int32_t* index);
-float    get_float32(const uint8_t* buffer, float scale, int32_t* index);
+        union {
+          T u;
+          uint8_t u8[size];
+        } source, dest;
+
+        source.u = u;
+
+        for (size_t i = 0; i < size; i++)
+          dest.u8[i] = source.u8[size - i - 1];
+
+        return dest.u;
+    }
+  
+  // Append data, this theorhetically can be used with any type
+  // but i recommend using append_floating for floating point numbers
+  template<typename T, typename Idx = size_t>
+  void append(uint8_t* buffer, T number, Idx& idx) {
+    constexpr auto size = sizeof(std::declval<T>());
+    const auto swapped = swap_endian(number);
+    std::memcpy(buffer, &swapped, size);
+    idx += size;
+  }
+
+  // append scaled floating point data. size represents size of data in the buffer.
+  template<typename T = float, typename StorageType, typename Idx = size_t, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    void append_floating(uint8_t* buffer, T number, T scale, Idx& idx) {
+      const auto value = number * scale;
+      append<StorageType>(buffer, value, idx);
+    }
+
+    
+  template<typename T, typename Idx = size_t>
+    T get(uint8_t* buffer, Idx& idx) {
+      constexpr auto size = sizeof(std::declval<T>());
+      T t;
+      std::memcpy(&t, &buffer[idx], size);
+      idx += size;
+      return swap_endian(t);
+    }
+
+    // this will return a float regardless of variable size
+    template<typename T = float, typename StorageType, typename Idx = size_t, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    T get_floating(uint8_t* buffer, T scale, Idx& idx)  {
+      const auto value = (T) get<StorageType>(buffer, idx);
+      return value / scale;
+    }
+
 }  // namespace buffer
 
 // for printing out size of class at compile time
