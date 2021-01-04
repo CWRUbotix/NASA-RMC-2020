@@ -303,58 +303,6 @@
     <string>Min: -0.6</string>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="motor0_spinbox">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>280</y>
-     <width>61</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="motor1_spinbox">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>280</y>
-     <width>61</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="motor2_spinbox">
-   <property name="geometry">
-    <rect>
-     <x>250</x>
-     <y>280</y>
-     <width>61</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="motor3_spinbox">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>380</y>
-     <width>71</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::ClickFocus</enum>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_5">
    <property name="geometry">
     <rect>
@@ -366,74 +314,6 @@
    </property>
    <property name="text">
     <string>Status:</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>230</y>
-     <width>101</width>
-     <height>51</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Motor 0
- Port</string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>240</x>
-     <y>230</y>
-     <width>71</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Motor 2
- depWinch</string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_4">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>330</y>
-     <width>101</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Motor 3
-bcBelt Drive</string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_2">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>220</y>
-     <width>71</width>
-     <height>61</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Motor 1 
-Starboard</string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="w_button">
@@ -559,7 +439,7 @@ bcTranslation</string>
     <enum>Qt::ClickFocus</enum>
    </property>
    <property name="singleStep">
-    <number>1</number>
+    <double>1.000000000000000</double>
    </property>
   </widget>
   <widget class="QLabel" name="label_13">
@@ -622,54 +502,6 @@ Keyboard up arrow and down arrow work here</string>
     <string>Assign to all fields</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_15">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>600</y>
-     <width>81</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Motor 6
-portLooky</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_16">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>600</y>
-     <width>141</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Motor 7
-starboardLooky</string>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="motor6_spinbox">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>640</y>
-     <width>71</width>
-     <height>26</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="motor7_spinbox">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>640</y>
-     <width>81</width>
-     <height>26</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_17">
    <property name="geometry">
     <rect>
@@ -703,28 +535,6 @@ Attitude:o/l</string>
    </property>
    <property name="text">
     <string>TODO</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_19">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>220</y>
-     <width>161</width>
-     <height>81</height>
-    </rect>
-   </property>
-   <property name="frameShape">
-    <enum>QFrame::StyledPanel</enum>
-   </property>
-   <property name="frameShadow">
-    <enum>QFrame::Raised</enum>
-   </property>
-   <property name="text">
-    <string>Press and release now implemented for WASD Control.</string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="zero_locomotion_button">
@@ -772,7 +582,7 @@ Attitude:o/l</string>
     <enum>Qt::ClickFocus</enum>
    </property>
    <property name="maximum">
-    <number>1000</number>
+    <double>1000.000000000000000</double>
    </property>
   </widget>
   <widget class="QLabel" name="label_20">
@@ -1586,67 +1396,6 @@ Attitude:o/l</string>
     <string>Start Updating Sensors</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="sensor7_lineedit">
-   <property name="geometry">
-    <rect>
-     <x>600</x>
-     <y>640</y>
-     <width>113</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="maxLength">
-    <number>8</number>
-   </property>
-   <property name="readOnly">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="sensor5_label_12">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>640</y>
-     <width>131</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>7: PortLooky</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="sensor8_lineedit">
-   <property name="geometry">
-    <rect>
-     <x>600</x>
-     <y>670</y>
-     <width>113</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-   <property name="maxLength">
-    <number>8</number>
-   </property>
-   <property name="readOnly">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="sensor5_label_13">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>670</y>
-     <width>131</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>8: StarboardLooky</string>
-   </property>
-  </widget>
   <widget class="QPushButton" name="stop_sensor_update_button">
    <property name="geometry">
     <rect>
@@ -1691,6 +1440,130 @@ Attitude:o/l</string>
    <property name="flat">
     <bool>false</bool>
    </property>
+   <widget class="QDoubleSpinBox" name="motor3_spinbox">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>300</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::ClickFocus</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>250</y>
+      <width>101</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Motor 3
+bcBelt Drive</string>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>150</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Motor 2
+ depWinch</string>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="motor2_spinbox">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>190</y>
+      <width>61</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::ClickFocus</enum>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>70</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Dig</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_2">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>70</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Dump</string>
+    </property>
+   </widget>
+   <widget class="QSlider" name="general_speed_slider_2">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>40</y>
+      <width>21</width>
+      <height>91</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::WheelFocus</enum>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>70</y>
+      <width>21</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="mouseTracking">
+     <bool>false</bool>
+    </property>
+    <property name="acceptDrops">
+     <bool>false</bool>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::RightToLeft</enum>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
@@ -1728,15 +1601,7 @@ Attitude:o/l</string>
   <zorder>emergency_stop_button</zorder>
   <zorder>label_vertical_max</zorder>
   <zorder>label_vertical_min</zorder>
-  <zorder>motor0_spinbox</zorder>
-  <zorder>motor1_spinbox</zorder>
-  <zorder>motor2_spinbox</zorder>
-  <zorder>motor3_spinbox</zorder>
   <zorder>label_5</zorder>
-  <zorder>label</zorder>
-  <zorder>label_3</zorder>
-  <zorder>label_4</zorder>
-  <zorder>label_2</zorder>
   <zorder>w_button</zorder>
   <zorder>a_button</zorder>
   <zorder>s_button</zorder>
@@ -1750,13 +1615,8 @@ Attitude:o/l</string>
   <zorder>motor5_spinbox</zorder>
   <zorder>label_14</zorder>
   <zorder>general_assign_checkbox</zorder>
-  <zorder>label_15</zorder>
-  <zorder>label_16</zorder>
-  <zorder>motor6_spinbox</zorder>
-  <zorder>motor7_spinbox</zorder>
   <zorder>label_17</zorder>
   <zorder>label_18</zorder>
-  <zorder>label_19</zorder>
   <zorder>zero_locomotion_button</zorder>
   <zorder>start_shift_button</zorder>
   <zorder>target_translate_spinbox</zorder>
@@ -1773,10 +1633,6 @@ Attitude:o/l</string>
   <zorder>attitude_shift_cancel_button</zorder>
   <zorder>groupBox</zorder>
   <zorder>update_sensors_button</zorder>
-  <zorder>sensor7_lineedit</zorder>
-  <zorder>sensor5_label_12</zorder>
-  <zorder>sensor8_lineedit</zorder>
-  <zorder>sensor5_label_13</zorder>
   <zorder>stop_sensor_update_button</zorder>
   <zorder>debug_checkbox</zorder>
  </widget>

@@ -5,7 +5,6 @@ import rospy
 import rospkg
 import sys
 import rosservice
-
 import robotInterface
 
 from qt_gui.plugin import Plugin
@@ -70,14 +69,10 @@ class MyPlugin(Plugin):
         
         ### Map motors to their respective UI elements
         self.motor_widgets = {
-            0:self._widget.motor0_spinbox,
-            1:self._widget.motor1_spinbox,
             2:self._widget.motor2_spinbox,
             3:self._widget.motor3_spinbox,
             4:self._widget.motor4_spinbox,
-            5:self._widget.motor5_spinbox,
-            6:self._widget.motor6_spinbox,
-            7:self._widget.motor7_spinbox
+            5:self._widget.motor5_spinbox, 
         }
 
         self.sensor_widgets = {
@@ -87,9 +82,10 @@ class MyPlugin(Plugin):
             3:self._widget.sensor3_lineedit,
             4:self._widget.sensor4_lineedit,
             5:self._widget.sensor5_lineedit,
-            6:self._widget.sensor6_lineedit,
-            7:self._widget.sensor7_lineedit,
-            8:self._widget.sensor8_lineedit,
+            6:self._widget.sensor6_lineedit
+        }
+           # 7:self._widget.sensor7_lineedit,
+        '''8:self._widget.sensor8_lineedit,
             9:self._widget.sensor9_lineedit,
             10:self._widget.sensor10_lineedit,
             13:self._widget.sensor13_lineedit,
@@ -103,8 +99,7 @@ class MyPlugin(Plugin):
             29:self._widget.sensor29_lineedit,
             30:self._widget.sensor30_lineedit,
             31:self._widget.sensor31_lineedit,
-            32:self._widget.sensor32_lineedit,
-        }
+            32:self._widget.sensor32_lineedit,'''
 
         self.ENABLE_DEBUGGING = False
 
@@ -112,22 +107,12 @@ class MyPlugin(Plugin):
         self.general_speed_slider_conversion_factor = 0.1
         self.attitude_slider_conversion_factor = 0.01
 
-        self._widget.motor0_spinbox.valueChanged.connect(self.motor0_spinbox_changed)
-        self._widget.motor1_spinbox.valueChanged.connect(self.motor1_spinbox_changed)
         self._widget.motor2_spinbox.valueChanged.connect(self.motor2_spinbox_changed)
         self._widget.motor3_spinbox.valueChanged.connect(self.motor3_spinbox_changed)
         self._widget.motor4_spinbox.valueChanged.connect(self.motor4_spinbox_changed)
         self._widget.motor5_spinbox.valueChanged.connect(self.motor5_spinbox_changed)
-        self._widget.motor6_spinbox.valueChanged.connect(self.motor6_spinbox_changed)
-        self._widget.motor7_spinbox.valueChanged.connect(self.motor7_spinbox_changed)
-
+       
         '''Set reasonable ranges for the motors'''
-        '''Ignore motors 0 and 1 for now'''
-        self._widget.motor0_spinbox.setRange(0, 0)
-        self._widget.motor0_spinbox.setSingleStep(0)
-        self._widget.motor1_spinbox.setRange(0, 0)
-        self._widget.motor1_spinbox.setSingleStep(0)
-
         '''deposition bucket speed is from -1 to 1'''
         self._widget.motor2_spinbox.setRange(-1, 1)
         self._widget.motor2_spinbox.setSingleStep(0.1)
@@ -155,12 +140,6 @@ class MyPlugin(Plugin):
         #Configure the step/target
         self._widget.steps_attitude_spinbox.setSingleStep(0.1)
         self._widget.target_attitude_spinbox.setSingleStep(0.1)
-
-        '''ignore motors 6 and 7 for now'''
-        self._widget.motor6_spinbox.setRange(0, 0)
-        self._widget.motor6_spinbox.setSingleStep(0)
-        self._widget.motor7_spinbox.setRange(0, 0)
-        self._widget.motor7_spinbox.setSingleStep(0)
         
         ''' drive speed is from -0.6 to 0.6
             can also used to control all other motor spinbox values'''
@@ -181,7 +160,7 @@ class MyPlugin(Plugin):
         self._widget.s_button.pressed.connect(self.s_pressed)
         self._widget.d_button.pressed.connect(self.d_pressed)
 
-        self._widget.zero_locomotion_button.pressed.connect(self.zero_locomotion_speeds)
+        #self._widget.zero_locomotion_button.pressed.connect(self.zero_locomotion_speeds)
         
         self._widget.start_shift_button.pressed.connect(self.setup_translate_shift_timer)
         self._widget.translate_cancel_button.pressed.connect(self.cancel_shift)
@@ -260,20 +239,6 @@ class MyPlugin(Plugin):
             if not event.isAutoRepeat():
                 rospy.loginfo("Key released")
                 robotInterface.sendDriveCommand(0, 0)
-
-    def set_locomotion_speeds(self, port_speed, starboard_speed):
-        pass
-        '''
-        port and starboard are motors 0 and 1. Ignore for now
-        respPort = robotInterface.sendWheelSpeed(port_speed)
-        respStarboard = robotInterface.sendWheelSpeed(starboard_speed)
-        rospy.loginfo("Set locomotion speeds: %s" % (respPort and respStarboard))
-        '''
-        
-    def zero_locomotion_speeds(self):
-        self.motor_widgets.get(0).setValue(0)
-        self.motor_widgets.get(1).setValue(0)
-        self.set_locomotion_speeds(0,0)
         
     def get_general_motor_val(self):
         val = float(self._widget.general_speed_spinbox.value())
@@ -289,7 +254,6 @@ class MyPlugin(Plugin):
     def a_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
-
         robotInterface.sendDriveCommand(3, motor_speed)
         if self.ENABLE_DEBUGGING:
             rospy.loginfo("a key pressed")
@@ -320,8 +284,7 @@ class MyPlugin(Plugin):
         translationPos = robotInterface.sensorValueMap.get(4)
         bcAttitudePos = robotInterface.sensorValueMap.get(5)
 
-        rospy.loginfo("ESTOP: Setting translation position: %s and attitude: %s" % (translationPos, bcAttitudePos) )
-
+        rospy.loginfo("ESTOP: Setting translation position: %s and attitude: %s" % (translationPos, bcAttitudePos))
         robotInterface.sendExcavationDepth(translationPos)
         robotInterface.sendExcavationAngle(bcAttitudePos)
 
@@ -350,14 +313,6 @@ class MyPlugin(Plugin):
     """
     Individual Motor Change Functions
     """
-    def motor0_spinbox_changed(self):
-        val = float(self.motor_widgets.get(0).value())
-        pass #Ignore motor 0 for now
-
-    def motor1_spinbox_changed(self):
-        val = float(self.motor_widgets.get(1).value())
-        pass #Ignore motor 1 for now
-
     def motor2_spinbox_changed(self):
         val = float(self.motor_widgets.get(2).value())
         robotInterface.sendDepositionBucketSpeed(val)
@@ -378,18 +333,6 @@ class MyPlugin(Plugin):
     def motor5_slider_changed(self):
         val = float (self._widget.attitude_slider.value() * self.attitude_slider_conversion_factor)
         self._widget.motor5_spinbox.setValue(val)
-
-    ### Looky Spinboxes
-
-    def motor6_spinbox_changed(self):
-        val = float(self.motor_widgets.get(6).value())
-        #self.send_spinbox_value(6, val)
-        #Ignore motor 6 for now
-
-    def motor7_spinbox_changed(self):
-        val = float(self.motor_widgets.get(7).value())
-        #self.send_spinbox_value(7, val)
-        #Ignore motor 7 for now
 
     ### Translation timer-updated shift to some specified value
     def setup_translate_shift_timer(self):
@@ -446,18 +389,14 @@ class MyPlugin(Plugin):
 
     def general_slider_changed(self):
         sliderValue = int(self._widget.general_speed_slider.value())
-        self._widget.general_speed_spinbox.setValue(sliderValue * self.general_speed_slider_conversion_factor)
-        #rospy.loginfo("Slider value is: %s" % sliderValue)
-    
+        self._widget.general_speed_spinbox.setValue(sliderValue * self.general_speed_slider_conversion_factor)    
 
     # Iteratively send values
     def _on_parameter_changed(self):
-        #Ignore motors 0 and 1 for now
         robotInterface.sendDepositionBucketSpeed(float(self.motor_widgets.get(2).value()))
         robotInterface.sendExcavationSpeed(float(self.motor_widgets.get(3).value()))
         robotInterface.sendExcavationDepth(float(self.motor_widgets.get(4).value()))
         robotInterface.sendExcavationAngle(float(self.motor_widgets.get(5).value()))
-        #Ignore motors 6 and 7 for now
 
     """
     Sensor value updating 
