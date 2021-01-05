@@ -11,6 +11,7 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, QTimer, Slot
 from python_qt_binding.QtWidgets import QWidget
+from actionlib.msg import TestAction
 
 node_name = 'robot_interface'
 motorCommandTopic = 'motor_setpoints'
@@ -82,10 +83,7 @@ class MyPlugin(Plugin):
             3:self._widget.sensor3_lineedit,
             4:self._widget.sensor4_lineedit,
             5:self._widget.sensor5_lineedit,
-            6:self._widget.sensor6_lineedit
-        }
-           # 7:self._widget.sensor7_lineedit,
-        '''8:self._widget.sensor8_lineedit,
+            6:self._widget.sensor6_lineedit,
             9:self._widget.sensor9_lineedit,
             10:self._widget.sensor10_lineedit,
             13:self._widget.sensor13_lineedit,
@@ -99,18 +97,14 @@ class MyPlugin(Plugin):
             29:self._widget.sensor29_lineedit,
             30:self._widget.sensor30_lineedit,
             31:self._widget.sensor31_lineedit,
-            32:self._widget.sensor32_lineedit,'''
+            32:self._widget.sensor32_lineedit
+        }
 
         self.ENABLE_DEBUGGING = False
 
         #For converting slider values to floats 
         self.general_speed_slider_conversion_factor = 0.1
         self.attitude_slider_conversion_factor = 0.01
-
-        self._widget.motor2_spinbox.valueChanged.connect(self.motor2_spinbox_changed)
-        self._widget.motor3_spinbox.valueChanged.connect(self.motor3_spinbox_changed)
-        self._widget.motor4_spinbox.valueChanged.connect(self.motor4_spinbox_changed)
-        self._widget.motor5_spinbox.valueChanged.connect(self.motor5_spinbox_changed)
        
         '''Set reasonable ranges for the motors'''
         '''deposition bucket speed is from -1 to 1'''
@@ -125,10 +119,6 @@ class MyPlugin(Plugin):
         self._widget.motor4_spinbox.setRange(0, 0.4)
         self._widget.motor4_spinbox.setSingleStep(0.05)
 
-        #Configure the step/target
-        self._widget.steps_per_sec_spinbox.setSingleStep(0.1)
-        self._widget.target_translate_spinbox.setSingleStep(0.1)
-
         '''excavation angle is from 0 to 1.57'''
         self._widget.motor5_spinbox.setRange(0, 1.57)
         self._widget.motor5_spinbox.setSingleStep(0.02)
@@ -136,40 +126,42 @@ class MyPlugin(Plugin):
         #Configure the slider counterpart
         self._widget.attitude_slider.setRange(0, 157)
         self._widget.attitude_slider.setSingleStep(2)
-
-        #Configure the step/target
-        self._widget.steps_attitude_spinbox.setSingleStep(0.1)
-        self._widget.target_attitude_spinbox.setSingleStep(0.1)
         
         ''' drive speed is from -0.6 to 0.6
             can also used to control all other motor spinbox values'''
-        self._widget.general_speed_spinbox.setRange(-0.6, 0.6)
+        self._widget.general_speed_spinbox.setRange(0, 0.6)
         self._widget.general_speed_spinbox.setSingleStep(0.1)
 
         #Configure the slider counterpart 
-        self._widget.general_speed_slider.setRange(-6, 6) 
+        self._widget.general_speed_slider.setRange(0, 6) 
         self._widget.general_speed_slider.setSingleStep(1)
 
-        self._widget.general_speed_spinbox.valueChanged.connect(self.general_spinbox_changed)
-        self._widget.general_speed_slider.valueChanged.connect(self.general_slider_changed)
-        self._widget.attitude_slider.valueChanged.connect(self.motor5_slider_changed)
+        #Configure the goal value slider 
+        self._widget.goal_value_slider.setRange(0, 2)
+        self._widget.goal_value_slider.setSingleStep(1)
 
+        #All spinbox valueChanged callbacks
+        self._widget.motor2_spinbox.valueChanged.connect(self.motor2_spinbox_changed)
+        self._widget.motor3_spinbox.valueChanged.connect(self.motor3_spinbox_changed)
+        self._widget.motor4_spinbox.valueChanged.connect(self.motor4_spinbox_changed)
+        self._widget.motor5_spinbox.valueChanged.connect(self.motor5_spinbox_changed)
+        self._widget.general_speed_spinbox.valueChanged.connect(self.general_spinbox_changed)
+
+        #All slider valueChanges callbacks
+        self._widget.attitude_slider.valueChanged.connect(self.motor5_slider_changed)
+        self._widget.goal_value_slider.valueChanged.connect(self.goal_value_slider_changed)
+        self._widget.general_speed_slider.valueChanged.connect(self.general_slider_changed)
+
+        #All button pressed callbacks
         self._widget.emergency_stop_button.pressed.connect(self.estop_pressed)
         self._widget.w_button.pressed.connect(self.w_pressed)
         self._widget.a_button.pressed.connect(self.a_pressed)
         self._widget.s_button.pressed.connect(self.s_pressed)
         self._widget.d_button.pressed.connect(self.d_pressed)
-
-        #self._widget.zero_locomotion_button.pressed.connect(self.zero_locomotion_speeds)
-        
-        self._widget.start_shift_button.pressed.connect(self.setup_translate_shift_timer)
-        self._widget.translate_cancel_button.pressed.connect(self.cancel_shift)
-        self._widget.attitude_shift_button.pressed.connect(self.setup_attitude_timer)
-        self._widget.attitude_shift_cancel_button.pressed.connect(self.cancel_attitude_shift)
-
+        self._widget.dig_button.pressed.connect(self.dig_pressed)
+        self._widget.dump_button.pressed.connect(self.dump_pressed)
         self._widget.update_sensors_button.pressed.connect(self._setup_timer_update_sensors)
         self._widget.stop_sensor_update_button.pressed.connect(self._stop_update_timer)
-
         self._widget.debug_checkbox.toggled.connect(self.debugging_checkbox_checked)
 
         # ROS Connection Fields
@@ -204,16 +196,14 @@ class MyPlugin(Plugin):
     Messy, but it works, theoretically.
     """
     def keyPressEvent(self, event):
-        motor_speed = self.get_general_motor_val()
-        #rospy.loginfo("general motor value is: %s" % motor_speed)
         if event.key() == Qt.Key_W:
-            self.w_pressed(motor_speed)
+            self.w_pressed()
         elif event.key() == Qt.Key_S:
-            self.s_pressed(motor_speed)
+            self.s_pressed()
         elif event.key() == Qt.Key_A:
-            self.a_pressed(motor_speed)
+            self.a_pressed()
         elif event.key() == Qt.Key_D:
-            self.d_pressed(motor_speed)
+            self.d_pressed()
         # Emergency stop, triggers for all motors. Can include one explicitly defined for locomotion though
         elif event.key() == Qt.Key_E:
             rospy.loginfo("Emergency Stopping")
@@ -225,15 +215,16 @@ class MyPlugin(Plugin):
 
         # Arrow keys to manipulate the general spinbox speed
         elif event.key() == Qt.Key_Up:
+            motor_speed = self.get_general_motor_val()
             rospy.loginfo("Key up")
             self._widget.general_speed_spinbox.setValue(motor_speed + 1)
 
         elif event.key() == Qt.Key_Down:
+            motor_speed = self.get_general_motor_val()
             rospy.loginfo("Key down")
             self._widget.general_speed_spinbox.setValue(motor_speed - 1)
 
     # Currently only geared toward locomotion
-
     def keyReleaseEvent(self, event):
         if event.key() in (Qt.Key_W, Qt.Key_S, Qt.Key_A, Qt.Key_D):
             if not event.isAutoRepeat():
@@ -244,37 +235,33 @@ class MyPlugin(Plugin):
         val = float(self._widget.general_speed_spinbox.value())
         return val
 
-    def w_pressed(self, motor_speed=None):
-        if motor_speed is None:
-            motor_speed = self.get_general_motor_val()
+    def w_pressed(self):
+        motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(0, motor_speed)
         if self.ENABLE_DEBUGGING:
             rospy.loginfo("w key pressed")
 
-    def a_pressed(self, motor_speed=None):
-        if motor_speed is None:
-            motor_speed = self.get_general_motor_val()
+    def a_pressed(self):
+        motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(3, motor_speed)
         if self.ENABLE_DEBUGGING:
             rospy.loginfo("a key pressed")
 
-    def s_pressed(self, motor_speed=None):
-        if motor_speed is None:
-            motor_speed = self.get_general_motor_val()
+    def s_pressed(self):
+        motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(1, motor_speed)
         if self.ENABLE_DEBUGGING:
             rospy.loginfo("s key pressed")
 
-    def d_pressed(self, motor_speed=None):
-        if motor_speed is None:
-            motor_speed = self.get_general_motor_val()
+    def d_pressed(self):
+        motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(2, motor_speed)
         if self.ENABLE_DEBUGGING:
             rospy.loginfo("d key pressed")
 
     def estop_pressed(self):
         rospy.loginfo("ESTOP: Attempting to stop all motors...")
-        
+    
         # Set all known motors to value 0
         robotInterface.sendWheelSpeed(0)
         robotInterface.sendExcavationSpeed(0)
@@ -290,6 +277,14 @@ class MyPlugin(Plugin):
 
         # Stop any updated changes to the translation system
         self._update_translate_timer = QTimer(self)
+
+    def dig_pressed(self):
+        val = int(self._widget.goal_value_slider.value())
+        robotInterface.sendDigAction(val)
+
+    def dump_pressed(self):
+        val = int(self._widget.goal_value_slider.value())
+        robotInterface.sendDumpAction(val)
 
     """
     Unregister ROS publisher
@@ -307,8 +302,6 @@ class MyPlugin(Plugin):
         #if robotInterface is not None:
         #    robotInterface.motorCommandPub.unregister()
 
-
-    #### Speed and Angle change Functions
 
     """
     Individual Motor Change Functions
@@ -334,48 +327,9 @@ class MyPlugin(Plugin):
         val = float (self._widget.attitude_slider.value() * self.attitude_slider_conversion_factor)
         self._widget.motor5_spinbox.setValue(val)
 
-    ### Translation timer-updated shift to some specified value
-    def setup_translate_shift_timer(self):
-        self._update_translate_timer = QTimer()
-        self._update_translate_timer.timeout.connect(self.shift_timer_func)
-        self._update_translate_timer.start(1000)
-
-    def shift_timer_func(self):
-        currentValue = self._widget.motor4_spinbox.value()
-        targetValue = self._widget.target_translate_spinbox.value()
-        if(targetValue == currentValue):
-            self._update_translate_timer = QTimer(self)
-            self._widget.translate_cancel_button.setEnabled(False)
-            return
-        else:
-            delta = self._widget.steps_per_sec_spinbox.value()
-            self._widget.motor4_spinbox.setValue(currentValue + delta)
-            self._widget.translate_cancel_button.setEnabled(True)
-
-    def setup_attitude_timer(self):
-        self._update_attitude_timer = QTimer()
-        self._update_attitude_timer.timeout.connect(self.shift_timer_attitude_func)
-        self._update_attitude_timer.start(1000)
-
-    def shift_timer_attitude_func(self):
-        currentValue = self._widget.motor5_spinbox.value()
-        targetValue = self._widget.target_attitude_spinbox.value()
-        if(targetValue == currentValue):
-            self._update_attitude_timer = QTimer(self)
-            self._widget.attitude_shift_cancel_button.setEnabled(False)
-        else:
-            delta = self._widget.steps_attitude_spinbox.value()
-            self._widget.motor5_spinbox.setValue(currentValue + delta)
-            self._widget.attitude_shift_cancel_button.setEnabled(True)
-    
-    # Cancel the 'shift' by just setting the reference to a new QTimer
-    def cancel_shift(self):
-        self._update_translate_timer.stop()
-        self._widget.translate_cancel_button.setEnabled(False)
-
-    def cancel_attitude_shift(self):
-        self._update_attitude_timer.stop()
-        self._widget.attitude_shift_cancel_button.setEnabled(False)
+    def goal_value_slider_changed(self):
+        val = self._widget.goal_value_slider.value()
+        self._widget.goal_value_label.setText(str(val))
 
     """
     Grouped Motor Control Functions
@@ -390,13 +344,6 @@ class MyPlugin(Plugin):
     def general_slider_changed(self):
         sliderValue = int(self._widget.general_speed_slider.value())
         self._widget.general_speed_spinbox.setValue(sliderValue * self.general_speed_slider_conversion_factor)    
-
-    # Iteratively send values
-    def _on_parameter_changed(self):
-        robotInterface.sendDepositionBucketSpeed(float(self.motor_widgets.get(2).value()))
-        robotInterface.sendExcavationSpeed(float(self.motor_widgets.get(3).value()))
-        robotInterface.sendExcavationDepth(float(self.motor_widgets.get(4).value()))
-        robotInterface.sendExcavationAngle(float(self.motor_widgets.get(5).value()))
 
     """
     Sensor value updating 
@@ -418,11 +365,7 @@ class MyPlugin(Plugin):
                 sensorVal = robotInterface.sensorValueMap.get(sensor_id)
                 sensor_widget.setText(str(sensorVal))
         except Exception as exc:
-            rospy.logwarn("There was an unusual problem updating sensors: %s", exc.getMessage())
-
-
-    def _set_status_text(self, text):
-        self._widget.status_label.setText(text)
+            rospy.logwarn("There was an unusual problem updating sensors: %s", exc)
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here

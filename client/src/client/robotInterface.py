@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import rospy
+import actionlib
+from actionlib.msg import TestAction, TestGoal
 from hwctrl.msg import SensorData
 from hwctrl.msg import MotorCmd
 from geometry_msgs.msg import Twist
@@ -17,6 +19,8 @@ excavation_speed_pub = rospy.Publisher('/excavation/conveyor_cmd', MotorCmd, que
 excavation_depth_pub = rospy.Publisher('/excavation/depth_cmd', MotorCmd, queue_size=1)
 excavation_angle_pub = rospy.Publisher('/excavation/angle_cmd', MotorCmd, queue_size=1)
 drive_command_pub = rospy.Publisher('/glenn_base/cmd_vel', Twist, queue_size=1)
+dig_action_client = actionlib.SimpleActionClient('dig', TestAction)
+dump_action_client = actionlib.SimpleActionClient('dump', TestAction)
 
 sensorValueMap = {
     0:0,
@@ -73,7 +77,7 @@ def sendWheelSpeed(forward_vel):
     try:
         drive_command_pub.publish(motor_msg)
     except rospy.ROSInterruptException as e:
-        rospy.logwarn(e.getMessage())
+        rospy.logwarn(e)
 
 def sendDriveCommand(direction, forward_vel):
     motor_msg = Twist()
@@ -92,8 +96,9 @@ def sendDriveCommand(direction, forward_vel):
         motor_msg.angular = Vector3(0, 0, forward_vel * angular_vel_factor)
     try:
         drive_command_pub.publish(motor_msg)
+        rospy.loginfo("Sent drive command with \nlinear: \n%s \nangular: \n%s", motor_msg.linear, motor_msg.angular)
     except rospy.ROSInterruptException as e:
-        rospy.logwarn(e.getMessage())
+        rospy.logwarn(e)
 
 #Publishes a MotorCmd message on the given publisher 
 def sendMotorCommand(pub, value, accel, msg_for):
@@ -105,14 +110,25 @@ def sendMotorCommand(pub, value, accel, msg_for):
         pub.publish(motor_msg)
         rospy.loginfo("Sent motor command for %s with value: %f", msg_for, motor_msg.setpoint)
     except rospy.ROSInterruptException as e:
-        rospy.logwarn("There was a problem sending the motor command %s", e.getMessage())
+        rospy.logwarn("There was a problem sending the motor command %s", e)
 
 def sensorValueCallback(data):
     rospy.loginfo("Sensor %u has value %f", data.sensor_id, data.value)
     sensorValueMap[data.sensor_id] = data.value
 
 def getSensorValue(sensor_id):
-    return sensorValueMap(sensor_id)
+    return sensorValueMap.get(sensor_id)
+
+def sendDumpAction(val):
+    goal_msg = TestGoal(goal=val)
+    dump_action_client.wait_for_server()
+    dump_action_client.send_goal(goal_msg)
+
+def sendDigAction(val):
+    goal_msg = TestGoal(goal=val)
+    dig_action_client.wait_for_server()
+    dig_action_client.send_goal(goal_msg)
+
 
 def initializeRobotInterface():
     #rospy.init_node(node_name,disable_signals=True)
