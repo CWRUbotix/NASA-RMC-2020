@@ -270,8 +270,6 @@ class MyPlugin(Plugin):
         # Excavation depth and conveyor angle are set to the most recent position from SensorValues
         translationPos = robotInterface.sensorValueMap.get(4)
         bcAttitudePos = robotInterface.sensorValueMap.get(5)
-
-        rospy.loginfo("ESTOP: Setting translation position: %s and attitude: %s" % (translationPos, bcAttitudePos))
         robotInterface.sendExcavationDepth(translationPos)
         robotInterface.sendExcavationAngle(bcAttitudePos)
 
