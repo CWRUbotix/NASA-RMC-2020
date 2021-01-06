@@ -147,7 +147,7 @@ class MyPlugin(Plugin):
         self._widget.motor5_spinbox.valueChanged.connect(self.motor5_spinbox_changed)
         self._widget.general_speed_spinbox.valueChanged.connect(self.general_spinbox_changed)
 
-        #All slider valueChanges callbacks
+        #All slider valueChanged callbacks
         self._widget.attitude_slider.valueChanged.connect(self.motor5_slider_changed)
         self._widget.goal_value_slider.valueChanged.connect(self.goal_value_slider_changed)
         self._widget.general_speed_slider.valueChanged.connect(self.general_slider_changed)
