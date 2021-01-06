@@ -121,13 +121,21 @@ def getSensorValue(sensor_id):
 
 def sendDumpAction(val):
     goal_msg = TestGoal(goal=val)
-    dump_action_client.wait_for_server()
-    dump_action_client.send_goal(goal_msg)
+    connected = dump_action_client.wait_for_server(rospy.Duration(0.5))
+
+    if connected:
+        dump_action_client.send_goal(goal_msg)
+    else:
+        rospy.logwarn('Dumping action server failed to connect after 0.5 seconds')
 
 def sendDigAction(val):
     goal_msg = TestGoal(goal=val)
-    dig_action_client.wait_for_server()
-    dig_action_client.send_goal(goal_msg)
+    connected = dig_action_client.wait_for_server(rospy.Duration(0.5))
+    
+    if connected:
+        dig_action_client.send_goal(goal_msg)
+    else:
+        rospy.logwarn('Excavation action server failed to connect after 0.5 seconds')
 
 
 def initializeRobotInterface():
