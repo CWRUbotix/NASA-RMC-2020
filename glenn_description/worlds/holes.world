@@ -58,5 +58,13 @@
       </include>
     </model>
 
+    <!-- Deposition_bin -->
+    <model name="deposition_bin">
+      <pose> 0.755 .5 0.55 0 0 3.141592</pose>
+      <include>
+        <uri>model://deposition_bin</uri>
+      </include>
+    </model>
+
   </world>
 </sdf>
