@@ -133,7 +133,7 @@ class MyPlugin(Plugin):
         self._widget.general_speed_spinbox.setSingleStep(0.1)
 
         #Configure the slider counterpart 
-        self._widget.general_speed_slider.setRange(0, 6) 
+        self._widget.general_speed_slider.setRange(0, 6)
         self._widget.general_speed_slider.setSingleStep(1)
 
         #Configure the goal value slider 
