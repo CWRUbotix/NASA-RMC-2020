@@ -24,10 +24,6 @@
       <arg name="enable_pointcloud" value="true"/>
       <arg name="enable_sync"       value="true"/>
       <arg name="tf_prefix"         value="$(arg camera)"/>
-      <arg name="x"                 value="0.48"/><!--(m) x offset of realsense from center of robot-->
-      <arg name="y"                 value="0.266"/> <!--(m) y offset of realsense from center of robot-->
-      <arg name="z"                 value="0.29"/> <!--(m) height of the realsense from the ground-->
-      <arg name="yaw"               value="-90"/><!-- (degrees) angle from robot coordinate to camera coordinate system-->
 
     </include>
 
