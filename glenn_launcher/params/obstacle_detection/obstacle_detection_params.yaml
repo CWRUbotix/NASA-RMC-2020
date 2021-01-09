@@ -4,7 +4,7 @@ grid_resolution: 0.1 # (m / cell) resolution of local and global occupancy grid
 grid_size: 3.5 # (m) width and height of local occupancy grid
 map_buffer: 0.15 # (m) width/cells to be added to global map to catch obstacles near edge
 
-# realsense params
+# realsense params/ currently not used. see realsense_camera.launch
 realsense/z: 0.29  # (m) height of the realsense from the ground
 realsense/x: 0.48  # (m) x offset of realsense from center of robot
 realsense/y: 0.266  # (m) y offset of realsense from center of robot
