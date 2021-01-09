@@ -14,8 +14,13 @@ IMUCalibrator::IMUCalibrator(ros::NodeHandle &nh, ros::NodeHandle &pnh) : nh_(nh
     pnh_.param("calibrate_time", calib_time_, 1.0);
     pnh_.param("still_range", still_range_, 0.1);
 
+    pnh_.param("default_bias_x", bias_.x, 0.0);
+    pnh_.param("default_bias_y", bias_.y, 0.0);
+    pnh_.param("default_bias_z", bias_.z, 0.0);
+
     ROS_INFO("Calibrate time set to %.2f", calib_time_);
     ROS_INFO("Still range set to %.2f", still_range_);
+    ROS_INFO("Initial bias set to %.3f, %.3f, %.3f", bias_.x, bias_.y, bias_.z);
 
     calibrating_ = false;
 
@@ -111,7 +116,8 @@ bool IMUCalibrator::calibrate_service_cb(std_srvs::TriggerRequest &request, std_
             bias_.x = mean(roll_samples_);
             bias_.y = mean(pitch_samples_);
             bias_.z = mean(yaw_samples_);
-        } else {
+        }
+        else {
             ROS_WARN("Too much movement, trying again");
         }
     }
@@ -119,7 +125,8 @@ bool IMUCalibrator::calibrate_service_cb(std_srvs::TriggerRequest &request, std_
     if (!success)
     {
         ROS_ERROR("IMU Calibration failed, exiting");
-    } else {
+    }
+    else {
         ROS_INFO("Successfully calibrated");
         ROS_INFO("New biases %.3f, %.3f, %.3f", bias_.x, bias_.y, bias_.z);
         bias_pub_.publish(bias_);  // Publish new bias for debugging
