@@ -2,9 +2,10 @@
 <launch>
     <!-- "true" if running roscore from the robot -->
     <arg name="on_robot" value="$(eval '192.168.0.100' in optenv('ROS_MASTER_URI'))"/>
+<arg name="sim" default="false"/>
 
     <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
-    <include file="$(find glenn_launcher)/launch/obstacle_detection/realsense_camera.launch" if="$(arg bags)"/>
+    <include file="$(find glenn_launcher)/launch/obstacle_detection/realsense_camera.launch" unless="$(arg sim)"/>
     <!-- only run if not using simulator -->
     <!-- <node name="realsense_motion_tracking" pkg="obstacle_detection" type="realsense_motion_tracking_node.py" cwd="node"/> -->
     <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
