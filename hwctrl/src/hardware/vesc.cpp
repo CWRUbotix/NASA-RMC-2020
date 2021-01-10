@@ -44,18 +44,16 @@ void VescMotor::can_rx_callback(FramePtr frame) {
       {
         size_t idx = 0;
         rpm = buffer::get_floating<float, int32_t>(frame_data, 1.0, idx);
-        
-        // use these eventually?
         current_in = buffer::get_floating<float, int16_t>(frame_data, 10.0f, idx);
         duty_now = buffer::get_floating<float, int16_t>(frame_data, 1000.0, idx);
       }
 
       // publish rpm data
-      auto msg = boost::make_shared<hwctrl::MotorData>();
-      msg->data_type = msg->RPM;
-      msg->id = m_id;
-      msg->value = rpm / m_rpm_coef;
-      msg->timestamp = ros::Time::now();
+      hwctrl::MotorData msg;
+      msg.data_type = msg.RPM;
+      msg.id = m_id;
+      msg.value = rpm / m_rpm_coef;
+      msg.timestamp = ros::Time::now();
       m_motor_data_pub.publish(msg);
 
       break;
@@ -103,24 +101,23 @@ void VescMotor::can_rx_callback(FramePtr frame) {
             msg->data_type = msg->RPM;
             msg->id = m_id;
             
-            // eventually we may want to actually do something with this data
-            // for now, we only use rpm
-            float temp_mos1     = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
-            float temp_mos2     = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
+            // eventually we may want to do something with this data
+            float temp_mos1 = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
+            float temp_mos2 = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
             float current_motor = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
-            float current_in    = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
-            float avg_id        = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
-            float avg_iq        = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
-            float duty_now      = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 1000.0, idx);
-            float rpm           = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 1.0, idx);
-            float v_in          = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
-            float amp_hours          = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
-            float amp_hours_charged  = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
-            float watt_hours         = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
+            float current_in = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
+            float avg_id = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
+            float avg_iq = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 100.0, idx);
+            float duty_now = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 1000.0, idx);
+            float rpm = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 1.0, idx);
+            float v_in = buffer::get_floating<float, int16_t>(m_rx_buf.data(), 10.0, idx);
+            float amp_hours = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
+            float amp_hours_charged = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
+            float watt_hours = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
             float watt_hours_charged = buffer::get_floating<float, int32_t>(m_rx_buf.data(), 10000.0, idx);
-            int32_t tachometer       = buffer::get<int32_t>(m_rx_buf.data(), idx);
-            int32_t tachometer_abs   = buffer::get<int32_t>(m_rx_buf.data(), idx);
-            int8_t fault_code        = (int8_t) m_rx_buf[idx++];
+            int32_t tachometer = buffer::get<int32_t>(m_rx_buf.data(), idx);
+            int32_t tachometer_abs = buffer::get<int32_t>(m_rx_buf.data(), idx); 
+            int8_t fault_code = (int8_t) m_rx_buf[idx++];
 
             msg->timestamp = ros::Time::now();
             msg->value = rpm / m_rpm_coef;
