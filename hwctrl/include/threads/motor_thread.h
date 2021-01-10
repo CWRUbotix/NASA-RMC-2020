@@ -9,6 +9,7 @@
 #include <hwctrl/MotorCmd.h>
 #include <hwctrl/MotorData.h>
 #include <hwctrl/SensorData.h>
+#include <hwctrl/CanFrame.h>
 
 #include <boost/move/make_unique.hpp>
 #include <boost/move/unique_ptr.hpp>
@@ -39,15 +40,23 @@ class MotorThread : public HwctrlThread {
   void set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg);
   void limit_switch_callback(boost::shared_ptr<hwctrl::LimitSwState> msg);
   void estop_callback(boost::shared_ptr<std_msgs::Bool> msg);
+
+ protected:
+  using FramePtr = boost::shared_ptr<hwctrl::CanFrame>;
+  virtual void can_rx_callback(FramePtr frame);
+
  private:
 
   // subscribers
   ros::Subscriber m_motor_set_sub;
   ros::Subscriber m_estop_sub;
+  ros::Subscriber m_can_rx_sub;
   std::vector<ros::Subscriber> m_ls_subs;
 
   // motors
   std::map<uint32_t, boost::shared_ptr<Motor>> m_motors;
+
+  std::vector<uint8_t> m_vesc_buffer;
 
   bool m_sys_power_on = false;
 };

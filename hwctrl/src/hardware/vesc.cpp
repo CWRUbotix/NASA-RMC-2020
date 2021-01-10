@@ -207,3 +207,29 @@ void VescMotor::send_values_frame(ros::Time time) {
   frame->can_dlc = ind;
   m_can_tx_pub.publish(frame);
 }
+
+
+void VescMotor::update_values_from_buffer(uint8_t* buffer){
+  m_type = MotorType::Vesc;
+  // fill_data_from_buffer()
+  int ind = 1;
+  m_temp_mos1           = buffer::get_float16(buffer, 10.0, &ind);
+  m_temp_mos2           = buffer::get_float16(buffer, 10.0, &ind);
+  m_current_motor       = buffer::get_float32(buffer, 100.0, &ind);
+  m_current_in          = buffer::get_float32(buffer, 100.0, &ind);
+  m_avg_id              = buffer::get_float32(buffer, 100.0, &ind);
+  m_avg_iq              = buffer::get_float32(buffer, 100.0, &ind);
+  m_duty_now            = buffer::get_float16(buffer, 1000.0, &ind);
+  m_rpm                 = buffer::get_float32(buffer, 1.0, &ind);
+  m_v_in                = buffer::get_float16(buffer, 10.0, &ind);
+  m_amp_hours           = buffer::get_float32(buffer, 10000.0, &ind);
+  m_amp_hours_charged   = buffer::get_float32(buffer, 10000.0, &ind);
+  m_watt_hours          = buffer::get_float32(buffer, 10000.0, &ind);
+  m_watt_hours_charged  = buffer::get_float32(buffer, 10000.0, &ind);
+  m_tachometer          = buffer::get_int32(buffer, &ind);
+  m_tachometer_abs      = buffer::get_int32(buffer, &ind);
+  m_fault_code          = (int8_t)buffer[ind++];
+  
+  // publish data
+
+}
