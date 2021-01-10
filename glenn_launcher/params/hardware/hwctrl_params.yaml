@@ -4,56 +4,56 @@
 hardware:
   sensor:
     uwb_node_1:
-      id: 0
+      id: 1
       name: 'UWB NODE 1'
       type: 'uwb'
       can_id: 1
       update_period: 0.1
     uwb_node_2:
-      id: 1
+      id: 2
       name: 'UWB NODE 2'
       type: 'uwb'
       can_id: 2
       update_period: 0.1
     uwb_node_3:
-      id: 2
+      id: 3
       name: 'UWB NODE 3'
       type: 'uwb'
       can_id: 3
       update_period: 0.1
     uwb_node_4:
-      id: 3
+      id: 4
       name: 'UWB NODE 4'
       type: 'uwb'
       can_id: 4
       update_period: 0.1
     ebay_temperature:
-      id: 4
+      id: 5
       name: 'EBAY TEMPERATURE'
       gpio: '/sys/class/gpio/gpio69/'
       over_temp_gpio: '/sys/class/gpio/gpio27/'
       critical_temp_gpio: '/sys/class/gpio/gpio61/'
       update_period: 1.0
     imu:
-      id: 5
+      id: 6
       name: 'IMU'
       type: 'imu'
       gpio: '/sys/class/gpio/gpio66/'
       update_period: 0.005
     adc_1:
-      id: 6
+      id: 7
       name: 'POT'
       type: 'pot'
       gpio: '/sys/class/gpio/gpio67/'
       update_period: 0.01
     adc_2:
-      id: 7
+      id: 8
       name: 'LOAD CELL'
       type: 'load_cell'
       gpio: '/sys/class/gpio/gpio68/'
       update_period: 0.01
     limit_1:
-      id: 8
+      id: 9
       name: 'LIMIT DEP LOWER'
       type: 'limit'
       gpio: '/sys/class/gpio/gpio60/'
@@ -61,7 +61,7 @@ hardware:
       motor_id: 2
       allowed_dir: 1
     limit_2:
-      id: 9
+      id: 10
       name: 'LIMIT DEP UPPER'
       type: 'limit'
       gpio: '/sys/class/gpio/gpio48/'
@@ -69,7 +69,7 @@ hardware:
       motor_id: 2
       allowed_dir: 1
     limit_3:
-      id: 10
+      id: 11
       name: 'LIMIT EXC TRANS LOWER'
       type: 'limit'
       gpio: '/sys/class/gpio/gpio49/'
@@ -77,7 +77,7 @@ hardware:
       motor_id: 2
       allowed_dir: 1
     limit_4:
-      id: 11
+      id: 12
       name: 'LIMIT EXC TRANS UPPER'
       type: 'limit'
       gpio: '/sys/class/gpio/gpio117/'
@@ -85,7 +85,7 @@ hardware:
       motor_id: 2
       allowed_dir: 1
     estop:
-      id: 12
+      id: 13
       name: "ESTOP"
       type: "estop"
       gpio: "/sys/class/gpio/gpio45"
@@ -93,7 +93,7 @@ hardware:
 # BEGIN MOTOR CONFIGS
   motor:
     port_drive:
-      id: 1
+      id: 5
       name: 'PORT DRIVE'
       type: 'vesc'
       can_id: 5
@@ -102,7 +102,7 @@ hardware:
       max_acceleration: 75
       update_period: 0.25
     starboard_drive:
-      id: 2
+      id: 6
       name: 'STARBOARD DRIVE'
       type: 'vesc'
       can_id: 6
@@ -111,7 +111,7 @@ hardware:
       max_acceleration: 75
       update_period: 0.25
     dep:
-      id: 3
+      id: 7
       name: 'DEPOSITION DUNKERINO'
       type: 'vesc'
       can_id: 7
@@ -120,7 +120,7 @@ hardware:
       max_acceleration: 50
       update_period: 0.25
     exc_belt:
-      id: 4
+      id: 8
       name: 'EXCAVATION BELT'
       type: 'vesc'
       can_id: 8
@@ -129,7 +129,7 @@ hardware:
       max_acceleration: 50
       update_period: 0.25
     exc_translation:
-      id: 5
+      id: 9
       name: 'EXCAVATION TRANSLATION'
       type: 'vesc'
       can_id: 9
@@ -138,12 +138,12 @@ hardware:
       max_acceleration: 50
       update_period: 0.25
     exc_port_act:
-      id: 6
+      id: 10
       name: 'EXCAVATION PORT ACTUATOR'
       type: 'brushed_motor'
       can_id: 10
     exc_starboard_act:
-      id: 7
+      id: 11
       name: 'EXCAVATION STARBOARD ACTUATOR'
       type: 'brushed_motor'
       can_id: 11
