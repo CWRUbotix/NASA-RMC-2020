@@ -147,7 +147,6 @@ void MotorThread::read_from_server() {
     const std::string name_param = full_name + "/name";
     const std::string type_param = full_name + "/type";
     const std::string id_param = full_name + "/id";
-    const std::string can_id_param = full_name + "/can_id";
     const std::string gear_reduc_param = full_name + "/gear_reduction";
     const std::string max_rpm_param = full_name + "/max_rpm";
     const std::string max_accel_param = full_name + "/max_acceleration";
@@ -181,12 +180,8 @@ void MotorThread::read_from_server() {
     }
     if(m_nh.hasParam(id_param)) {
       m_nh.getParam(id_param, id);
-      ROS_INFO(" - Found system id: %d", id);
-      found++;
-    }
-    if (m_nh.hasParam(can_id_param)) {
-      m_nh.getParam(can_id_param, can_id);
-      ROS_INFO(" - Found CAN id: %d", can_id);
+      ROS_INFO(" - Found ID: %d", id);
+      can_id = id; // 
       found++;
     }
     if (m_nh.hasParam(gear_reduc_param)) {
