@@ -14,11 +14,15 @@
 #include "hardware/motor.h"
 #include "hardware/vesc.h"
 #include "hwctrl.h"
+#include "types.h"
+#include "util.h"
 
 MotorThread::MotorThread(ros::NodeHandle nh) : HwctrlThread("motor_thread", nh, 1000) {
   m_motor_set_sub = m_nh.subscribe("motor_setpoints", 128,
                                    &MotorThread::set_motor_callback, this);
   m_estop_sub = m_nh.subscribe("estop", 128, &MotorThread::estop_callback, this);
+  m_can_rx_sub = m_nh.subscribe("can_rx_frames", 128, &MotorThread::can_rx_callback, this);
+
   // Get all limit switch topics. Doesnt matter which one as long as they specify
   // which motor theyre addressing within the message
   const auto ls_topics = get_limit_switch_topics();
@@ -29,6 +33,82 @@ MotorThread::MotorThread(ros::NodeHandle nh) : HwctrlThread("motor_thread", nh, 
     m_ls_subs.push_back(m_nh.subscribe(name, 128, &MotorThread::limit_switch_callback, this));
 
   read_from_server();
+}
+
+void MotorThread::can_rx_callback(FramePtr frame) {
+  const uint32_t rx_id = (uint32_t)frame->can_id;
+  const uint8_t can_id = (uint8_t)(rx_id & 0xFF);  // extract only the id
+
+  if (can_id != 0) {
+    // not for us, our id is 0
+    return;
+  }
+
+  const uint8_t cmd = (uint8_t)(rx_id >> 8);
+  const uint8_t* frame_data = frame->data.data();
+
+  switch (cmd) {
+    case CanPacketId::CAN_PACKET_FILL_RX_BUFFER:{
+      int offset = frame_data[0];
+      int size = frame->can_dlc - 1;
+      int req_size = offset + size;
+
+      // if buffer is too small, resize to be larger (never resize to be smaller)
+      // I think this will only have to happen once
+      if(m_vesc_buffer.size() < req_size){
+        m_vesc_buffer.resize(req_size);
+      }
+
+      memcpy(m_vesc_buffer.data() + offset, frame_data + 1, size);
+      break;
+    }
+    case CanPacketId::CAN_PACKET_PROCESS_RX_BUFFER:{
+      int ind = 0;
+      int vesc_id = frame_data[ind++];
+
+      try{
+        
+        boost::shared_ptr<VescMotor> vesc = boost::dynamic_pointer_cast<VescMotor>(m_motors.at(vesc_id));
+
+        int n_cmds = frame_data[ind++];
+        uint16_t packet_len = (frame_data[ind++] << 8);
+        packet_len |= frame_data[ind++];
+        uint16_t crc = (frame_data[ind++] << 8);
+        crc |= frame_data[ind++];
+
+        uint8_t* vesc_rx_buf = m_vesc_buffer.data();
+
+        if (crc != crc::crc16(vesc_rx_buf, packet_len)) {
+          // error in transmission
+          ROS_WARN("Error: VESC checksum doesn't match");
+          break;
+        }
+
+        // vesc.is_online = true;
+
+        ind = 0;
+        int comm_cmd = vesc_rx_buf[ind++];
+        switch(comm_cmd){
+          case COMM_GET_VALUES:{
+            vesc->update_values_from_buffer(vesc_rx_buf);
+            break;
+          }
+          default:{
+            ROS_DEBUG("Vesc command %d not supported", comm_cmd);
+          }
+        }
+
+      }catch(std::out_of_range&) {
+        ROS_WARN("Motor with CAN ID %d is not defined.", vesc_id);
+      }
+
+      break;
+    }
+    default:
+      // These are depreciated
+      ROS_DEBUG("Vesc (id: %d) recieved depreciated frames", 0);
+      break;
+  }
 }
 
 std::vector<std::string> MotorThread::get_limit_switch_topics() {

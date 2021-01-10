@@ -63,6 +63,7 @@ private:
 protected:
     ros::NodeHandle m_nh;
     ros::Publisher  m_motor_data_pub;
+    ros::Subscriber m_motor_cmd_sub;
 
     std::string   m_name;
     uint32_t      m_id;
