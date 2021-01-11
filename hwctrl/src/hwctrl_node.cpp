@@ -1,30 +1,27 @@
-#include <hwctrl.h>
+#include <ros/ros.h>
 
-int main(int argc, char** argv){
-	ROS_INFO("Hardware Controller Node");
-	ros::init(argc, argv, "hwctrl");
-	ros::NodeHandle n;
+#include <thread>
 
-	// CREATE THE CanbusIf OBJECT
-	CanbusIf canbus_if(n);
+#include "threads/canbus_thread.h"
+#include "threads/motor_thread.h"
+#include "threads/sensor_thread.h"
 
-	// CREATE THE SensorIf OBJECT
-	SensorIf sensor_if(n);
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "hwctrl");
+  ros::NodeHandle nh;
 
-	// CREATE THE HwMotorIf OBJECT
-	HwMotorIf motor_if(n);
+  SensorThread sensor_thread(nh);
+  CanbusThread canbus_thread(nh);
+  MotorThread  motor_thread(nh);
 
-	ROS_INFO("ROS init success");
+  std::thread sensor_thread_obj(std::ref(sensor_thread));
+  std::thread canbus_thread_obj(std::ref(canbus_thread));
+  std::thread motor_thread_obj(std::ref(motor_thread));
 
-	ROS_INFO(motor_if.list_motors().c_str());
+  sensor_thread_obj.detach();
+  canbus_thread_obj.detach();
+  motor_thread_obj.detach();
 
-	// start threads, each thread creates it's own spinner
-	std::thread sensor_thread_obj(sensors_thread, &sensor_if);
-	std::thread motors_thread_obj(maintain_motors_thread, &motor_if);
-	std::thread canbus_thread_obj(canbus_thread, &canbus_if);
-
-//	ros::spin(); // spin to handle this global callback queue
-
-	ros::waitForShutdown();
-	return 0;
+  ros::waitForShutdown();
+  return 0;
 }
