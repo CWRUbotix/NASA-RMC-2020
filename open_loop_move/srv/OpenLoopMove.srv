@@ -1,0 +1,10 @@
+# Move type
+uint8 DISTANCE = 0
+uint8 TO_ANGLE = 1
+uint8 FOR_ANGLE = 2
+uint8 move_type
+
+# Distance or angle to travel
+float32 distance
+---
+bool success
