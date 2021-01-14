@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 import os
 
-import rospy
-import rospkg
-import sys
-import rosservice
-import robotInterface
-
+import rospy, rospkg, sys, rosservice, robotInterface
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import Qt, QTimer, Slot
+from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtWidgets import QWidget
 from actionlib.msg import TestAction
+from sensor_msgs.msg import Imu
+from std_msgs.msg import Bool, Float32
+from hwctrl.msg import Encoders
+
 
 node_name = 'robot_interface'
 motorCommandTopic = 'motor_setpoints'
@@ -50,7 +49,6 @@ class MyPlugin(Plugin):
 
         # ROS Publisher
         self._publisher = None
-        robotInterface.initializeRobotInterface()
 
         # Service Proxy and Subscriber
         self._service_proxy = None
@@ -67,67 +65,45 @@ class MyPlugin(Plugin):
         
         # Give QObjects reasonable names
         self._widget.setObjectName('MyPluginUi')
+
+        if context.serial_number() > 1:
+            self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         
-        ### Map motors to their respective UI elements
-        self.motor_widgets = {
-            2:self._widget.motor2_spinbox,
-            3:self._widget.motor3_spinbox,
-            4:self._widget.motor4_spinbox,
-            5:self._widget.motor5_spinbox, 
-        }
+        #Add widget to the user interface
+        context.add_widget(self._widget)
+        self._widget.setFocusPolicy(0x8)
+        self._widget.setFocus()
 
-        self.sensor_widgets = {
-            0:self._widget.sensor0_lineedit,
-            1:self._widget.sensor1_lineedit,
-            2:self._widget.sensor2_lineedit,
-            3:self._widget.sensor3_lineedit,
-            4:self._widget.sensor4_lineedit,
-            5:self._widget.sensor5_lineedit,
-            6:self._widget.sensor6_lineedit,
-            9:self._widget.sensor9_lineedit,
-            10:self._widget.sensor10_lineedit,
-            13:self._widget.sensor13_lineedit,
-            19:self._widget.sensor19_lineedit,
-            23:self._widget.sensor23_lineedit,
-            24:self._widget.sensor24_lineedit,
-            25:self._widget.sensor25_lineedit,
-            26:self._widget.sensor26_lineedit,
-            27:self._widget.sensor27_lineedit,
-            28:self._widget.sensor28_lineedit,
-            29:self._widget.sensor29_lineedit,
-            30:self._widget.sensor30_lineedit,
-            31:self._widget.sensor31_lineedit,
-            32:self._widget.sensor32_lineedit
-        }
-
+        #Initialize subscribers
+        self.initializeRobotInterface()
         self.ENABLE_DEBUGGING = False
 
         #For converting slider values to floats 
         self.general_speed_slider_conversion_factor = 0.1
-        self.attitude_slider_conversion_factor = 0.01
+        self.excavation_angle_slider_conversion_factor = 0.01
        
-        '''Set reasonable ranges for the motors'''
-        '''deposition bucket speed is from -1 to 1'''
-        self._widget.motor2_spinbox.setRange(-1, 1)
-        self._widget.motor2_spinbox.setSingleStep(0.1)
+        '''Set reasonable ranges for the motors
+         deposition bucket speed is from -1 to 1'''
+        self._widget.dep_bucket_speed_spinbox.setRange(-1, 1)
+        self._widget.dep_bucket_speed_spinbox.setSingleStep(0.1)
 
         '''excavation speed is from -1 to 1'''
-        self._widget.motor3_spinbox.setRange(-1, 1)
-        self._widget.motor3_spinbox.setSingleStep(0.1)
+        self._widget.excavation_speed_spinbox.setRange(-1, 1)
+        self._widget.excavation_speed_spinbox.setSingleStep(0.1)
 
         '''excavation depth is from 0 to 0.4'''
-        self._widget.motor4_spinbox.setRange(0, 0.4)
-        self._widget.motor4_spinbox.setSingleStep(0.05)
+        self._widget.excavation_depth_spinbox.setRange(0, 0.4)
+        self._widget.excavation_depth_spinbox.setSingleStep(0.05)
 
         '''excavation angle is from 0 to 1.57'''
-        self._widget.motor5_spinbox.setRange(0, 1.57)
-        self._widget.motor5_spinbox.setSingleStep(0.02)
+        self._widget.excavation_angle_spinbox.setRange(0, 1.57)
+        self._widget.excavation_angle_spinbox.setSingleStep(0.02)
 
         #Configure the slider counterpart
-        self._widget.attitude_slider.setRange(0, 157)
-        self._widget.attitude_slider.setSingleStep(2)
+        self._widget.excavation_angle_slider.setRange(0, 157)
+        self._widget.excavation_angle_slider.setSingleStep(2)
         
-        ''' drive speed is from -0.6 to 0.6
+        '''drive speed is from -0.6 to 0.6
             can also used to control all other motor spinbox values'''
         self._widget.general_speed_spinbox.setRange(0, 0.6)
         self._widget.general_speed_spinbox.setSingleStep(0.1)
@@ -141,14 +117,14 @@ class MyPlugin(Plugin):
         self._widget.goal_value_slider.setSingleStep(1)
 
         #All spinbox valueChanged callbacks
-        self._widget.motor2_spinbox.valueChanged.connect(self.motor2_spinbox_changed)
-        self._widget.motor3_spinbox.valueChanged.connect(self.motor3_spinbox_changed)
-        self._widget.motor4_spinbox.valueChanged.connect(self.motor4_spinbox_changed)
-        self._widget.motor5_spinbox.valueChanged.connect(self.motor5_spinbox_changed)
+        self._widget.dep_bucket_speed_spinbox.valueChanged.connect(self.dep_bucket_speed_changed)
+        self._widget.excavation_speed_spinbox.valueChanged.connect(self.excavation_speed_changed)
+        self._widget.excavation_depth_spinbox.valueChanged.connect(self.excavation_depth_changed)
+        self._widget.excavation_angle_spinbox.valueChanged.connect(self.excavation_angle_changed)
         self._widget.general_speed_spinbox.valueChanged.connect(self.general_spinbox_changed)
 
         #All slider valueChanged callbacks
-        self._widget.attitude_slider.valueChanged.connect(self.motor5_slider_changed)
+        self._widget.excavation_angle_slider.valueChanged.connect(self.excavation_angle_slider_changed)
         self._widget.goal_value_slider.valueChanged.connect(self.goal_value_slider_changed)
         self._widget.general_speed_slider.valueChanged.connect(self.general_slider_changed)
 
@@ -160,32 +136,11 @@ class MyPlugin(Plugin):
         self._widget.d_button.pressed.connect(self.d_pressed)
         self._widget.dig_button.pressed.connect(self.dig_pressed)
         self._widget.dump_button.pressed.connect(self.dump_pressed)
-        self._widget.update_sensors_button.pressed.connect(self._setup_timer_update_sensors)
-        self._widget.stop_sensor_update_button.pressed.connect(self._stop_update_timer)
         self._widget.debug_checkbox.toggled.connect(self.debugging_checkbox_checked)
-
-        # ROS Connection Fields
-        """
-        TODO: Omitted
-        """
-        ###
-
-        if context.serial_number() > 1:
-            self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
-        
-        # Add widget to the user interface
-        context.add_widget(self._widget)
-        self._widget.setFocusPolicy(0x8)
-        self._widget.setFocus()
 
         ### Keyboard teleop setup
         self._widget.keyPressEvent = self.keyPressEvent
         self._widget.keyReleaseEvent = self.keyReleaseEvent
-
-        # timer to consecutively send service messages
-        self._update_translate_timer = QTimer(self)
-        self._update_attitude_timer = QTimer(self)
-        self._update_sensors_timer = QTimer(self)
         
     def debugging_checkbox_checked(self):
         debugging_status = self._widget.debug_checkbox.isChecked()
@@ -266,15 +221,10 @@ class MyPlugin(Plugin):
         robotInterface.sendWheelSpeed(0)
         robotInterface.sendExcavationSpeed(0)
         robotInterface.sendDepositionBucketSpeed(0)
-        
-        # Excavation depth and conveyor angle are set to the most recent position from SensorValues
-        translationPos = robotInterface.sensorValueMap.get(4)
-        bcAttitudePos = robotInterface.sensorValueMap.get(5)
-        robotInterface.sendExcavationDepth(translationPos)
-        robotInterface.sendExcavationAngle(bcAttitudePos)
 
-        # Stop any updated changes to the translation system
-        self._update_translate_timer = QTimer(self)
+        # Excavation depth and conveyor angle are set to the most recent position from SensorValues
+        robotInterface.sendExcavationDepth(float(self._widget.excavation_depth_sv.text()))
+        robotInterface.sendExcavationAngle(float(self._widget.excavation_angle_sv.text()))
 
     def dig_pressed(self):
         val = int(self._widget.goal_value_slider.value())
@@ -304,26 +254,26 @@ class MyPlugin(Plugin):
     """
     Individual Motor Change Functions
     """
-    def motor2_spinbox_changed(self):
-        val = float(self.motor_widgets.get(2).value())
+    def dep_bucket_speed_changed(self):
+        val = float(self._widget.dep_bucket_speed_spinbox.value())
         robotInterface.sendDepositionBucketSpeed(val)
 
-    def motor3_spinbox_changed(self):
-        val = float(self.motor_widgets.get(3).value())
+    def excavation_speed_changed(self):
+        val = float(self._widget.excavation_speed_spinbox.value())
         robotInterface.sendExcavationSpeed(val)
 
-    def motor4_spinbox_changed(self):
-        val = float(self.motor_widgets.get(4).value())
+    def excavation_depth_changed(self):
+        val = float(self._widget.excavation_depth_spinbox.value())
         robotInterface.sendExcavationDepth(val)
 
-    def motor5_spinbox_changed(self):
-        val = float(self.motor_widgets.get(5).value())
+    def excavation_angle_changed(self):
+        val = float(self._widget.excavation_angle_spinbox.value())
         robotInterface.sendExcavationAngle(val)
-        self._widget.attitude_slider.setValue(int(val * 100))
+        self._widget.excavation_angle_slider.setValue(int(val * 100))
 
-    def motor5_slider_changed(self):
-        val = float (self._widget.attitude_slider.value() * self.attitude_slider_conversion_factor)
-        self._widget.motor5_spinbox.setValue(val)
+    def excavation_angle_slider_changed(self):
+        val = float (self._widget.excavation_angle_slider.value() * self.excavation_angle_slider_conversion_factor)
+        self._widget.excavation_angle_spinbox.setValue(val)
 
     def goal_value_slider_changed(self):
         val = self._widget.goal_value_slider.value()
@@ -336,8 +286,10 @@ class MyPlugin(Plugin):
         self._widget.general_speed_slider.setValue(int(self.get_general_motor_val() * 10))
         if self._widget.general_assign_checkbox.isChecked():
             motor_speed = self.get_general_motor_val()
-            for motor_id, ui_widget in self.motor_widgets.items():
-                ui_widget.setValue(motor_speed)
+            self._widget.dep_bucket_speed_spinbox.setValue(motor_speed)
+            self._widget.excavation_speed_spinbox.setValue(motor_speed)
+            self._widget.excavation_depth_spinbox.setValue(motor_speed)
+            self._widget.excavation_angle_spinbox.setValue(motor_speed)
 
     def general_slider_changed(self):
         sliderValue = int(self._widget.general_speed_slider.value())
@@ -346,24 +298,15 @@ class MyPlugin(Plugin):
     """
     Sensor value updating 
     """
-    def _stop_update_timer(self):
-        self._update_sensors_timer = QTimer()
-
-    def _setup_timer_update_sensors(self):
-        updatesPerSec = 100
-        msUpdate = int(1000/updatesPerSec)
-        self._update_sensors_timer = QTimer()
-        self._update_sensors_timer.timeout.connect(self.try_update_sensors)
-        self._update_sensors_timer.start(msUpdate)
-
-    def try_update_sensors(self):
-        try:
-            for sensor_id, sensor_widget in self.sensor_widgets.items():
-                # Try to get value
-                sensorVal = robotInterface.sensorValueMap.get(sensor_id)
-                sensor_widget.setText(str(sensorVal))
-        except Exception as exc:
-            rospy.logwarn("There was an unusual problem updating sensors: %s", exc)
+    def initializeRobotInterface(self):
+        rospy.Subscriber('/imu/data_raw', Imu, lambda data: self._widget.imu_data_raw_sv.setText(str(data.angular_velocity.z)))
+        rospy.Subscriber('/realsense/imu/data_raw', Imu, lambda data: self._widget.realsense_data_raw_sv.setText(str(data.angular_velocity.z)))
+        rospy.Subscriber('/dumper/top_limit_switch', Bool, lambda data: self._widget.top_limit_switch_sv.setText(str(data.data)))
+        rospy.Subscriber('/dumper/position', Float32, lambda data: self._widget.dumper_position_sv.setText(str(data.data)))
+        rospy.Subscriber('/dumper/weight', Float32, lambda data: self._widget.dumper_weight_sv.setText(str(data.data)))
+        rospy.Subscriber('/excavation/depth', Float32,lambda data: self._widget.excavation_depth_sv.setText(str(data.data)))
+        rospy.Subscriber('/excavation/angle', Float32,lambda data: self._widget.excavation_angle_sv.setText(str(data.data)))
+        rospy.Subscriber('/glenn_base/encoders', Encoders,lambda data: self._widget.encoders_sv.setText('Left: %.3f, right:%.3f'%(data.left, data.right)))
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
