@@ -47,13 +47,6 @@ class MyPlugin(Plugin):
             print('arguments: ', args)
             print('unknowns: ', unknowns)
 
-        # ROS Publisher
-        self._publisher = None
-
-        # Service Proxy and Subscriber
-        self._service_proxy = None
-        self._subscriber = None
-
         # Create QWidget
         self._widget = QWidget()
 
@@ -74,13 +67,13 @@ class MyPlugin(Plugin):
         self._widget.setFocusPolicy(0x8)
         self._widget.setFocus()
 
-        #Initialize subscribers
-        self.initializeRobotInterface()
+        #Widget vars
         self.ENABLE_DEBUGGING = False
-
-        #For converting slider values to floats 
         self.general_speed_slider_conversion_factor = 0.1
         self.excavation_angle_slider_conversion_factor = 0.01
+        self._subscriber_widget_map = {}
+
+        self._widget.stop_updating_button.setEnabled(False)
        
         '''Set reasonable ranges for the motors
          deposition bucket speed is from -1 to 1'''
@@ -137,6 +130,8 @@ class MyPlugin(Plugin):
         self._widget.dig_button.pressed.connect(self.dig_pressed)
         self._widget.dump_button.pressed.connect(self.dump_pressed)
         self._widget.debug_checkbox.toggled.connect(self.debugging_checkbox_checked)
+        self._widget.start_updating_button.pressed.connect(self.start_updating_sensors)
+        self._widget.stop_updating_button.pressed.connect(self.stop_updating_sensors)
 
         ### Keyboard teleop setup
         self._widget.keyPressEvent = self.keyPressEvent
@@ -223,8 +218,14 @@ class MyPlugin(Plugin):
         robotInterface.sendDepositionBucketSpeed(0)
 
         # Excavation depth and conveyor angle are set to the most recent position from SensorValues
-        robotInterface.sendExcavationDepth(float(self._widget.excavation_depth_sv.text()))
-        robotInterface.sendExcavationAngle(float(self._widget.excavation_angle_sv.text()))
+        exc_depth = self._widget.excavation_depth_sv.text()
+        exc_angle = self._widget.excavation_depth_sv.text()
+
+        if exc_depth == '': exc_depth = 0.0
+        if exc_angle == '': exc_angle = 0.0
+
+        robotInterface.sendExcavationDepth(float(exc_depth))
+        robotInterface.sendExcavationAngle(float(exc_angle))
 
     def dig_pressed(self):
         val = int(self._widget.goal_value_slider.value())
@@ -238,17 +239,7 @@ class MyPlugin(Plugin):
     Unregister ROS publisher
     """
     def _unregister_publisher(self):
-        if self._publisher is not None:
-            self._publisher.unregister()
-            self._publisher = None
-
-        if self._service_proxy is not None:
-            # TODO:Doesn't actually shutdown/unregister??
-            #self._service_proxy.shutdown('Shutting down service proxy...')
-            self._service_proxy = None
-
-        #if robotInterface is not None:
-        #    robotInterface.motorCommandPub.unregister()
+       self.stop_updating_sensors()
 
 
     """
@@ -298,15 +289,40 @@ class MyPlugin(Plugin):
     """
     Sensor value updating 
     """
-    def initializeRobotInterface(self):
-        rospy.Subscriber('/imu/data_raw', Imu, lambda data: self._widget.imu_data_raw_sv.setText(str(data.angular_velocity.z)))
-        rospy.Subscriber('/realsense/imu/data_raw', Imu, lambda data: self._widget.realsense_data_raw_sv.setText(str(data.angular_velocity.z)))
-        rospy.Subscriber('/dumper/top_limit_switch', Bool, lambda data: self._widget.top_limit_switch_sv.setText(str(data.data)))
-        rospy.Subscriber('/dumper/position', Float32, lambda data: self._widget.dumper_position_sv.setText(str(data.data)))
-        rospy.Subscriber('/dumper/weight', Float32, lambda data: self._widget.dumper_weight_sv.setText(str(data.data)))
-        rospy.Subscriber('/excavation/depth', Float32,lambda data: self._widget.excavation_depth_sv.setText(str(data.data)))
-        rospy.Subscriber('/excavation/angle', Float32,lambda data: self._widget.excavation_angle_sv.setText(str(data.data)))
-        rospy.Subscriber('/glenn_base/encoders', Encoders,lambda data: self._widget.encoders_sv.setText('Left: %.3f, right:%.3f'%(data.left, data.right)))
+    def start_updating_sensors(self):
+
+        self._widget.stop_updating_button.setEnabled(True)
+        self._widget.start_updating_button.setEnabled(False)
+
+        #Initialize the subscribers
+        self._imu_data_sub = rospy.Subscriber('/imu/data_raw', Imu, lambda data: self._widget.imu_data_raw_sv.setText(str(data.angular_velocity.z)))
+        self._realsense_data_sub = rospy.Subscriber('/realsense/imu/data_raw', Imu, lambda data: self._widget.realsense_data_raw_sv.setText(str(data.angular_velocity.z)))
+        self._top_limit_switch_sub = rospy.Subscriber('/dumper/top_limit_switch', Bool, lambda data: self._widget.top_limit_switch_sv.setText(str(data.data)))
+        self._dumper_position_sub = rospy.Subscriber('/dumper/position', Float32, lambda data: self._widget.dumper_position_sv.setText(str(data.data)))
+        self._dumper_weight_sub = rospy.Subscriber('/dumper/weight', Float32, lambda data: self._widget.dumper_weight_sv.setText(str(data.data)))
+        self._exc_depth_sub = rospy.Subscriber('/excavation/depth', Float32,lambda data: self._widget.excavation_depth_sv.setText(str(data.data)))
+        self._exc_angle_sub = rospy.Subscriber('/excavation/angle', Float32,lambda data: self._widget.excavation_angle_sv.setText(str(data.data)))
+        self._encocoders_sub = rospy.Subscriber('/glenn_base/encoders', Encoders,lambda data: self._widget.encoders_sv.setText('Left: %.3f, right:%.3f'%(data.left, data.right)))
+
+        #Link subscribers to their widgets
+        self._subscriber_widget_map = {
+            self._imu_data_sub:self._widget.imu_data_raw_sv,
+            self._realsense_data_sub:self._widget.realsense_data_raw_sv,
+            self._top_limit_switch_sub:self._widget.top_limit_switch_sv,
+            self._dumper_position_sub:self._widget.dumper_position_sv,
+            self._dumper_weight_sub:self._widget.dumper_weight_sv,
+            self._exc_depth_sub:self._widget.excavation_depth_sv,
+            self._exc_angle_sub:self._widget.excavation_angle_sv,
+            self._encocoders_sub:self._widget.encoders_sv
+        }
+
+    def stop_updating_sensors(self):
+        self._widget.stop_updating_button.setEnabled(False)
+        self._widget.start_updating_button.setEnabled(True)
+
+        for subscriber, sv_widget in self._subscriber_widget_map.items():
+            subscriber.unregister()
+            sv_widget.setText('')
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
