@@ -1,6 +1,6 @@
 #include <open_loop_move/trapezoidal_profile.h>
 
-void trapezoidal_profile(double distance, std::vector<geometry_msgs::Point> &profile)
+void trapezoidal_profile(double distance, std::vector<geometry_msgs::Point> &profile, double max_vel, double max_accel, double dt)
 {
     double pos = 0.0;
     double vel = 0.0;
@@ -11,15 +11,15 @@ void trapezoidal_profile(double distance, std::vector<geometry_msgs::Point> &pro
     distance = abs(distance);
 
     // Calculate rise, coast, and fall times
-    double accel_time = MAX_VEL / MAX_ACCEL;
-    double accel_distance = 0.5 * MAX_ACCEL * accel_time * accel_time;
+    double accel_time = max_vel / max_accel;
+    double accel_distance = 0.5 * max_accel * accel_time * accel_time;
 
     // Same as accel, would be different if end vel != 0
-    double deaccel_time = MAX_VEL / MAX_ACCEL;
-    double deaccel_distance = 0.5 * MAX_ACCEL * deaccel_time * deaccel_time;
+    double deaccel_time = max_vel / max_accel;
+    double deaccel_distance = 0.5 * max_accel * deaccel_time * deaccel_time;
 
     double coast_distance = distance - accel_distance - deaccel_distance;
-    double coast_time = coast_distance / MAX_VEL;
+    double coast_time = coast_distance / max_vel;
 
     // Check if triangular profile
     if (coast_distance < 0)
@@ -28,8 +28,8 @@ void trapezoidal_profile(double distance, std::vector<geometry_msgs::Point> &pro
         coast_time = 0;
         accel_distance = 0.5 * distance;
         deaccel_distance = 0.5 * distance;
-        accel_time = sqrt(2 * accel_distance / MAX_ACCEL);
-        deaccel_time = sqrt(2 * deaccel_distance / MAX_ACCEL);
+        accel_time = sqrt(2 * accel_distance / max_accel);
+        deaccel_time = sqrt(2 * deaccel_distance / max_accel);
     }
 
     // Convert to absolute time from durations
@@ -38,7 +38,7 @@ void trapezoidal_profile(double distance, std::vector<geometry_msgs::Point> &pro
 
     // Calculate trajectory
     double t = 0;
-    accel = MAX_ACCEL;
+    accel = max_accel;
     while (t < accel_time)
     {
         geometry_msgs::Point point;
@@ -49,13 +49,13 @@ void trapezoidal_profile(double distance, std::vector<geometry_msgs::Point> &pro
 
         vel = t * accel;
         pos = 0.5 * accel * t * t;
-        t += DT;
+        t += dt;
     }
 
     // Coast phase
     // May not exist if triangular
     accel = 0.0;
-    vel = accel_time * MAX_ACCEL;
+    vel = accel_time * max_accel;
     while(t < coast_time)
     {
         geometry_msgs::Point point;
@@ -64,13 +64,13 @@ void trapezoidal_profile(double distance, std::vector<geometry_msgs::Point> &pro
         point.z = 0;
         profile.push_back(point);
 
-        pos = 0.5 * MAX_ACCEL * accel_time * accel_time + vel * (t - accel_time);
-        t += DT;
+        pos = 0.5 * max_accel * accel_time * accel_time + vel * (t - accel_time);
+        t += dt;
     }
 
     // Deaccel phase
     // Stop when reached distance
-    accel = -MAX_ACCEL;
+    accel = -max_accel;
     while (t < deaccel_time)
     {
         geometry_msgs::Point point;
@@ -79,9 +79,9 @@ void trapezoidal_profile(double distance, std::vector<geometry_msgs::Point> &pro
         point.z = accel * multiplier;
         profile.push_back(point);
 
-        vel = MAX_ACCEL * (deaccel_time - t);
-        pos = distance - 0.5 * MAX_ACCEL * (deaccel_time - t) * (deaccel_time - t);
-        t += DT;
+        vel = max_accel * (deaccel_time - t);
+        pos = distance - 0.5 * max_accel * (deaccel_time - t) * (deaccel_time - t);
+        t += dt;
     }
 
     // Add final point

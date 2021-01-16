@@ -11,11 +11,28 @@ OpenLoopMove::OpenLoopMove(ros::NodeHandle &nh, ros::NodeHandle &pnh) : nh_(nh),
     move_srv_ = nh_.advertiseService("move_open_loop", &OpenLoopMove::move_srv_cb, this);
     odom_sub_ = nh_.subscribe("odom", 1, &OpenLoopMove::odom_cb, this);
 
-    publish_profile_ = true;
+    // Read params
+    double update_rate;
+    pnh_.param("dt", update_rate, 20.0);
+    dt_ = 1.0 / update_rate;
+
+    pnh_.param("max_vel_linear", max_vel_linear_, 0.5);
+    pnh_.param("max_accel_linear", max_accel_linear_, 1.5);
+    pnh_.param("max_vel_angular", max_vel_angular_, 1.5);
+    pnh_.param("max_accel_angular", max_accel_angular_, 3.0);
+
+    pnh_.param("kP_linear", kP_linear_, 0.0);
+    pnh_.param("kP_angular", kP_angular_, 0.0);
+    pnh_.param("kV_linear", kV_linear_, 0.0);
+    pnh_.param("kV_angular", kV_angular_, 0.0);
+    pnh_.param("kA_linear", kA_linear_, 0.0);
+    pnh_.param("kA_angular", kA_angular_, 0.0);
+
+    pnh_.param("publish_profile", publish_profile_, false);
+
     if (publish_profile_)
     {
         profile_pub_ = pnh_.advertise<geometry_msgs::Point>("profile", 1);
-
     }
 }
 
@@ -25,13 +42,9 @@ std::string OpenLoopMove::enum_to_move_type(int move_type)
     {
         return "Distance";
     }
-    else if (move_type == open_loop_move::OpenLoopMoveRequest::TO_ANGLE)
+    else if (move_type == open_loop_move::OpenLoopMoveRequest::ANGLE)
     {
         return "To angle";
-    }
-    else if (move_type == open_loop_move::OpenLoopMoveRequest::FOR_ANGLE)
-    {
-        return "For angle";
     }
 
     return "Unknown";
@@ -68,25 +81,46 @@ bool OpenLoopMove::move_srv_cb(open_loop_move::OpenLoopMoveRequest &request, ope
 
     std::vector<geometry_msgs::Point> profile;
 
-    trapezoidal_profile(distance, profile);
+    double start_angle = odom_yaw_;
+    double start_x = odom_pose_.x;
+    double start_y = odom_pose_.y;
 
-    ros::Rate timer(1 / DT);
+    if (move_type == open_loop_move::OpenLoopMoveRequest::DISTANCE)
+    {
+        trapezoidal_profile(distance, profile, max_vel_linear_, max_accel_linear_, dt_);
+    }
+    else if (move_type == open_loop_move::OpenLoopMoveRequest::ANGLE)
+    {
+        trapezoidal_profile(distance, profile, max_vel_angular_, max_accel_angular_, dt_);
+    }
+    else
+    {
+        ROS_WARN("Unknown move type %d. Exiting", move_type);
+        response.success = false;
+        return false;
+    }
+
+    ros::Rate timer(1 / dt_);
     
     for (geometry_msgs::Point p : profile)
     {
-        profile_pub_.publish(p);
+        if (publish_profile_)
+        {
+            profile_pub_.publish(p);
+        }
 
         // Control robot to move
         if (move_type == open_loop_move::OpenLoopMoveRequest::DISTANCE)
         {
-            straight_path_controller(p.x, p.y, p.z);
+            straight_path_controller(start_x, start_y, p.x, p.y, p.z);
         }
         else // Both other types are turning
         {
-            turn_in_place_controller(p.x, p.y, p.z);
+            turn_in_place_controller(start_angle, p.x, p.y, p.z);
         }
 
         timer.sleep();
+        ros::spinOnce();
 
         // Have to use isShuttingDown in service
         // not ros::ok
@@ -106,20 +140,29 @@ bool OpenLoopMove::move_srv_cb(open_loop_move::OpenLoopMoveRequest &request, ope
     return true;
 }
 
-void OpenLoopMove::straight_path_controller(double pos, double vel, double accel)
+void OpenLoopMove::straight_path_controller(double start_x, double start_y, double target_pos, double target_vel, double target_accel)
 {
-    geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x = vel;
+    double distance_traveled = sqrt((odom_pose_.x - start_x) * (odom_pose_.x - start_x) + (odom_pose_.y - start_y) * (odom_pose_.y - start_y));
+    double pos_error = target_pos - distance_traveled;
+    double vel_error = target_vel - odom_twist_.linear.x;
 
-    cmd_vel_pub_.publish(cmd_vel);
+    double cmd_vel = target_vel + pos_error * kP_linear_ + vel_error * kV_linear_ + target_accel * kA_linear_;
+
+    geometry_msgs::Twist cmd_vel_msg;
+    cmd_vel_msg.linear.x = cmd_vel;
+    cmd_vel_pub_.publish(cmd_vel_msg);
 }
 
-void OpenLoopMove::turn_in_place_controller(double pos, double vel, double accel)
+void OpenLoopMove::turn_in_place_controller(double start_angle, double target_pos, double target_vel, double target_accel)
 {
-    geometry_msgs::Twist cmd_vel;
-    cmd_vel.angular.z = vel;
+    double angle_error = min_angle(target_pos - (odom_yaw_ - start_angle));
+    double vel_error = target_vel - odom_twist_.angular.z;
 
-    cmd_vel_pub_.publish(cmd_vel);
+    double cmd_vel = target_vel + angle_error * kP_angular_ + vel_error * kV_angular_ + target_accel * kA_angular_;
+
+    geometry_msgs::Twist cmd_vel_msg;
+    cmd_vel_msg.angular.z = cmd_vel;
+    cmd_vel_pub_.publish(cmd_vel_msg);
 }
 
 
@@ -128,7 +171,6 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "open_loop_mover");
     ros::NodeHandle nh("");
     ros::NodeHandle pnh("~");
-
 
     OpenLoopMove mover(nh, pnh);
     ros::spin();   
