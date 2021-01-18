@@ -296,13 +296,13 @@ class MyPlugin(Plugin):
 
         #Initialize the subscribers
         self._imu_data_sub = rospy.Subscriber('/imu/data_raw', Imu, lambda data: self._widget.imu_data_raw_sv.setText(str(data.angular_velocity.z)))
-        self._realsense_data_sub = rospy.Subscriber('/realsense/imu/data_raw', Imu, lambda data: self._widget.realsense_data_raw_sv.setText(str(data.angular_velocity.z)))
+        self._realsense_data_sub = rospy.Subscriber('/imu_realsense/data_raw', Imu, lambda data: self._widget.realsense_data_raw_sv.setText(str(data.angular_velocity.z)))
         self._top_limit_switch_sub = rospy.Subscriber('/dumper/top_limit_switch', Bool, lambda data: self._widget.top_limit_switch_sv.setText(str(data.data)))
         self._dumper_position_sub = rospy.Subscriber('/dumper/position', Float32, lambda data: self._widget.dumper_position_sv.setText(str(data.data)))
         self._dumper_weight_sub = rospy.Subscriber('/dumper/weight', Float32, lambda data: self._widget.dumper_weight_sv.setText(str(data.data)))
         self._exc_depth_sub = rospy.Subscriber('/excavation/depth', Float32,lambda data: self._widget.excavation_depth_sv.setText(str(data.data)))
         self._exc_angle_sub = rospy.Subscriber('/excavation/angle', Float32,lambda data: self._widget.excavation_angle_sv.setText(str(data.data)))
-        self._encocoders_sub = rospy.Subscriber('/glenn_base/encoders', Encoders,lambda data: self._widget.encoders_sv.setText('Left: %.3f, right:%.3f'%(data.left, data.right)))
+        self._encocoders_sub = rospy.Subscriber('/glenn_base/encoders', Encoders,lambda data: self._widget.encoders_sv.setText('Left: %.3f, right: %.3f' % (data.left, data.right)))
 
         #Link subscribers to their widgets
         self._subscriber_widget_map = {
