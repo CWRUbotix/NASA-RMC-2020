@@ -64,5 +64,7 @@ CATKIN_IGNORE
 *.npy
 saved_frames/*
 
-# VSCode stuff
+# vscode
 .vscode
+.vscode/*
+.clangd
