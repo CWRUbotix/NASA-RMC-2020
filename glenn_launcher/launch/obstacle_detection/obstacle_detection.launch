@@ -6,8 +6,7 @@
 
     <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
     <include file="$(find glenn_launcher)/launch/obstacle_detection/realsense_camera.launch" unless="$(arg sim)"/>
-    <!-- only run if not using simulator -->
-    <!-- <node name="realsense_motion_tracking" pkg="obstacle_detection" type="realsense_motion_tracking_node.py" cwd="node"/> -->
+
     <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
         <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
         <remap from="/imu/data" to="/imu_realsense/data"/>
@@ -18,6 +17,32 @@
         <param name="reverse_tf" value="false"/>
     </node>
 
-    <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" output="screen" cwd="node"/>
+    <node name="pcl_manager" pkg="nodelet" type="nodelet" args="manager"/>
+
+    <node name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid pcl_manager">
+        <remap from="~input" to="/realsense/depth/points_raw"/>
+        <remap from="~output" to="/realsense/depth/points"/>
+        <param name="leaf_size" value="0.05"/>
+        <param name="filter_field_name" value="z"/>
+        <param name="filter_limit_min" value="0.0"/>
+        <param name="filter_limit_max" value="3.0"/>
+        <param name="use_indices" value="false"/>
+        <param name="output_frame" value="realsense_footprint_link"/>
+    </node>
+
+   <node name="point_cloud_normal_estimator" pkg="obstacle_detection" type="point_cloud_normal_estimator">
+        <remap from="input_cloud" to="/realsense/depth/points"/>
+        <remap from="output_cloud" to="/realsense/depth/points_obstacles"/>
+        <remap from="output_models" to="/obstacles/coefficients"/>
+
+        <param name="search_radius" value="0.07"/>
+        <param name="normal_threshold" value="0.95"/>
+        <param name="cluster_tolerance" value="0.1"/>
+    </node>
+
+    <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py">
+        <remap from="input_cloud" to="/realsense/depth/points_obstacles"/>
+    </node>
+
     <node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid_node.py" output="screen" cwd="node"/>
 </launch>
