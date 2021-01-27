@@ -1,0 +1,16 @@
+material regolith
+{
+  receive_shadows on
+	technique
+	{
+		pass
+		{
+			texture_unit
+			{
+                scale 0.2 0.2
+				texture ../textures/regolith.png
+			}
+		}
+	}
+}
+
