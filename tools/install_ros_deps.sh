@@ -24,6 +24,11 @@ PACKAGES=(
 
     # Needed to calculate point clouds of obstacles
     ros-$ROS_DISTRO-ros-numpy
+
+    # SBG Driver Package
+    ros-$ROS_DISTRO-sbg-driver
+
+
 )
 
 sudo apt update # Make sure package list is up to date
