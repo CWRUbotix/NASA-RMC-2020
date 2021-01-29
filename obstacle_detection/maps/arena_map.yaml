@@ -1,7 +1,7 @@
 image: arena_map.png
 resolution: 0.1
 origin: [0.0, 0.0, 0.0]
-occupied_thresh: 0.5
-free_thresh: 0.25
-negate: -1
-mode: raw
+occupied_thresh: 0.9
+free_thresh: 0.9
+negate: 0
+mode: trinary

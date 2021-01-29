@@ -58,7 +58,6 @@ qtcreator-*
 CATKIN_IGNORE
 
 # Pictures
-*.png
 
 # precompiled arrays
 *.npy
