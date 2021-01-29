@@ -4,14 +4,10 @@
     <arg name="rviz" default="true"/>
     <arg name="use_steering" default="true"/>
     <arg name="model" default="$(find glenn_description)/urdf/glenn.urdf.xacro"/>
-    <arg name="world" default="bumpy"/>
+    <arg name="world" default="empty_walls"/>
     <arg name="verbose" default="false"/>
     <arg name="map_file" value="$(find obstacle_detection)/maps/arena_map.yaml"/>   
-
-    
-    
-   
-
+       
     <rosparam command="load" file="$(find glenn_description)/config/diff_drive.yaml"
               ns="glenn_base" />
     <rosparam command="load" file="$(find glenn_description)/config/joints.yaml"
