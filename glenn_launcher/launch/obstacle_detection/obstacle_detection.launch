@@ -2,6 +2,7 @@
 <launch>
     <!-- "true" if running roscore from the robot -->
     <arg name="on_robot" value="$(eval '192.168.0.100' in optenv('ROS_MASTER_URI'))"/>
+    <arg name="map_file" value="$(find obstacle_detection)/maps/arena_map.yaml"/>   
 
     <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
 
@@ -19,4 +20,5 @@
 
     <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py" output="screen" cwd="node"/>
     <node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid_node.py" output="screen" cwd="node"/>
+    <node name="map_server" pkg="map_server" type="map_server"  args="$(arg map_file)"/> 
 </launch>
