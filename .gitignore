@@ -57,8 +57,11 @@ qtcreator-*
 # Catkin custom files
 CATKIN_IGNORE
 
-# Pictures
-
 # precompiled arrays
 *.npy
 saved_frames/*
+
+# vscode
+.vscode
+.vscode/*
+.clangd

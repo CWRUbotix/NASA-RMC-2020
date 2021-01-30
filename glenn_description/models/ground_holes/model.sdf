@@ -15,11 +15,12 @@
           </mesh>
         </geometry>
         <material>
-          <lighting>1</lighting>
-          <ambient>0.26 0.28 0.26 1</ambient>
-          <diffuse>0.26 0.28 0.26 1</diffuse>
-          <specular>0.01 0.01 0.01 1</specular>
-          <emissive>0 0 0 1</emissive>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <emissive>0.3 0.3 0.3 1</emissive>
+          <script>
+            <uri>model://ground_holes/materials/scripts</uri>
+	          <name>regolith</name>
+          </script>
         </material>
         <transparency>0</transparency>
         <cast_shadows>1</cast_shadows>

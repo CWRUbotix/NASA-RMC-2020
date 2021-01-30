@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="open_loop_mover" pkg="open_loop_move" type="open_loop_move">
+        <remap from="cmd_vel" to="/glenn_base/cmd_vel"/>
+        <remap from="odom" to="/glenn_base/odom_filtered"/>
+
+        <param name="update_rate" value="20"/>
+
+        <param name="max_vel_linear" value="0.5"/>
+        <param name="max_accel_linear" value="1.5"/>
+        <param name="max_vel_angular" value="1.5"/>
+        <param name="max_accel_angular" value="3.0"/>
+
+        <param name="kP_linear" value="0.0"/>
+        <param name="kP_angular" value="2"/>
+
+        <param name="kV_linear" value="0.05"/>
+        <param name="kV_angular" value="0.0"/>
+
+        <param name="kA_linear" value="0.1"/>
+        <param name="kA_angular" value="0.0"/>
+
+        <param name="publish_profile" value="true"/>
+    </node>
+</launch>

@@ -54,5 +54,6 @@
         <uri>model://rock</uri>
       </include>
     </model>
+
   </world>
 </sdf>

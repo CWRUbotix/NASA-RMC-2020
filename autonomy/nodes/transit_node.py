@@ -202,7 +202,7 @@ class TransitNode:
             self.encoder_values[0] = msg.value
 
     def subscribe(self):
-        rospy.Subscriber("odometry/filtered_map", Odometry, self.receive_state)
+        rospy.Subscriber("glenn_base/odom_map", Odometry, self.receive_state)
         rospy.Subscriber("global_occupancy_grid", OccupancyGrid, self.receive_grid)
 
     def publish_path(self):

@@ -1,0 +1,132 @@
+[
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/buffer.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/buffer.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/buffer.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/canbus.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/canbus.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/canbus.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/crc.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/crc.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/crc.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/gpio.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/gpio.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/gpio.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/hwctrl_node.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/hwctrl_node.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/hwctrl_node.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/hwctrl.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/hwctrl.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/hwctrl.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/lsm6ds3.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/lsm6ds3.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/lsm6ds3.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/motors.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/motors.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/motors.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/parse_csv.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/parse_csv.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/parse_csv.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/sensors.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/sensors.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/sensors.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/spi.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/spi.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/spi.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/uwb.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/uwb.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/uwb.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl.dir/src/vesc.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/vesc.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/vesc.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/buffer.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/buffer.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/buffer.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/canbus.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/canbus.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/canbus.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/crc.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/crc.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/crc.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/gpio.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/gpio.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/gpio.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/hwctrl_cal.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/hwctrl_cal.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/hwctrl_cal.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/hwctrl.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/hwctrl.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/hwctrl.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/lsm6ds3.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/lsm6ds3.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/lsm6ds3.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/motors.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/motors.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/motors.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/parse_csv.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/parse_csv.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/parse_csv.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/sensors.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/sensors.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/sensors.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/spi.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/spi.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/spi.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/uwb.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/uwb.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/uwb.cpp"
+},
+{
+  "directory": "/home/bscholar/catkin_ws/build/NASA-RMC-2020/hwctrl",
+  "command": "/usr/bin/c++  -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"hwctrl\\\" -I/home/bscholar/catkin_ws/devel/include -I/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp    -std=c++11 -o CMakeFiles/hwctrl_cal.dir/src/vesc.cpp.o -c /home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/vesc.cpp",
+  "file": "/home/bscholar/catkin_ws/src/NASA-RMC-2020/hwctrl/src/vesc.cpp"
+}
+]
