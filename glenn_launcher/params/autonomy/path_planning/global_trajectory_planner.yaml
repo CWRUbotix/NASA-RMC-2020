@@ -7,10 +7,6 @@ GlobalPlanner:
     use_grid_path: false
     old_navfn_behavior: false
     
-    lethal_cost: 253
-    neutral_cost: 66
-    cost_factor: 0.55
-
     publish_potential: true
     orientation_mode: 0
     orientation_window_size: 1
