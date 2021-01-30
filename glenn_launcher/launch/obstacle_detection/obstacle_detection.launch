@@ -5,6 +5,7 @@
     <arg name="sim" default="false"/>
 
     <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
+    <include file="$(find sbg_ros_driver)/launch/sbg_device.launch" unless="$(arg sim)"/>
     <include file="$(find glenn_launcher)/launch/obstacle_detection/realsense_camera.launch" unless="$(arg sim)"/>
 
     <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
