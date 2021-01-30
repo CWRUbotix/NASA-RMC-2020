@@ -46,5 +46,5 @@
     </node>
 
     <node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid_node.py" output="screen" cwd="node"/>
-    <node name="map_server" pkg="map_server" type="map_server"  args="$(arg map_file)"/> 
+    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)"/>
 </launch>
