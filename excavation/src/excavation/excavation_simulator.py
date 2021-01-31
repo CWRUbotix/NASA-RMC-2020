@@ -2,7 +2,7 @@
 
 import rospy
 from std_msgs.msg import Float32, Bool
-from hwctrl.msg import SetMotorMsg
+from hwctrl.msg import MotorCmd
 
 
 class ExcavationSimulator:
@@ -27,10 +27,10 @@ class ExcavationSimulator:
         self.excavation_angle_cmd = 0  # rad
         self.excavation_conveyor_cmd = 0  # speed
 
-        rospy.Subscriber("dumper/motor_cmd", SetMotorMsg, self.receive_dumper_motor_cmd, queue_size=2)
-        rospy.Subscriber("excavation/angle_cmd", SetMotorMsg, self.receive_excavation_angle_cmd, queue_size=2)
-        rospy.Subscriber("excavation/depth_cmd", SetMotorMsg, self.receive_excavation_depth_cmd, queue_size=2)
-        rospy.Subscriber("excavation/conveyor_cmd", SetMotorMsg, self.receive_excavation_conveyor_cmd, queue_size=2)
+        rospy.Subscriber("dumper/motor_cmd", MotorCmd, self.receive_dumper_motor_cmd, queue_size=2)
+        rospy.Subscriber("excavation/angle_cmd", MotorCmd, self.receive_excavation_angle_cmd, queue_size=2)
+        rospy.Subscriber("excavation/depth_cmd", MotorCmd, self.receive_excavation_depth_cmd, queue_size=2)
+        rospy.Subscriber("excavation/conveyor_cmd", MotorCmd, self.receive_excavation_conveyor_cmd, queue_size=2)
 
         self.dumper_top_limit_switch_pub = rospy.Publisher("dumper/top_limit_switch", Bool, queue_size=4)
         self.dumper_weight_pub = rospy.Publisher("dumper/weight", Float32, queue_size=4)

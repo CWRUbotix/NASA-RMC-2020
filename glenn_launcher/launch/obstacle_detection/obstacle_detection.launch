@@ -2,11 +2,12 @@
 <launch>
     <!-- "true" if running roscore from the robot -->
     <arg name="on_robot" value="$(eval '192.168.0.100' in optenv('ROS_MASTER_URI'))"/>
+    <arg name="sim" default="false"/>
+    <arg name="map_file" value="$(find obstacle_detection)/maps/arena_map.yaml"/>   
 
     <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
+    <include file="$(find glenn_launcher)/launch/obstacle_detection/realsense_camera.launch" unless="$(arg sim)"/>
 
-    <!-- only run if not using simulator -->
-    <!-- <node name="realsense_motion_tracking" pkg="obstacle_detection" type="realsense_motion_tracking_node.py" cwd="node"/> -->
     <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
         <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
         <remap from="/imu/data" to="/imu_realsense/data"/>
@@ -60,4 +61,5 @@
     <node name="global_occupancy_grid_node" pkg="obstacle_detection" type="global_occupancy_grid_node.py">
         <remap from="input_cloud" to="/realsense/depth/points_obstacles"/>
     </node>
+    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)"/>
 </launch>
