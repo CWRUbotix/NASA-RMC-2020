@@ -9,7 +9,7 @@ from actionlib.msg import TestAction, TestGoal
 from actionlib_msgs.msg import GoalStatus
 from std_msgs.msg import Float32
 
-from hwctrl.msg import SetMotorMsg
+from hwctrl.msg import MotorCmd
 
 
 # State Machine states
@@ -47,9 +47,9 @@ class Excavator:
         self.has_dug_top_layer = False
         self.has_sent_dump_goal = False
 
-        self.angle_cmd_pub = rospy.Publisher("excavation/angle_cmd", SetMotorMsg, queue_size=2)
-        self.depth_cmd_pub = rospy.Publisher("excavation/depth_cmd", SetMotorMsg, queue_size=2)
-        self.conveyor_cmd_pub = rospy.Publisher("excavation/conveyor_cmd", SetMotorMsg, queue_size=2)
+        self.angle_cmd_pub = rospy.Publisher("excavation/angle_cmd", MotorCmd, queue_size=2)
+        self.depth_cmd_pub = rospy.Publisher("excavation/depth_cmd", MotorCmd, queue_size=2)
+        self.conveyor_cmd_pub = rospy.Publisher("excavation/conveyor_cmd", MotorCmd, queue_size=2)
 
         rospy.Subscriber("excavation/angle", Float32, self.receive_angle, queue_size=4)
         rospy.Subscriber("excavation/depth", Float32, self.receive_depth, queue_size=4)
@@ -132,7 +132,7 @@ class Excavator:
         rospy.loginfo("Excavation state machine finished")
 
     def publish_cmd(self, publisher, command, accel=None):
-        motor_msg = SetMotorMsg()
+        motor_msg = MotorCmd()
         motor_msg.setpoint = command
         if accel:
             motor_msg.acceleration = accel

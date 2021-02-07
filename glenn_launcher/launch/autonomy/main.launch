@@ -9,7 +9,10 @@
         <arg name="sim" value="$(arg sim)"/>
     </include>
 
-    <include file="$(find glenn_launcher)/launch/obstacle_detection/obstacle_detection.launch"/>
+    <include file="$(find glenn_launcher)/launch/obstacle_detection/obstacle_detection.launch">
+        <arg name="sim" value="$(arg sim)"/>
+    </include>
+
     <include file="$(find glenn_launcher)/launch/autonomy/autonomy.launch"/>
 
     <include file="$(find glenn_launcher)/launch/excavation/excavation.launch">

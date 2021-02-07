@@ -7,7 +7,7 @@ import actionlib
 from actionlib.msg import TestAction
 
 from std_msgs.msg import Float32, Bool
-from hwctrl.msg import SetMotorMsg
+from hwctrl.msg import MotorCmd
 
 
 # State Machine states
@@ -41,7 +41,7 @@ class Dumper:
         self.state_last_time = rospy.get_time()
         self.state_done = False
 
-        self.motor_setpoint_pub = rospy.Publisher("dumper/motor_cmd", SetMotorMsg, queue_size=2)
+        self.motor_setpoint_pub = rospy.Publisher("dumper/motor_cmd", MotorCmd, queue_size=2)
 
         rospy.Subscriber("dumper/top_limit_switch", Bool, self.receive_top_limit_switch, queue_size=4)
         rospy.Subscriber("dumper/weight", Float32, self.receive_dumper_weight, queue_size=4)
@@ -117,7 +117,7 @@ class Dumper:
         self.server.set_succeeded()
 
     def set_motor_speed(self, command):
-        motor_msg = SetMotorMsg()
+        motor_msg = MotorCmd()
         motor_msg.setpoint = command
         motor_msg.acceleration = self.max_accel
         self.motor_setpoint_pub.publish(motor_msg)

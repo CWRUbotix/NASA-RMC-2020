@@ -6,7 +6,7 @@
       <collision name='short_wall_1_Collision'>
         <geometry>
           <box>
-            <size>2.6 0.1 0.5</size>
+            <size>2.7 0.1 0.5</size>
           </box>
         </geometry>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
@@ -16,7 +16,7 @@
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <geometry>
           <box>
-            <size>2.5 0.1 0.5</size>
+            <size>2.7 0.1 0.5</size>
           </box>
         </geometry>
         <material>
@@ -30,7 +30,7 @@
           <layer>0</layer>
         </meta>
       </visual>
-      <pose frame=''>1.25 0.05 0 0 -0 0</pose>
+      <pose frame=''>1.25 -0.05 0 0 -0 0</pose>
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
@@ -39,7 +39,7 @@
       <collision name='long_wall_1_Collision'>
         <geometry>
           <box>
-            <size>6.9 0.1 0.5</size>
+            <size>7.0 0.1 0.5</size>
           </box>
         </geometry>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
@@ -49,7 +49,7 @@
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <geometry>
           <box>
-            <size>6.9 0.1 0.5</size>
+            <size>7.0 0.1 0.5</size>
           </box>
         </geometry>
         <material>
@@ -63,7 +63,7 @@
           <layer>0</layer>
         </meta>
       </visual>
-      <pose frame=''>0 3.45 0 0 -0 1.5708</pose>
+      <pose frame=''>-0.05 3.4 0 0 -0 1.5708</pose>
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
@@ -72,7 +72,7 @@
       <collision name='long_wall_2_Collision'>
         <geometry>
           <box>
-            <size>6.9 0.1 0.5</size>
+            <size>7.0 0.1 0.5</size>
           </box>
         </geometry>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
@@ -82,7 +82,7 @@
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <geometry>
           <box>
-            <size>6.9 0.1 0.5</size>
+            <size>7.0 0.1 0.5</size>
           </box>
         </geometry>
         <material>
@@ -96,7 +96,7 @@
           <layer>0</layer>
         </meta>
       </visual>
-      <pose frame=''>2.5 3.45 0 0 -0 1.5708</pose>
+      <pose frame=''>2.55 3.4 0 0 -0 1.5708</pose>
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
@@ -105,7 +105,7 @@
       <collision name='short_wall_2_Collision'>
         <geometry>
           <box>
-            <size>2.5 0.1 0.5</size>
+            <size>2.7 0.1 0.5</size>
           </box>
         </geometry>
         <pose frame=''>0 0 0.25 0 -0 0</pose>
@@ -115,7 +115,7 @@
         <pose frame=''>0 0 0.25 0 -0 0</pose>
         <geometry>
           <box>
-            <size>2.6 0.1 0.5</size>
+            <size>2.7 0.1 0.5</size>
           </box>
         </geometry>
         <material>
@@ -129,7 +129,7 @@
           <layer>0</layer>
         </meta>
       </visual>
-      <pose frame=''>1.25 6.9 0 0 -0 0</pose>
+      <pose frame=''>1.25 6.85 0 0 -0 0</pose>
       <self_collide>0</self_collide>
       <enable_wind>0</enable_wind>
       <kinematic>0</kinematic>
