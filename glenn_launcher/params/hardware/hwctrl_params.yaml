@@ -95,6 +95,7 @@ hardware:
     port_drive:
       id: 5
       name: 'PORT DRIVE'
+      topic: '/glenn_base/port_motor_cmd'
       type: 'vesc'
       can_id: 5
       gear_reduction: 630 # gear_reduc*pole_pairs
@@ -104,6 +105,7 @@ hardware:
     starboard_drive:
       id: 6
       name: 'STARBOARD DRIVE'
+      topic: '/glenn_base/starboard_motor_cmd'
       type: 'vesc'
       can_id: 6
       gear_reduction: 630 # gear_reduc*pole_pairs
@@ -114,6 +116,7 @@ hardware:
       id: 7
       name: 'DEPOSITION DUNKERINO'
       type: 'vesc'
+      topic: "/deposition/winch_cmd"
       can_id: 7
       gear_reduction: 245 # gear_reduc*pole_pairs
       max_rpm: 140
@@ -122,6 +125,7 @@ hardware:
     exc_belt:
       id: 8
       name: 'EXCAVATION BELT'
+      topic: "/excavation/conveyor_cmd"
       type: 'vesc'
       can_id: 8
       gear_reduction: 245 # gear_reduc*pole_pairs
@@ -131,6 +135,7 @@ hardware:
     exc_translation:
       id: 9
       name: 'EXCAVATION TRANSLATION'
+      topic: "/excavation/depth_cmd"
       type: 'vesc'
       can_id: 9
       gear_reduction: 245 # gear_reduc*pole_pairs
@@ -140,10 +145,12 @@ hardware:
     exc_port_act:
       id: 10
       name: 'EXCAVATION PORT ACTUATOR'
+      topic: "/excavation/angle_cmd"
       type: 'brushed_motor'
       can_id: 10
     exc_starboard_act:
       id: 11
       name: 'EXCAVATION STARBOARD ACTUATOR'
+      topic: "/excavation/angle_cmd"
       type: 'brushed_motor'
       can_id: 11
