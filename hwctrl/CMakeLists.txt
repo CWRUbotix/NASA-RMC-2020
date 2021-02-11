@@ -14,7 +14,7 @@ endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-std=c++14 -O2)
 else()
-    add_compile_options(-std=c++14 -Wall -Wextra -pedantic -g)
+    add_compile_options(-std=c++14 -Wall) # -Wextra -pedantic -g)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
