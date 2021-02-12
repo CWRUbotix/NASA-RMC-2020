@@ -100,6 +100,8 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
     int motor_id;
     int allowed_dir;
 
+    SensorConfig config;
+
     if (m_nh.hasParam(name_param)) {
       m_nh.getParam(name_param, name_str);
     }
