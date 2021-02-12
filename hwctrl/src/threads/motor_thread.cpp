@@ -18,8 +18,6 @@
 #include "util.h"
 
 MotorThread::MotorThread(ros::NodeHandle nh) : HwctrlThread("motor_thread", nh, 1000) {
-  m_motor_set_sub = m_nh.subscribe("motor_setpoints", 128,
-                                   &MotorThread::set_motor_callback, this);
   m_estop_sub = m_nh.subscribe("estop", 128, &MotorThread::estop_callback, this);
   m_can_rx_sub = m_nh.subscribe("can_rx_frames", 128, &MotorThread::can_rx_callback, this);
 
@@ -223,15 +221,6 @@ void MotorThread::read_from_server() {
     }
 
     if (found > 0 && motor != nullptr) m_motors.insert({config.id, motor});
-  }
-}
-
-void MotorThread::set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg) {
-  try {
-    m_motors.at(msg->id)->set_setpoint(ros::Time::now(), msg->setpoint,
-                                     msg->acceleration);
-  } catch(std::out_of_range&) {
-    ROS_WARN("Motor with ID %d is not defined.", msg->id);
   }
 }
 
