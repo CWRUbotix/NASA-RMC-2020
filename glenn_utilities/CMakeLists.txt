@@ -3,10 +3,11 @@ project(glenn_utilities)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  geometry_msgs
 )
 
 catkin_package(
-  CATKIN_DEPENDS rospy
+  CATKIN_DEPENDS rospy geometry_msgs
 )
 
 catkin_python_setup()
