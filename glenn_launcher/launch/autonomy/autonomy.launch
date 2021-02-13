@@ -26,7 +26,8 @@
 	    <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/local_trajectory_planner.yaml" command="load"/>
 
 	    <remap from="/cmd_vel" to="/glenn_base/cmd_vel"/>
-	    <remap from="/odom" to="/odometry/filtered_map"/>
+	    <remap from="/odom" to="/odometry/odom_map"/>
+	    <remap from="/map" to="/map_server"/>
         </node>
 
         <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
