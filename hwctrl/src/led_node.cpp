@@ -29,12 +29,13 @@ int main(int argc, char **argv)
         msg.can_dlc= 3;
 
         msg.data[0] = r;
-        msg.data[1] = b;
-        msg.data[2] = g;
+        msg.data[1] = g;
+        msg.data[2] = b;
         m_can_rx_pub.publish(msg);
         loop_rate.sleep();
+        ros::spinOnce();
     }
-
+    
     return 0;
 
  }
