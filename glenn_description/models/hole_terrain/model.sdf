@@ -1,0 +1,35 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+
+  <model name="hole_terrain">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <heightmap>
+              <uri>model://hole_terrain/materials/textures/dem_test2.png</uri>
+              <size>1 1 1</size>
+            </heightmap>
+          </geometry>
+        </collision>
+
+        <visual name="visual">
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <emissive>0.3 0.3 0.3 1</emissive>
+            <script>
+              <uri>model://hole_terrain/materials/scripts</uri>
+              <name>regolith</name>
+            </script>
+          </material>
+          <geometry>
+            <heightmap>
+              <uri>model://hole_terrain/materials/textures/dem_test2.png</uri>
+              <size> 1 1 1</size>
+            </heightmap>
+          </geometry>
+        </visual>
+
+      </link>
+    </model>
+</sdf>
