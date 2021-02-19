@@ -7,9 +7,9 @@
         <collision name="collision">
           <geometry>
             <heightmap>
-              <uri>model://hole_terrain/materials/textures/dem_test2.png</uri>
+              <uri>model://hole_terrain/materials/textures/test3.png</uri>
               <size>1 1 1</size>
-            </heightmap>
+            </heightmap>          
           </geometry>
         </collision>
 
@@ -24,8 +24,8 @@
           </material>
           <geometry>
             <heightmap>
-              <uri>model://hole_terrain/materials/textures/dem_test2.png</uri>
-              <size> 1 1 1</size>
+              <uri>model://hole_terrain/materials/textures/test3.png</uri>
+              <size>1 1 1</size>
             </heightmap>
           </geometry>
         </visual>
