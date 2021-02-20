@@ -7,7 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-  CATKIN_DEPENDS rospy hwctrl
+  CATKIN_DEPENDS rospy hwctrl geometry_msgs  
 )
 
 catkin_python_setup()
