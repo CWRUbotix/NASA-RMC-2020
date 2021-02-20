@@ -3,11 +3,11 @@ project(glenn_utilities)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
-  geometry_msgs
+  hwctrl
 )
 
 catkin_package(
-  CATKIN_DEPENDS rospy geometry_msgs
+  CATKIN_DEPENDS rospy hwctrl geometry_msgs
 )
 
 catkin_python_setup()

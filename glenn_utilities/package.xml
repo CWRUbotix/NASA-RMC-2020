@@ -42,8 +42,8 @@
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
 
+  <depend>hwctrl</depend>
   <depend>geometry_msgs</depend>
-
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
