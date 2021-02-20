@@ -34,12 +34,11 @@ catkin_python_setup()
 
 add_message_files(
   DIRECTORY msg
-  )
+)
 
- 
 add_service_files(
   FILES 
-  LED.srv 
+    LED.srv
 )
 
 generate_messages(
@@ -102,8 +101,6 @@ add_executable(hwctrl_cal
   src/interface/spi.cpp
   src/util.cpp
 )
-
-
 
 add_executable(led_node src/led_node.cpp)
 
