@@ -8,7 +8,7 @@ twist_covariance_diagonal: [0.002, 0.02, 0.0, 0.0, 0.0, 0.001]
 
 enable_odom_tf: false
 
-wheel_separation_multiplier: 1.8
+wheel_separation_multiplier: 3
 
 linear:
     x:

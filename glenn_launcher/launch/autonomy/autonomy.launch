@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <launch>
-	<!-- "true" if this launch file is being run from on the robot -->
-	<arg name="launch_from_robot" value="$(eval '192.168.0.100' in optenv('ROS_IP'))"/>
-	
-	<machine name="robot" address="192.168.0.100" user="cwrubotix" password="cwrubotix" default="never" env-loader="/home/cwrubotix/my_env_setup.sh"/>
+    <!-- "true" if this launch file is being run from on the robot -->
+    <arg name="launch_from_robot" value="$(eval '192.168.0.100' in optenv('ROS_IP'))"/>
+    
+    <machine name="robot" address="192.168.0.100" user="cwrubotix" password="cwrubotix" default="never" env-loader="/home/cwrubotix/my_env_setup.sh"/>
 
-	<rosparam command="load" file="$(find glenn_launcher)/params/autonomy/autonomy.yaml" ns="autonomy"/>
+    <rosparam command="load" file="$(find glenn_launcher)/params/autonomy/autonomy.yaml" ns="autonomy"/>
 
     <group if="$(arg launch_from_robot)">
         <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
@@ -17,23 +17,22 @@
         <!-- <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/> -->
 
         <node pkg="move_base" type="move_base" name="move_base" output="screen">
-	    <param name="controller_frequency" value="10.0"/>
-	    <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
-	    <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS"/>
-	    <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_global.yaml" command="load"/>
-	    <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_local.yaml" command="load"/>
-	    <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/global_trajectory_planner.yaml" command="load"/>
-	    <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/local_trajectory_planner.yaml" command="load"/>
+            <param name="controller_frequency" value="10.0"/>
+            <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
+            <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS"/>
+            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_global.yaml" command="load"/>
+            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_local.yaml" command="load"/>
+            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/global_trajectory_planner.yaml" command="load"/>
+            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/local_trajectory_planner.yaml" command="load"/>
 
-	    <remap from="/cmd_vel" to="/glenn_base/cmd_vel"/>
-	    <remap from="/odom" to="/odometry/odom_map"/>
-	    <remap from="/map" to="/map_server"/>
+            <remap from="/cmd_vel" to="/glenn_base/cmd_vel"/>
+            <remap from="/odom" to="/odometry/odom_map"/>
         </node>
 
         <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
 
-	<!--	<node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/> -->
+    <!--    <node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/> -->
 
-	<node name="robot_state_machine_node" pkg="autonomy" type="robot_state_machine_node.py" />
+        <node name="robot_state_machine_node" pkg="autonomy" type="robot_state_machine_node.py" />
     </group>
 </launch>
