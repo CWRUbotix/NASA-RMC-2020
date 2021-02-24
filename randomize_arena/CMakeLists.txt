@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(obstacle_generation)
+project(randomize_arena)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  png
 )
 
 catkin_package(
-  CATKIN_DEPENDS rospy
+  CATKIN_DEPENDS 
+    rospy
+    png
 )
 
 catkin_python_setup()

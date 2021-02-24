@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import png 
 import random
 import numpy
@@ -148,6 +150,7 @@ def pixel_value(holes,x_pixel,y_pixel):
    
     return pixel_color
 
+'''
 def print8bitGreyscalePng(img):
   height = len(img)
   width = len(img[0])
@@ -159,6 +162,7 @@ def print8bitGreyscalePng(img):
       #print("y=%d " % y)
       print("%d " % img[y][x], end='')
     print()
+  '''
   
 def write8bitGreyscalePng(filename, img):
   height = len(img)

@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <node name="generate_height_map_node" pkg="obstacle_generation" type="generate_height_map_node.py">
-        <rosparam file="$(find glenn_launcher)/params/obstacle_generation/obstacle_generation_params.yaml"/>
-    </node>
-</launch>
