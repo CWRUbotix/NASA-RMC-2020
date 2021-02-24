@@ -1,0 +1,31 @@
+# Obstacle generation params
+
+# of pixels needs to be 2^n + 1 for the height map
+# pixels of the height map must be a square
+image_width: 513 # (pixels) the amounit of pixels in the x direction 
+image_height: 513 # (pixels) the amounit of pixels in the y direction
+
+arena_width: 2.5 # (m) the width of the arena in the x direction
+arena_height: 6.8 # (m) the height of the arena in the y direction
+
+#size scalar x and y must be the same since the height map has to be a square
+size_scalar_x: 6.8 # the scalar of the height map in the x direction
+size_scalar_y: 6.8 # the scalar of the height map in the y direction
+size_scalar_z: 0.4 # the scalar of the height map in the z direction
+
+hole_min_depth: 0.3 # (m) the minimum hole depth
+hole_max_depth: 0.4 # (m) the maximum hole depth
+
+hole_min_radius: 0.15 # (m) the minimum hole radius
+hole_max_radius: 0.2 # (m) the minimum hole radius
+
+grayscale_bitdepth: 8 # (channels) the number of grey channels for each pixel can only be 1/2/4/8/16
+
+height_map_name: 'height_map.png' # name of image file
+
+ground_tolerance: 0.08  # (m) points within this tolerance of the ground plane are removed
+grid_resolution: 0.1 # (m / cell) resolution of local and global occupancy grid
+grid_size: 3.5 # (m) width and height of local occupancy grid
+map_buffer: 0.15 # (m) width/cells to be added to global map to catch obstacles near edge
+
+
