@@ -21,13 +21,6 @@
   <!-- Example: -->
   <!-- <url type="website">http://wiki.ros.org/obstacle_detection</url> -->
 
-
-  <!-- Author tags are optional, multiple are allowed, one per tag -->
-  <!-- Authors do not have to be maintainers, but could be -->
-  <!-- Example: -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
-
-
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <!-- Examples: -->
@@ -52,10 +45,11 @@
   <build_depend>rospy</build_depend>
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
+  <!--
   <build_depend>png</build_depend>
   <build_export_depend>png</build_export_depend>
   <exec_depend>png</exec_depend>
-
+  -->
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

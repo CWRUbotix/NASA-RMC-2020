@@ -3,13 +3,11 @@ project(randomize_arena)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
-  png
 )
 
 catkin_package(
   CATKIN_DEPENDS 
     rospy
-    png
 )
 
 catkin_python_setup()

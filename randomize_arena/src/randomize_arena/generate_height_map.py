@@ -1,5 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
+import rospy
 import png 
 import random
 import numpy
@@ -177,7 +178,38 @@ def write8bitGreyscalePng(filename, img):
 
   print("write8bitGreyscalePng wrote %s" % filename)
 
-def generate_height_map(holes):
+def generate_height_map():
+
+    
+    obstacles = numpy.zeros((rock_amount,obstacle_data_amount))
+    obstacles_one_hole = numpy.zeros(((len(obstacles)+1), obstacle_data_amount))
+    obstacles_two_holes = numpy.zeros((len(obstacles_one_hole)+1, obstacle_data_amount))
+
+    obstacles[0][0] = x1
+    obstacles[0][1] = y1
+    obstacles[0][2] = rockRadius
+
+    obstacles[1][0] = x2
+    obstacles[1][1] = y2
+    obstacles[1][2] = rockRadius
+
+    obstacles[2][0] = x3
+    obstacles[2][1] = y3
+    obstacles[2][2] = rockRadius
+
+    obstacles_one_hole = hole_spot_chooser(obstacles)
+    print("obstacles one hole")
+    print(obstacles_one_hole)
+    obstacles_two_holes = hole_spot_chooser(obstacles_one_hole)
+    print("obstacles two hole")
+    print(obstacles_two_holes)
+
+    print("we made it")
+
+    holes = numpy.zeros((hole_amount,obstacle_data_amount))
+    holes[0] = obstacles_two_holes[len(obstacles_two_holes)-2]
+    holes[1] = obstacles_two_holes[len(obstacles_two_holes)-1]
+
 
     height_map_name = 'height_map.png'
 
@@ -189,42 +221,13 @@ def generate_height_map(holes):
     write8bitGreyscalePng(height_map_name,img)
 
     
+def main():
+    #ospy.loginfo("generate height map main")
+
+    rospy.init_node("generate_height_map")
+    generate_height_map()
+    rospy.spin()
 
 
-obstacles = numpy.zeros((rock_amount,obstacle_data_amount))
-obstacles_one_hole = numpy.zeros(((len(obstacles)+1), obstacle_data_amount))
-obstacles_two_holes = numpy.zeros((len(obstacles_one_hole)+1, obstacle_data_amount))
-
-obstacles[0][0] = x1
-obstacles[0][1] = y1
-obstacles[0][2] = rockRadius
-
-obstacles[1][0] = x2
-obstacles[1][1] = y2
-obstacles[1][2] = rockRadius
-
-obstacles[2][0] = x3
-obstacles[2][1] = y3
-obstacles[2][2] = rockRadius
-
-obstacles_one_hole = hole_spot_chooser(obstacles)
-print("obstacles one hole")
-print(obstacles_one_hole)
-obstacles_two_holes = hole_spot_chooser(obstacles_one_hole)
-print("obstacles two hole")
-print(obstacles_two_holes)
-
-print("we made it")
-
-
-'''
-for j in range(len(obstacles_two_holes)):
-
-    drawCircle(obstacles_two_holes[j][0],obstacles_two_holes[j][1],obstacles_two_holes[j][2])  
-'''
-
-holes = numpy.zeros((hole_amount,obstacle_data_amount))
-holes[0] = obstacles_two_holes[len(obstacles_two_holes)-2]
-holes[1] = obstacles_two_holes[len(obstacles_two_holes)-1]
-
-generate_height_map(holes)
+if __name__ == "__main__":
+    main()
