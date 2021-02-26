@@ -146,12 +146,12 @@ def pixel_value(holes,x_pixel,y_pixel):
         
            # print(z_meters)
             pixel_color = int(max_8bit_grayscale_val - z_term*max_8bit_grayscale_val/sizeZ)
-           # print(pixel_color)
+            break
 
    
     return pixel_color
 
-'''
+
 def print8bitGreyscalePng(img):
   height = len(img)
   width = len(img[0])
@@ -163,7 +163,7 @@ def print8bitGreyscalePng(img):
       #print("y=%d " % y)
       print("%d " % img[y][x], end='')
     print()
-  '''
+  
   
 def write8bitGreyscalePng(filename, img):
   height = len(img)
@@ -210,21 +210,33 @@ def generate_height_map():
     holes[0] = obstacles_two_holes[len(obstacles_two_holes)-2]
     holes[1] = obstacles_two_holes[len(obstacles_two_holes)-1]
 
-
     height_map_name = 'height_map.png'
+    height_map_path = 'glenn_description/models/hole_terrain/materials/textures'
+    height_map_relative_path = '/'
 
-    if (os.path.isfile(height_map_name)):
-        os.remove(height_map_name)
+    file_path =__file__
+    file_path_array = file_path.split('/')
+
+    for i in file_path_array:
+
+        height_map_relative_path = os.path.join(height_map_relative_path,i)
+        if(i == 'NASA-RMC-2020'):
+            break
+
+    height_map_name_and_path = os.path.join(height_map_relative_path,height_map_path,height_map_name)
+
+    print(height_map_name_and_path)
+    
 
     img = [[pixel_value(holes,x,y) for x in range(width)] for y in range(height)]
            
-    write8bitGreyscalePng(height_map_name,img)
+    
+    write8bitGreyscalePng(height_map_name_and_path,img)
 
     
 def main():
-    #ospy.loginfo("generate height map main")
-
-    rospy.init_node("generate_height_map")
+    rospy.loginfo("generate height map main")
+    rospy.init_node("GenerateHeightMap")
     generate_height_map()
     rospy.spin()
 
