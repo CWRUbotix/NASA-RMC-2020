@@ -9,7 +9,7 @@
             <heightmap>
               <uri>model://hole_terrain/materials/textures/height_map.png</uri>
               <size> 6.8 6.8 0.4</size>
-              <pos>1.25 3.4 -0.4 0 0 0</pos>
+              <pos>1.25 3.4 -0.4 1.57 0 0</pos>
             </heightmap>          
           </geometry>
         </collision>
@@ -27,7 +27,7 @@
             <heightmap>
               <uri>model://hole_terrain/materials/textures/height_map.png</uri>
               <size> 6.8 6.8 0.4</size>
-              <pos>1.25 3.4 -0.4 0 0 0</pos>
+              <pos>1.25 3.4 -0.4 1.57 0 0</pos>
             </heightmap>
           </geometry>
         </visual>
