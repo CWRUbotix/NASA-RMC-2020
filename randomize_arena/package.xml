@@ -1,14 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>hwctrl</name>
-  <version>2.0.0</version>
-  <description>The hardware controller package</description>
+  <name>randomize_arena</name>
+  <version>0.0.0</version>
+  <description>The randomize_arena package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="bbs27@case.edu"> Ben Scholar </maintainer>
-  <maintainer email="acc163@case.edu">Adam Cordingley</maintainer>
+  <maintainer email="phila@todo.todo">phila</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -20,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/hwctrl</url> -->
+  <!-- <url type="website">http://wiki.ros.org/randomize_arena</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -50,13 +49,16 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>message_generation</build_depend>
-  <depend>roscpp</depend>
-  <depend>std_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>message_runtime</depend>
-  <!-- <exec_depend>message_runtime</exec_depend> -->
+  <build_depend>gazebo_msgs</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_export_depend>gazebo_msgs</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>std_srvs</build_export_depend>
+  <exec_depend>gazebo_msgs</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

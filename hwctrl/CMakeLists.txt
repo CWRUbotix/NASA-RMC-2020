@@ -32,9 +32,14 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 
-add_message_files(DIRECTORY msg)
+add_message_files(
+  DIRECTORY msg
+)
 
-# add_service_files(DIRECTORY srv)
+add_service_files(
+  FILES 
+    LED.srv
+)
 
 generate_messages(
   DEPENDENCIES
@@ -48,6 +53,7 @@ catkin_package(
 #  LIBRARIES hwctrl
   CATKIN_DEPENDS roscpp std_msgs message_runtime sensor_msgs geometry_msgs
 #  DEPENDS system_lib
+  CATKIN_DEPENDS message_runtime
 )
 
 include_directories(
@@ -96,6 +102,8 @@ add_executable(hwctrl_cal
   src/util.cpp
 )
 
+add_executable(led_node src/led_node.cpp)
+
 if(CATKIN_ENABLE_TESTING)
   catkin_add_gtest(hwctrl_tests test/testing.cpp src/util.cpp)
   target_link_libraries(hwctrl_tests ${catkin_LIBRARIES})
@@ -114,6 +122,7 @@ endif()
 
 target_link_libraries(hwctrl ${catkin_LIBRARIES})
 target_link_libraries(hwctrl_cal ${catkin_LIBRARIES})
+target_link_libraries(led_node ${catkin_LIBRARIES})
 
 # for hwctrl executable
 add_dependencies(hwctrl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -122,3 +131,5 @@ add_dependencies(hwctrl hwctrl_generate_messages_cpp)
 # for hwctrl_cal executable
 add_dependencies(hwctrl_cal ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(hwctrl_cal hwctrl_generate_messages_cpp)
+
+add_dependencies(led_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
