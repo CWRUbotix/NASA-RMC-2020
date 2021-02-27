@@ -40,5 +40,22 @@
         <uri>model://hole_terrain</uri>
       </include>
     </model>
+
+    <!-- A rock -->
+    <model name="rock_1">
+      <pose>0.79 3.37 0 0 0 0</pose>
+      <include>
+        <uri>model://rock</uri>
+      </include>
+    </model>
+
+    <!-- Another rock-->
+    <model name="rock_2">
+      <pose>1.8 2.4 0 0 0 0.5</pose>
+      <include>
+        <uri>model://rock</uri>
+      </include>
+    </model>
+    
   </world>
 </sdf>
