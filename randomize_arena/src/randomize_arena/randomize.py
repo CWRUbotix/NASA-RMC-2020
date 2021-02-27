@@ -4,7 +4,7 @@ from random import uniform
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 from gazebo_msgs.msg import ModelState
 from geometry_msgs.msg import Point 
-from std_srvs.srv import Trigger
+from std_srvs.srv import Trigger, TriggerResponse
 
 #Randomizes the robot state
 def randomize_robot(req):
@@ -12,8 +12,8 @@ def randomize_robot(req):
     robot_state.model_name = "robot"
     random_x = uniform(0, 2.5)
     random_y = uniform(0, 6.8)
-    robot_state.pose.position = Point(random_x, random_y, 0.2)
 
+    robot_state.pose.position = Point(random_x, random_y, 0.2)
     send_state(robot_state)
 
 #Randomizes the rock state 
@@ -23,22 +23,17 @@ def randomize_rocks(req):
     rock_1_state.model_name = "rock_1"
     rock_2_state.model_name = "rock_2"
 
-    rock1_x = uniform(0, 3.6)
-    roxk1_y = uniform(0, 2.5)
-    rock2_x = uniform(0, 3.6)
-    roxk2_y = uniform(0, 2.5)
-    padding = 0.5
+    #Randomize rock 1 
+    rock1_x = uniform(0, 2.5)
+    rock1_y = uniform(0, 3.6)
 
-    '''
-    #Ensure that the two rocks do not spawn on the same spot
-    while (rock2_x < rock1_x + padding and rock2_x > rock1_x - padding) and (rock2_y < rock1_y + padding and rock2_y > rock1_y - padding):
-        rock2_x = uniform(0, 3.6)
-        roxk2_y = uniform(0, 2.5)
-    '''
+    #Randoize rock 2
+    rock2_x = uniform(0, 2.5)
+    rock2_y = uniform(0, 3.6)
 
-    rock_1_state.pose.position = Point(3, 3, 0.2)
-    rock_2_state.pose.position = Point(4, 3, 0.2)
-
+    #Send to gazebo
+    rock_1_state.pose.position = Point(rock1_x, rock1_y, 0.2)
+    rock_2_state.pose.position = Point(rock2_x, rock2_y, 0.2)
     send_state(rock_1_state)
     send_state(rock_2_state)
 
