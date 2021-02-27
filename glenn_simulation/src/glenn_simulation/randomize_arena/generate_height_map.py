@@ -69,7 +69,7 @@ def hole_spot_chooser(obstacles):
         hole_radius = random.uniform(hole_min_radius,hole_max_radius)
 
         hole_x =  random.uniform(hole_radius,arena_width-hole_radius)
-        hole_y =  random.uniform(obstacleZoneY + hole_radius,sizeY-hole_radius)
+        hole_y =  random.uniform(hole_radius,obstacleZoneY-hole_radius)
                 
         hole_circle[0] = hole_x
         hole_circle[1] = hole_y 
