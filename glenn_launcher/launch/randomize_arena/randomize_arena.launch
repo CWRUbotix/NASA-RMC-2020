@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 
-    <node name="generate_height_map_node" pkg="randomize_arena" type="generate_height_map_node.py">
-        <rosparam file="$(find glenn_launcher)/params/randomize_arena/randomize_arena_params.yaml"/>
-    </node>
     
+    
+    <node name ="randomize_arena_node" pkg="randomize_arena" type="randomize.py">
+    </node>
+
 </launch>

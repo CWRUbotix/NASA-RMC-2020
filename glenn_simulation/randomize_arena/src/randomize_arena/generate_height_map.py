@@ -151,7 +151,6 @@ def pixel_value(holes,x_pixel,y_pixel):
    
     return pixel_color
 
-
 def print8bitGreyscalePng(img):
   height = len(img)
   width = len(img[0])
