@@ -29,6 +29,10 @@ PACKAGES=(
     ros-$ROS_DISTRO-move-base
     ros-$ROS_DISTRO-global-planner
     ros-$ROS_DISTRO-dwa-local-planner
+
+    # Point cloud library
+    ros-$ROS_DISTRO-pcl-ros
+    ros-$ROS_DISTRO-pcl-conversions
 )
 
 sudo apt update # Make sure package list is up to date
