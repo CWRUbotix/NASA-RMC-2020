@@ -327,7 +327,7 @@ def reset_ground(ground_state):
         
         item_pose   =   Pose(Point(x=10/2, y=arena_length/2,    z=-arena_height),   orient)
 
-        #spawn_model(ground_state.model_name, product_xml, "", item_pose, "world")
+        spawn_model(ground_state.model_name, product_xml, "", item_pose, "world")
         rospy.loginfo("Successfully reset the ground for %s"%(ground_state.model_name))
 
     except rospy.ServiceException as e:
