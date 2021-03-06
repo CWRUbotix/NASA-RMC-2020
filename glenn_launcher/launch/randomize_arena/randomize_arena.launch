@@ -1,9 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    
-    
-    <node name ="randomize_arena_node" pkg="randomize_arena" type="randomize.py">
-    </node>
+    rosservice call gazebo/delete_model '{model_name: hole_terrain}'
+    rosrun gazebo_ros spawn_model -file `echo $GAZEBO_MODEL_PATH`/hole_terrain/model.sdf -sdf -model hole_terrain -y 3.4 -x 1.25
 
 </launch>

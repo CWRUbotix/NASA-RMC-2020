@@ -4,10 +4,13 @@ import numpy
 import random 
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 from gazebo_msgs.msg import ModelState
-from geometry_msgs.msg import Point 
+from gazebo_msgs.srv import DeleteModel, SpawnModel
+from geometry_msgs.msg import Point, Pose, Quaternion 
 from std_srvs.srv import Trigger, TriggerResponse
 import os
 import png
+from scipy.spatial.transform import Rotation
+
 
 width =  513
 height = width
@@ -18,11 +21,13 @@ sizeX = 6.8
 sizeY = 6.8
 sizeZ = 0.4
 
-rock_radius = 0.2
+rock_radius = 0.25
+rock_z = 0.2
 
 obstacleZoneY = 3.2
-arena_height = 6.8
+arena_length = 6.8
 arena_width = 2.5
+arena_height = 0.4
 
 obstacle_data_amount = 3
 hole_amount = 2 
@@ -163,7 +168,7 @@ def pixel_value(holes,x_pixel,y_pixel):
    
     return pixel_color
 
-def print8bitGreyscalePng(img):
+def print_greyscale_png(img):
   height = len(img)
   width = len(img[0])
   print("height=%d" % height)
@@ -175,7 +180,7 @@ def print8bitGreyscalePng(img):
       print("%d " % img[y][x], end='')
     print()
   
-def write8bitGreyscalePng(filename, img):
+def write_greyscale_png(filename, img):
   height = len(img)
   width = len(img[0])
   print("write8bitGreyscalePng height=%d" % height)
@@ -187,6 +192,21 @@ def write8bitGreyscalePng(filename, img):
   f.close()
 
   print("write8bitGreyscalePng wrote %s" % filename)
+
+def janky_gazebo_path(filename,desired_path,folder_name):
+
+    relative_path = '/'
+
+    file_path =__file__
+    file_path_array = file_path.split('/')
+
+    for i in file_path_array:
+
+        relative_path = os.path.join(relative_path,i)
+        if(i == folder_name):
+            break
+
+    return os.path.join(relative_path,desired_path,filename)
 
 #Randomizes the robot state
 def randomize_robot(req):
@@ -206,12 +226,6 @@ def randomize_obstacles(req):
     rock_1_state.model_name = "rock_1"
     rock_2_state.model_name = "rock_2"
 
-    obstacleZoneY = 3.2
-    arena_height = 6.8
-    arena_width = 2.5
-
-    hole_amount = 2
-    obstacle_data_amount = 3
 
     #Randomize rock 1 
     one_obstacles = random_spot(rock_radius)
@@ -225,9 +239,13 @@ def randomize_obstacles(req):
 
     for i in range(len(two_obstacles)):
 
-        points[i] = Point(two_obstacles[i][0],two_obstacles[i][1],two_obstacles[i][2])
+        points[i] = Point(two_obstacles[i][0],two_obstacles[i][1], rock_z)
 
     print('Switch from rocks to holes here')
+
+    hole_terrain_state = ModelState()
+    hole_terrain_state.model_name = "hole_terrain"
+   
 
     hole_max_radius = 0.2
     hole_min_radius = 0.1
@@ -244,24 +262,11 @@ def randomize_obstacles(req):
     folder_name = 'NASA-RMC-2020'
     height_map_relative_path = '/'
     
-    height =513
-    width = height
-    bit_depth_val=8
-
-    file_path =__file__
-    file_path_array = file_path.split('/')
-
-    for i in file_path_array:
-
-        height_map_relative_path = os.path.join(height_map_relative_path,i)
-        if(i == folder_name):
-            break
-
-    height_map_name_and_path = os.path.join(height_map_relative_path,height_map_path,height_map_name)
+    file_name_and_path = janky_gazebo_path(height_map_name,height_map_path,folder_name)
 
     img = [[pixel_value(holes,x,y) for x in range(width)] for y in range(height)]
            
-    write8bitGreyscalePng(height_map_name_and_path,img)
+    write_greyscale_png(file_name_and_path,img)
 
     print("wrote new height map")
 
@@ -269,6 +274,8 @@ def randomize_obstacles(req):
     rock_2_state.pose.position = points[1]
     send_state(rock_1_state)
     send_state(rock_2_state)
+
+    reset_ground(hole_terrain_state)
 
 #Sends the model state to gazebo
 def send_state(model_state):
@@ -284,9 +291,53 @@ def send_state(model_state):
         rospy.logerr("Failed to send model state for %s"%(model_state.model_name))
         rospy.logerr(e)
 
+def reset_ground(ground_state):
+
+    height_map_name = 'model.sdf'
+    height_map_path = 'glenn_simulation/glenn_description/models/hole_terrain'
+    folder_name = 'NASA-RMC-2020'
+    height_map_relative_path = '/'
+    
+    file_name_and_path = janky_gazebo_path(height_map_name,height_map_path,folder_name)
+
+
+    rospy.loginfo("Waiting for set model state service...")
+    rospy.wait_for_service("gazebo/delete_model")
+    rospy.wait_for_service("gazebo/spawn_sdf_model")
+
+    try:
+        delete_model = rospy.ServiceProxy("gazebo/delete_model", DeleteModel)
+        spawn_model = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+
+        with open(file_name_and_path, "r") as f:
+            product_xml = f.read().replace('\n', '')
+
+        orient =Rotation.from_euler('xyz', [90, 0, 0], degrees=True).as_quat()
+
+        print(orient)
+
+        orient = Quaternion(orient[0],orient[1],orient[2],orient[3])
+
+        print(orient)
+
+        delete_model('hole_terrain')
+
+        print(ground_state.model_name)
+
+        
+        item_pose   =   Pose(Point(x=10/2, y=arena_length/2,    z=-arena_height),   orient)
+
+        #spawn_model(ground_state.model_name, product_xml, "", item_pose, "world")
+        rospy.loginfo("Successfully reset the ground for %s"%(ground_state.model_name))
+
+    except rospy.ServiceException as e:
+        rospy.logerr("Failed to reset the ground for %s"%(ground_state.model_name))
+        rospy.logerr(e)
+
+
+
 #Listens for triggers to randomize the arena
 def server():
-    obstacle_data_amount = 3
 
     rospy.Service("/randomize_robot_state", Trigger, randomize_robot)
     rospy.Service("/randomize_obstacle_state", Trigger, randomize_obstacles)
