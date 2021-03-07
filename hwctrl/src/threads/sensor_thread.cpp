@@ -91,43 +91,40 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
     const std::string allowed_dir_param = full_name + "/allowed_dir";
 
     // Sensor sensor;
-    std::string name_str;
-    std::string topic_str;
-    SensorType type;
-    ros::Duration period;
-    int can_id;
-    unique_ptr<Gpio> gpio;
+    // std::string name_str;
+    // std::string topic_str;
+    // SensorType type;
+    // ros::Duration period;
+    // int can_id;
+
+
     int motor_id;
     int allowed_dir;
-
     SensorConfig config;
+    std::unique_ptr<Gpio> gpio;
 
     if (m_nh.hasParam(name_param)) {
-      m_nh.getParam(name_param, name_str);
+      m_nh.getParam(name_param, config.name);
     }
     if (m_nh.hasParam(topic_param)) {
-      m_nh.getParam(topic_param, topic_str);
+      m_nh.getParam(topic_param, config.topic);
     }
     if (m_nh.hasParam(type_param)) {
       std::string type_str;
       m_nh.getParam(type_param, type_str);
-      type = get_sensor_type_from_param(type_str);
+      config.type = get_sensor_type_from_param(type_str);
     }
     if (m_nh.hasParam(period_param)) {
       double temp;
       m_nh.getParam(period_param, temp);
       ROS_INFO(" - Found sensor update period: %.3fs", temp);
-      period = ros::Duration(temp);
-    }
-    if (m_nh.hasParam(can_id_param)) {
-      m_nh.getParam(can_id_param, can_id);
-      ROS_INFO(" - Found CAN id: %d", can_id);
+      config.update_period = ros::Duration(temp);
     }
     if (m_nh.hasParam(gpio_param)) {
       std::string gpio_path;
       m_nh.getParam(gpio_param, gpio_path);
       ROS_INFO(" - Found gpio file path: %s", gpio_path.c_str());
-      gpio = boost::movelib::make_unique<Gpio>(gpio_path);
+      gpio = std::make_unique<Gpio>(gpio_path);
     }
     if(m_nh.hasParam(motor_id_param)) {
       m_nh.getParam(motor_id_param, motor_id);
@@ -137,68 +134,55 @@ void SensorThread::configure_from_server(boost::shared_ptr<Spi> spi) {
       m_nh.getParam(allowed_dir_param, allowed_dir);
       ROS_INFO(" - Found allowed direction: %d",allowed_dir);
     }
+
     // if this overflows, something is wrong anyways
     uint8_t sys_id_idx = 0;
     boost::shared_ptr<Sensor> sensor;
-    switch (type) {
+    switch (config.type) {
       case SensorType::UWB: {
         // I dont think we want to update all of these at the same time.
-        auto node = boost::make_shared<UwbNode>(m_nh, name_str, type, sys_id_idx++,
-                                                "localization_data", 1024, period,
-                                                can_id);
+        auto node = boost::make_shared<UwbNode>(m_nh, config);
         m_uwb_nodes.push_back(node);
         sensor = node;
         break;
       }
       case SensorType::QUAD_ENC: {
-        auto q = boost::make_shared<QuadEncoder>(
-          m_nh, name_str, type, sys_id_idx++, "sensor_data", 128, period, can_id);
+        auto q = boost::make_shared<QuadEncoder>(m_nh, config);
         sensor = q;
         break;
       }
       case SensorType::LIMIT_SW: {
-        auto sw =
-            boost::make_shared<LimitSwitch>(m_nh, name_str, type, sys_id_idx++, topic_str,
-                                            128, period, std::move(gpio), motor_id, allowed_dir);
+        auto sw = boost::make_shared<LimitSwitch>(m_nh, config, std::move(gpio), motor_id, allowed_dir);
         sensor = sw;
         break;
       }
       case SensorType::POWER_SENSE: {
-        auto ps = boost::make_shared<GenericGpioSensor>(
-            m_nh, name_str, type, sys_id_idx++, "sensor_data", 128, period,
-            std::move(gpio));
+        auto ps = boost::make_shared<GenericGpioSensor>(m_nh, config, std::move(gpio));
         sensor = ps;
         break;
       }
       case SensorType::LSM6DS3: {
-        auto imu = boost::make_shared<Lsm6ds3>(m_nh, name_str, sys_id_idx++, "imu_data",
-                                               128, period, spi, std::move(gpio));
+        auto imu = boost::make_shared<Lsm6ds3>(m_nh, config, std::move(gpio));
         sensor = imu;
         break;
       }
       case SensorType::LOAD_CELL: {
-        auto lc =
-            boost::make_shared<LoadCellADC>(m_nh, name_str, sys_id_idx++, "sensor_data",
-                                            128, period, spi, std::move(gpio));
+        auto lc = boost::make_shared<LoadCellADC>(m_nh, config, std::move(gpio));
         sensor = lc;
         break;
       }
       case SensorType::POT: {
-        auto pot = boost::make_shared<PotentiometerADC>(
-            m_nh, name_str, sys_id_idx++, "sensor_data", 128, period, spi,
-            std::move(gpio));
+        auto pot = boost::make_shared<PotentiometerADC>(m_nh, config, spi, std::move(gpio));
         sensor = pot;
         break;
       }
       case SensorType::TEMP_SENSE: {
-        auto ts = boost::make_shared<EbayTempSensor>(
-            m_nh, name_str, sys_id_idx++, "ebay_temperature", 128, period, spi,
-            std::move(gpio));
+        auto ts = boost::make_shared<EbayTempSensor>(m_nh, config, spi, std::move(gpio));
         sensor = ts;
         break;
       }
       case SensorType::ESTOP: {
-        auto es = boost::make_shared<EStop>(m_nh, name_str, SensorType::ESTOP, sys_id_idx++, "estop", 128, period, std::move(gpio));
+        auto es = boost::make_shared<EStop>(m_nh, config, std::move(gpio));
         sensor = es;
         break;
       }   

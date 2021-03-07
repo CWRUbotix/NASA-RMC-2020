@@ -2,15 +2,10 @@
 
 #include <linux/spi/spidev.h>
 
-PotentiometerADC::PotentiometerADC(ros::NodeHandle nh, const std::string& name,
-                                   uint32_t id, const std::string& topic,
-                                   uint32_t topic_size,
-                                   ros::Duration update_period,
-                                   boost::shared_ptr<Spi> spi,
-                                   boost::movelib::unique_ptr<Gpio> cs_pin)
-    : SpiSensor<PubData>(nh, name, SensorType::POT, id, topic, topic_size,
-                         update_period, spi, ADS1120_SPI_SPEED,
-                         ADS1120_SPI_MODE, std::move(cs_pin)) {}
+PotentiometerADC::PotentiometerADC(
+    
+    )
+: SpiSensor
 
 void PotentiometerADC::setup() {
   uint8_t buf[2] = {};

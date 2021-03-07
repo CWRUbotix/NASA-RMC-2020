@@ -2,10 +2,10 @@
 
 #include  <ros/ros.h>
 
-EStop::EStop(GpioSensorArgs) : GpioSensorArgsPass {}
+EStop::EStop(ros::NodeHandle nh, boost::movelib::unique_ptr<Gpio> gpio, SensorConfig const& config) : GpioSensor(nh, std::move(gpio), config){}
 
 void EStop::update() {
-  auto state = m_gpio->is_reset();
+  const auto state = m_gpio->is_reset();
   auto msg = boost::make_shared<std_msgs::Bool>();
   msg->data = state;
   m_pub.publish(msg);

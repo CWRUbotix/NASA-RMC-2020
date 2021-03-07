@@ -133,7 +133,7 @@ protected:
 template <typename T> class SpiSensor : public SensorImpl<T> {
 public:
   SpiSensor(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode,
-            boost::movelib::unique_ptr<Gpio> cs, SensorConfig const &config);
+            std::unique_ptr<Gpio> cs, SensorConfig const &config);
   virtual ~SpiSensor() = default;
 
 protected:
@@ -154,24 +154,24 @@ protected:
   uint32_t m_spi_speed;
   uint32_t m_spi_mode;
 
-  boost::movelib::unique_ptr<Gpio> m_cs;
+  std::unique_ptr<Gpio> m_cs;
 };
 
 template <typename T> class GpioSensor : public SensorImpl<T> {
 public:
-  GpioSensor(ros::NodeHandle nh, boost::movelib::unique_ptr<Gpio> gpio,
+  GpioSensor(ros::NodeHandle nh, std::unique_ptr<Gpio> gpio,
              SensorConfig const &config)
       : SensorImpl<T>(nh, config), m_gpio(std::move(gpio)) {}
 
   virtual ~GpioSensor() = default;
 
 protected:
-  boost::movelib::unique_ptr<Gpio> m_gpio;
+  std::unique_ptr<Gpio> m_gpio;
 };
 
 class GenericGpioSensor : public GpioSensor<hwctrl::SensorData> {
 public:
-  GenericGpioSensor(ros::NodeHandle nh, boost::movelib::unique_ptr<Gpio> gpio,
+  GenericGpioSensor(ros::NodeHandle nh, std::unique_ptr<Gpio> gpio,
                     SensorConfig const &config,
                     Gpio::State on_state = Gpio::State::Set);
   virtual ~GenericGpioSensor() = default;
@@ -185,7 +185,7 @@ private:
 
 class LimitSwitch : public GpioSensor<hwctrl::LimitSwState> {
 public:
-  LimitSwitch(ros::NodeHandle nh, boost::movelib::unique_ptr<Gpio> gpio,
+  LimitSwitch(ros::NodeHandle nh, std::unique_ptr<Gpio> gpio,
               uint32_t motor_id, int32_t allowed_dir,
               SensorConfig const &config);
   virtual ~LimitSwitch() = default;

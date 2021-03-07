@@ -4,7 +4,7 @@
 
 class QuadEncoder : public CanSensor<hwctrl::SensorData> {
  public:
-  QuadEncoder(CanSensorArgs, bool inverted = false);
+  QuadEncoder(SensorConfig const& config, bool inverted = false);
   virtual ~QuadEncoder() = default;
 
   virtual void setup() override final;
@@ -17,10 +17,10 @@ class QuadEncoder : public CanSensor<hwctrl::SensorData> {
   bool m_inverted;
 
  public:
-  enum IncomingFrameIdent : uint8_t {
+  enum class IncomingFrameIdent : uint8_t {
 
   };
-  enum OutgoingFrameIdent : uint8_t {
+  enum class OutgoingFrameIdent : uint8_t {
 
   };
 };
