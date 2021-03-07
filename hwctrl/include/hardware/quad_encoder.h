@@ -4,7 +4,7 @@
 
 class QuadEncoder : public CanSensor<hwctrl::SensorData> {
  public:
-  QuadEncoder(SensorConfig const& config, bool inverted = false);
+  QuadEncoder(ros::NodeHandle nh, SensorConfig const& config, bool inverted = false);
   virtual ~QuadEncoder() = default;
 
   virtual void setup() override final;

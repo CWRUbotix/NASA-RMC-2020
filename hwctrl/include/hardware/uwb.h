@@ -38,7 +38,7 @@ struct Anchor {
 
 class UwbNode : public CanSensor<hwctrl::UwbData> {
  public:
-  UwbNode(CanSensorArgs);
+  UwbNode(ros::NodeHandle m_nh, SensorConfig const& config);
   virtual ~UwbNode() = default;
 
   virtual void setup() override final;

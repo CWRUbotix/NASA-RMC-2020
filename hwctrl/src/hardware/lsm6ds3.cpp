@@ -19,13 +19,8 @@
 
 #include "util.h"
 
-Lsm6ds3::Lsm6ds3(ros::NodeHandle nh, const std::string& name, uint32_t id,
-                 const std::string& topic, uint32_t topic_size,
-                 ros::Duration update_period, boost::shared_ptr<Spi> spi,
-                 boost::movelib::unique_ptr<Gpio> cs, uint32_t samples)
-    : SpiSensor<PubData>(
-        nh, name, SensorType::LSM6DS3, id, topic, topic_size, update_period, spi, LSM6DS3_SPI_SPEED,
-        LSM6DS3_SPI_MODE, std::move(cs)), m_rms(), m_vars(), m_sample_bufs()
+Lsm6ds3::Lsm6ds3(ros::NodeHandle nh, SensorConfig const& config, boost::shared_ptr<Spi> spi, std::unique_ptr<Gpio> cs, uint32_t samples)
+    : SpiSensor<PubData>(nh, spi, LSM6DS3_SPI_SPEED, LSM6DS3_SPI_MODE, std::move(cs), config)
   {
     for(unsigned int i = 0; i < 6; i++) {
       m_rms.at(i) = 0.0f;
@@ -43,7 +38,7 @@ void Lsm6ds3::update() {
   sensor_msgs::Imu msg;
   msg.header.seq = seq++;  // do we really need this?
   msg.header.stamp = ros::Time::now();
-  msg.header.frame_id = m_name;
+  msg.header.frame_id = get_name();
 
   // do not set for now
   msg.orientation_covariance[0] = -1.0;

@@ -13,7 +13,7 @@
 // boolean will be fine. Plus we might want to extend this class later
 class EStop : public GpioSensor<std_msgs::Bool> {
 public:
-  EStop(ros::NodeHandle nh, boost::movelib::unique_ptr<Gpio> gpio, SensorConfig const& config);
+  EStop(ros::NodeHandle nh, std::unique_ptr<Gpio> gpio, SensorConfig const& config);
   ~EStop() = default;
 
   virtual void setup() override final { m_is_setup = true; }

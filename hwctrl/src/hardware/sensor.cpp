@@ -93,7 +93,7 @@ CanSensor<T>::CanSensor(ros::NodeHandle nh, SensorConfig const& config)
 }
 
 template <typename T>
-SpiSensor<T>::SpiSensor(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, boost::movelib::unique_ptr<Gpio> cs_pin, SensorConfig const& config)
+SpiSensor<T>::SpiSensor(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, std::unique_ptr<Gpio> cs_pin, SensorConfig const& config)
     : SensorImpl<T>(nh, config),
       m_spi(spi),
       m_spi_speed(spi_speed),
@@ -101,7 +101,7 @@ SpiSensor<T>::SpiSensor(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, uint32_t
       m_cs(std::move(cs_pin)) {}
 
 GenericGpioSensor::GenericGpioSensor(
-    ros::NodeHandle nh, boost::movelib::unique_ptr<Gpio> gpio,
+    ros::NodeHandle nh, std::unique_ptr<Gpio> gpio,
                     SensorConfig const &config,
                     Gpio::State on_state)
     : GpioSensor<hwctrl::SensorData>(nh, std::move(gpio), config), m_on_state(on_state) {}
@@ -127,7 +127,7 @@ void GenericGpioSensor::update() {
   m_update = false;
 }
 
-LimitSwitch::LimitSwitch(ros::NodeHandle nh, boost::movelib::unique_ptr<Gpio> gpio,uint32_t motor_id,
+LimitSwitch::LimitSwitch(ros::NodeHandle nh, std::unique_ptr<Gpio> gpio,uint32_t motor_id,
                          int32_t allowed_dir, SensorConfig const& config)
     : GpioSensor(nh, std::move(gpio), config), m_motor_id(motor_id), m_allowed_dir(allowed_dir) {}
 

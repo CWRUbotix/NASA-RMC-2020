@@ -4,7 +4,7 @@
 
 #include <ros/ros.h>
 
-class BMCMotor : CanMotor {
+class BMCMotor : public CanMotor {
  public:
   BMCMotor(ros::NodeHandle nh, MotorConfig const& config);
   virtual ~BMCMotor() = default;

@@ -165,10 +165,7 @@ constexpr double xl_var =
   using VarianceMatrix = boost::array<double, 9>;
 
  public:
-  Lsm6ds3(ros::NodeHandle nh, const std::string& name, uint32_t id,
-          const std::string& topic, uint32_t topic_size,
-          ros::Duration update_period, boost::shared_ptr<Spi> spi,
-          boost::movelib::unique_ptr<Gpio> cs, uint32_t samples = 5);
+  Lsm6ds3(ros::NodeHandle nh, SensorConfig const& config, boost::shared_ptr<Spi> spi, std::unique_ptr<Gpio> gpio, uint32_t samples = 1000);
   virtual ~Lsm6ds3() = default;
 
   virtual void setup() override final;

@@ -57,10 +57,7 @@
 
 class EbayTempSensor : public SpiSensor<hwctrl::SensorData> {
  public:
-  EbayTempSensor(ros::NodeHandle nh, const std::string& name, uint32_t id,
-                 const std::string& topic, uint32_t topic_size,
-                 ros::Duration update_period, boost::shared_ptr<Spi> spi,
-                 boost::movelib::unique_ptr<Gpio> cs_pin);
+  EbayTempSensor(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, std::unique_ptr<Gpio> cs_pin, SensorConfig const& config);
   virtual ~EbayTempSensor() = default;
 
   virtual void setup() override final;

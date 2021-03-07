@@ -2,7 +2,7 @@
 
 #include  <ros/ros.h>
 
-EStop::EStop(ros::NodeHandle nh, boost::movelib::unique_ptr<Gpio> gpio, SensorConfig const& config) : GpioSensor(nh, std::move(gpio), config){}
+EStop::EStop(ros::NodeHandle nh, std::unique_ptr<Gpio> gpio, SensorConfig const& config) : GpioSensor(nh, std::move(gpio), config){}
 
 void EStop::update() {
   const auto state = m_gpio->is_reset();

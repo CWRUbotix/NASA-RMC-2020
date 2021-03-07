@@ -2,10 +2,8 @@
 
 #include <linux/spi/spidev.h>
 
-PotentiometerADC::PotentiometerADC(
-    
-    )
-: SpiSensor
+PotentiometerADC::PotentiometerADC(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, std::unique_ptr<Gpio> cs, SensorConfig const& config)
+  : SpiSensor<PubData>(nh, spi, ADS1120_SPI_SPEED, ADS1120_SPI_MODE, std::move(cs), config ) {};
 
 void PotentiometerADC::setup() {
   uint8_t buf[2] = {};
@@ -41,14 +39,8 @@ void PotentiometerADC::update() {
   m_update = false;
 }
 
-LoadCellADC::LoadCellADC(ros::NodeHandle nh, const std::string& name,
-                         uint32_t id, const std::string& topic,
-                         uint32_t topic_size, ros::Duration update_period,
-                         boost::shared_ptr<Spi> spi,
-                         boost::movelib::unique_ptr<Gpio> cs_pin)
-    : SpiSensor<PubData>(nh, name, SensorType::LOAD_CELL, id, topic, topic_size,
-                         update_period, spi, ADS1120_SPI_SPEED,
-                         ADS1120_SPI_MODE, std::move(cs_pin)) {}
+LoadCellADC::LoadCellADC(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, std::unique_ptr<Gpio> cs, SensorConfig const& config)
+  : SpiSensor<PubData>(nh, spi, ADS1120_SPI_SPEED, ADS1120_SPI_MODE, std::move(cs), config) {};
 
 void LoadCellADC::setup() {
   uint8_t buf[2] = {};

@@ -3,7 +3,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-UwbNode::UwbNode(CanSensorArgs) : CanSensorArgsPass(PubData), m_anchors() {
+UwbNode::UwbNode(ros::NodeHandle nh, const SensorConfig& config) : CanSensor(nh, config), m_anchors() {
   // reserve space for 5 anchors
   m_anchors.reserve(5);
 };
