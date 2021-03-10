@@ -212,14 +212,38 @@ def janky_gazebo_path(filename,desired_path,folder_name):
 def randomize_robot(req):
     robot_state = ModelState()
     robot_state.model_name = "robot"
-    random_x = uniform(0, 2.5)
-    random_y = uniform(0, 6.8)
+    
+    rotation_direction = random.randint(0,3)*90
+    orient = Rotation.from_euler('xyz', [0, 0, rotation_direction,  ], degrees=True).as_quat()
+    orient = Quaternion(orient[0],orient[1],orient[2],orient[3])
+
+    robot_state.pose.orientation = orient
+
+    robot_length = 0.9411 
+    robot_width = 0.4577  
+
+    if ((rotation_direction % 180) == 0):
+        x_from_edge = robot_length/2
+        y_from_edge = robot_width/2
+    else:
+        x_from_edge = robot_width/2
+        y_from_edge = robot_length/2 
+
+    random_x = random.uniform(x_from_edge, arena_width-x_from_edge)
+    random_y = random.uniform(y_from_edge, obstacleZoneY-y_from_edge)
 
     robot_state.pose.position = Point(random_x, random_y, 0.2)
+
+    print('robot pos')
+    print(robot_state.pose.position)
+
+
+
+
     send_state(robot_state)
 
 #Randomizes the rock state 
-def randomize_obstacles(req):
+def randomize_rocks(req):
     print("randomize obstacle Start")
     rock_1_state = ModelState()
     rock_2_state = ModelState()
@@ -241,11 +265,23 @@ def randomize_obstacles(req):
 
         points[i] = Point(two_obstacles[i][0],two_obstacles[i][1], rock_z)
 
-    print('Switch from rocks to holes here')
+    rock_1_state.pose.position = points[0]
+    rock_2_state.pose.position = points[1]
+    send_state(rock_1_state)
+    send_state(rock_2_state)
+
+def randomize_holes(req):
 
     hole_terrain_state = ModelState()
     hole_terrain_state.model_name = "hole_terrain"
    
+    one_obstacles = random_spot(rock_radius)
+
+    #Randomize rock 2
+    two_obstacles = obstacle_spot_chooser(one_obstacles,rock_radius)
+
+
+
 
     hole_max_radius = 0.2
     hole_min_radius = 0.1
@@ -269,11 +305,6 @@ def randomize_obstacles(req):
     write_greyscale_png(file_name_and_path,img)
 
     print("wrote new height map")
-
-    rock_1_state.pose.position = points[0]
-    rock_2_state.pose.position = points[1]
-    send_state(rock_1_state)
-    send_state(rock_2_state)
 
     reset_ground(hole_terrain_state)
 
@@ -334,11 +365,10 @@ def reset_ground(ground_state):
         rospy.logerr("Failed to reset the ground for %s"%(ground_state.model_name))
         rospy.logerr(e)
 
-
-
 #Listens for triggers to randomize the arena
 def server():
 
     rospy.Service("/randomize_robot_state", Trigger, randomize_robot)
-    rospy.Service("/randomize_obstacle_state", Trigger, randomize_obstacles)
+    rospy.Service("/randomize_rock_state", Trigger, randomize_rocks)
+    rospy.Service("/randomize_hole_state", Trigger, randomize_holes)
 
