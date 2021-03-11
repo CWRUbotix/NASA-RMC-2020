@@ -284,9 +284,6 @@ def randomize_rocks(req):
     rock_1_state.pose.position = points[0]
     rock_2_state.pose.position = points[1]
     send_state(rock_1_state)
-
-    rospy.sleep(1)
-
     send_state(rock_2_state)
 
     return (True, 'Successfully randomized rocks')
