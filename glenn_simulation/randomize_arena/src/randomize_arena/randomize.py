@@ -12,34 +12,42 @@ import png
 from scipy.spatial.transform import Rotation
 
 
+#Height and hidth of height map image. Needs to be a val of 2^n +1
+#Affects smoothness of hole x and y
 width =  513
 height = width
 
+#Needs to be a 2^n. Max of 16. Increased smoothness of the hole depth
 grayscale_bitdepth = 8
 
+#Size values of hole_terrain model
 sizeX = 6.8
 sizeY = 6.8
 sizeZ = 0.4
 
+#Rock constants
 rock_radius = 0.25
 rock_z = 0.2
 
+#Arena constants
 obstacleZoneY = 3.2
 arena_length = 6.8
 arena_width = 2.5
 arena_height = 0.4
 
+#Hole and rock data
 obstacle_data_amount = 3
 hole_amount = 2
 rock_amount = 2
 
+#Model names
 robot_name = 'robot'
 hole_name = 'hole_terrain'
 rock1_name = 'rock_1'
 rock2_name = 'rock_2'
 rock3_name = 'rock_3'
 
-
+#Create global service
 try:
     service = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
        
@@ -47,6 +55,7 @@ except rospy.ServiceException as e:
     rospy.logerr("Failed to create service for model state")
     rospy.logerr(e)
 
+#Checks if circles are intersecting
 def intersecting_circles(circle1, circle2):
 
     d = numpy.sqrt((circle1[0]-circle2[0])*(circle1[0]-circle2[0]) + (circle1[1]-circle2[1])*(circle1[1]-circle2[1]))
@@ -54,6 +63,7 @@ def intersecting_circles(circle1, circle2):
 
     return d < r 
 
+#Checks if multiple circles are intersecting
 def intersecting_multiple_circles(circle_array,circle):
 
     if(circle_array.ndim == 1):
@@ -67,6 +77,7 @@ def intersecting_multiple_circles(circle_array,circle):
     
     return False
 
+#Chooses a random spot for an obstacle
 def random_spot(radius):
 
     obstacle_circle = numpy.zeros(obstacle_data_amount)
@@ -80,6 +91,7 @@ def random_spot(radius):
 
     return obstacle_circle  
 
+#Chooses a random spot for an obstacle based on other obstacles
 def obstacle_spot_chooser(obstacles,radius):
 
     
@@ -128,6 +140,7 @@ def obstacle_spot_chooser(obstacles,radius):
 
     return new_obstacles
 
+#Calculates the pixel value for the height map
 def pixel_value(holes,x_pixel,y_pixel):
 
     max_8bit_grayscale_val = pow(2,grayscale_bitdepth)-1
@@ -189,6 +202,7 @@ def pixel_value(holes,x_pixel,y_pixel):
    
     return pixel_color
 
+#Prints out img data
 def print_greyscale_png(img):
   height = len(img)
   width = len(img[0])
@@ -200,7 +214,8 @@ def print_greyscale_png(img):
       #print("y=%d " % y)
       print("%d " % img[y][x], end='')
     print()
-  
+
+#Writes image
 def write_greyscale_png(filename, img):
   height = len(img)
   width = len(img[0])
@@ -214,6 +229,7 @@ def write_greyscale_png(filename, img):
 
   print("write8bitGreyscalePng wrote %s" % filename)
 
+#$Gazebo_Model_Path replacement since it wasn't working
 def janky_gazebo_path(filename,desired_path,folder_name):
 
     relative_path = '/'
@@ -287,7 +303,7 @@ def randomize_rocks(req):
     send_state(rock_2_state)
 
     return (True, 'Successfully randomized rocks')
-
+#Randomizes the hole state 
 def randomize_holes(req):
 
     hole_terrain_state = ModelState()
@@ -348,6 +364,7 @@ def send_state(model_state):
         rospy.logerr("Failed to send model state for %s"%(model_state.model_name))
         rospy.logerr(e)
 
+#Reset the ground model
 def reset_ground(ground_state):
 
     height_map_name = 'model.sdf'
@@ -382,7 +399,7 @@ def reset_ground(ground_state):
         print(ground_state.model_name)
 
         
-        item_pose   =   Pose(Point(x=10/2, y=arena_length/2,    z=-arena_height),   orient)
+        item_pose   =   Pose(Point(x=arena_width/2, y=arena_length/2,    z=-arena_height),   orient)
 
         spawn_model(ground_state.model_name, product_xml, "", item_pose, "world")
         rospy.loginfo("Successfully reset the ground for %s"%(ground_state.model_name))
