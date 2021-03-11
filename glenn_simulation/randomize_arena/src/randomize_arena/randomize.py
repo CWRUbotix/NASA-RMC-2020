@@ -39,6 +39,14 @@ rock1_name = 'rock_1'
 rock2_name = 'rock_2'
 rock3_name = 'rock_3'
 
+
+try:
+    service = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
+       
+except rospy.ServiceException as e:  
+    rospy.logerr("Failed to create service for model state")
+    rospy.logerr(e)
+
 def intersecting_circles(circle1, circle2):
 
     d = numpy.sqrt((circle1[0]-circle2[0])*(circle1[0]-circle2[0]) + (circle1[1]-circle2[1])*(circle1[1]-circle2[1]))
@@ -249,6 +257,7 @@ def randomize_robot(req):
 
     send_state(robot_state)
 
+    return (True, 'Successfully randomized %s', robot_name)
 #Randomizes the rock state 
 def randomize_rocks(req):
    
@@ -275,7 +284,12 @@ def randomize_rocks(req):
     rock_1_state.pose.position = points[0]
     rock_2_state.pose.position = points[1]
     send_state(rock_1_state)
+
+    rospy.sleep(1)
+
     send_state(rock_2_state)
+
+    return (True, 'Successfully randomized rocks')
 
 def randomize_holes(req):
 
@@ -321,13 +335,15 @@ def randomize_holes(req):
 
     reset_ground(hole_terrain_state)
 
+    return (True, 'Successfully randomized holes')
+
 #Sends the model state to gazebo
 def send_state(model_state):
     rospy.loginfo("Waiting for set model state service...")
     rospy.wait_for_service("/gazebo/set_model_state")
 
     try:
-        service = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
+        global service 
         res = service(model_state)
         rospy.loginfo("Successfully sent model state for %s"%(model_state.model_name))
 
