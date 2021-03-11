@@ -269,11 +269,20 @@ def randomize_robot(req):
     random_x = random.uniform(x_from_edge, arena_width-x_from_edge)
     random_y = random.uniform(y_from_edge, obstacleZoneY-y_from_edge)
 
-    robot_state.pose.position = Point(random_x, random_y, 0.2)
+    random_x = random.uniform(x_from_edge, arena_width-x_from_edge)
+    random_y = random.uniform(y_from_edge, obstacleZoneY-y_from_edge)
+
+    robot_state.pose.position = Point(random_x, random_y, 1)
+
+    print("x from edge: ",x_from_edge," y from edge: ", y_from_edge)
+
+    print('random_x:' ,random_x," random_y: ", random_y)
+
+    print("Robot Pos",robot_state.pose.position)
 
     send_state(robot_state)
 
-    return (True, 'Successfully randomized %s', robot_name)
+    return (True, 'Successfully randomized robot')
 #Randomizes the rock state 
 def randomize_rocks(req):
    
@@ -320,7 +329,7 @@ def randomize_holes(req):
 
     for i in range(len(rock_array)):
 
-        two_obstacle[i] = [rock_array[i].pose.position.Point.x , rock_array[i].pose.position.Point.y, rock_radius]
+        two_obstacle[i] = [rock_array[i].pose.position.x , rock_array[i].pose.position.y, rock_radius]
 
 
     hole_max_radius = 0.2
@@ -410,8 +419,6 @@ def reset_ground(ground_state):
 
 #Listens for triggers to randomize the arena
 def server():
-
-    rospy.Service("/randomize_robot_state", Trigger, randomize_robot)
     rospy.Service("/randomize_rock_state", Trigger, randomize_rocks)
     rospy.Service("/randomize_hole_state", Trigger, randomize_holes)
-
+    rospy.Service("/randomize_robot_state", Trigger, randomize_robot)
