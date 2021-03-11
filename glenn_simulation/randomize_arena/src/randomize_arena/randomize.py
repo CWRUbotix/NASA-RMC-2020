@@ -30,7 +30,14 @@ arena_width = 2.5
 arena_height = 0.4
 
 obstacle_data_amount = 3
-hole_amount = 2 
+hole_amount = 2
+rock_amount = 2
+
+robot_name = 'robot'
+hole_name = 'hole_terrain'
+rock1_name = 'rock_1'
+rock2_name = 'rock_2'
+rock3_name = 'rock_3'
 
 def intersecting_circles(circle1, circle2):
 
@@ -67,13 +74,13 @@ def random_spot(radius):
 
 def obstacle_spot_chooser(obstacles,radius):
 
-    print("length of obstacles=%d" % len(obstacles))
-
+    
     obstacle_length = len(obstacles)
 
     if(obstacles.ndim == 1):
         obstacle_length = 1
         
+    print("length of obstacles=%d" % obstacle_length)
 
 
     while True:
@@ -91,8 +98,14 @@ def obstacle_spot_chooser(obstacles,radius):
 
     new_obstacles = numpy.zeros((obstacle_length+1,obstacle_data_amount))
    
-    for j in range(obstacle_length):
-        new_obstacles[j] = obstacles[j]
+    if(obstacles.ndim == 1):
+
+        new_obstacles[0] = obstacles
+
+    else:
+
+        for j in range(obstacle_length):
+            new_obstacles[j] = obstacles[j]
 
     new_obstacles[obstacle_length] = obstacle_circle
 
@@ -211,7 +224,7 @@ def janky_gazebo_path(filename,desired_path,folder_name):
 #Randomizes the robot state
 def randomize_robot(req):
     robot_state = ModelState()
-    robot_state.model_name = "robot"
+    robot_state.model_name = robot_name
     
     rotation_direction = random.randint(0,3)*90
     orient = Rotation.from_euler('xyz', [0, 0, rotation_direction,  ], degrees=True).as_quat()
@@ -234,21 +247,15 @@ def randomize_robot(req):
 
     robot_state.pose.position = Point(random_x, random_y, 0.2)
 
-    print('robot pos')
-    print(robot_state.pose.position)
-
-
-
-
     send_state(robot_state)
 
 #Randomizes the rock state 
 def randomize_rocks(req):
-    print("randomize obstacle Start")
+   
     rock_1_state = ModelState()
     rock_2_state = ModelState()
-    rock_1_state.model_name = "rock_1"
-    rock_2_state.model_name = "rock_2"
+    rock_1_state.model_name = rock1_name
+    rock_2_state.model_name = rock2_name
 
 
     #Randomize rock 1 
@@ -273,21 +280,27 @@ def randomize_rocks(req):
 def randomize_holes(req):
 
     hole_terrain_state = ModelState()
-    hole_terrain_state.model_name = "hole_terrain"
+    hole_terrain_state.model_name = hole_name
    
-    one_obstacles = random_spot(rock_radius)
+    rock_1_state = ModelState()
+    rock_2_state = ModelState()
+    rock_1_state.model_name = rock1_name
+    rock_2_state.model_name = rock2_name
 
-    #Randomize rock 2
-    two_obstacles = obstacle_spot_chooser(one_obstacles,rock_radius)
+    rock_array = [rock_1_state,rock_2_state]
 
+    two_obstacle = numpy.zeros((rock_amount,obstacle_data_amount))
 
+    for i in range(len(rock_array)):
+
+        two_obstacle[i] = [rock_array[i].pose.position.Point.x , rock_array[i].pose.position.Point.y, rock_radius]
 
 
     hole_max_radius = 0.2
     hole_min_radius = 0.1
 
-    three_obstacle = obstacle_spot_chooser(two_obstacles,random.uniform(hole_min_radius,hole_max_radius))
-    four_obstacle = obstacle_spot_chooser(two_obstacles,random.uniform(hole_min_radius,hole_max_radius))
+    three_obstacle = obstacle_spot_chooser(two_obstacle,random.uniform(hole_min_radius,hole_max_radius))
+    four_obstacle = obstacle_spot_chooser(three_obstacle,random.uniform(hole_min_radius,hole_max_radius))
 
     holes = numpy.zeros( (hole_amount,obstacle_data_amount) )
     holes[0] = four_obstacle[len(four_obstacle)-2]
