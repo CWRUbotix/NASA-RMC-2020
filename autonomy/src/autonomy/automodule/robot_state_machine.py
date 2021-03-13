@@ -88,10 +88,10 @@ class RobotStateMachine():
     def drive_goal_cb(self, userdata, goal):
         drive_goal = MoveBaseActionGoal()
 
-        drive_goal.goal.target_pose.header.frame_id = "base_link"
+        drive_goal.goal.target_pose.header.frame_id = "map"
         drive_goal.goal.target_pose.pose.orientation.w = 1
 
-        dig_spots = [(0.5, 5), (0.5, 4), (1.5, 5), (1.5, 4)]
+        dig_spots = [(1, 5.75), (1, 4.75), (1.75, 5.75), (1.75, 4.75)]
         bin_spot = (1.5, 0.85)
 
         position = drive_goal.goal.target_pose.pose.position

@@ -30,7 +30,7 @@ def main():
 
         action_goal = MoveBaseActionGoal()
 
-        action_goal.goal.target_pose.header.frame_id = "base_link"
+        action_goal.goal.target_pose.header.frame_id = "map"
         action_goal.goal.target_pose.pose.position.x = x
         action_goal.goal.target_pose.pose.position.y = y
         action_goal.goal.target_pose.pose.orientation.w = 1
