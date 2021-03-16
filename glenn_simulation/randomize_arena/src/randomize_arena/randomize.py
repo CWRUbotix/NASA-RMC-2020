@@ -31,6 +31,7 @@ rock_z = 0.2
 
 #Arena constants
 obstacleZoneY = 3.2
+robot_zone_y = 1
 arena_length = 6.8
 arena_width = 2.5
 arena_height = 0.4
@@ -83,7 +84,7 @@ def random_spot(radius):
     obstacle_circle = numpy.zeros(obstacle_data_amount)
 
     obstacle_x =  random.uniform(radius,arena_width-radius)
-    obstacle_y =  random.uniform(radius,obstacleZoneY-radius)
+    obstacle_y =  random.uniform(robot_zone_y+radius,obstacleZoneY-radius)
             
     obstacle_circle[0] = obstacle_x
     obstacle_circle[1] = obstacle_y 
@@ -267,12 +268,9 @@ def randomize_robot(req):
         y_from_edge = robot_length/2 
 
     random_x = random.uniform(x_from_edge, arena_width-x_from_edge)
-    random_y = random.uniform(y_from_edge, obstacleZoneY-y_from_edge)
+    random_y = random.uniform(y_from_edge, robot_zone_y-y_from_edge)
 
-    random_x = random.uniform(x_from_edge, arena_width-x_from_edge)
-    random_y = random.uniform(y_from_edge, obstacleZoneY-y_from_edge)
-
-    robot_state.pose.position = Point(random_x, random_y, 1)
+    robot_state.pose.position = Point(random_x, random_y, 0.75)
 
     print("x from edge: ",x_from_edge," y from edge: ", y_from_edge)
 
