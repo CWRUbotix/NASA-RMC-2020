@@ -30,7 +30,7 @@ rock_radius = 0.25
 rock_z = 0.2
 
 #Arena constants
-obstacleZoneY = 3.2
+obstacleZoneY = 3.6
 robot_zone_y = 1
 arena_length = 6.8
 arena_width = 2.5
@@ -260,17 +260,13 @@ def randomize_robot(req):
     robot_length = 0.9411 
     robot_width = 0.4577  
 
-    if ((rotation_direction % 180) == 0):
-        x_from_edge = robot_length/2
-        y_from_edge = robot_width/2
-    else:
-        x_from_edge = robot_width/2
-        y_from_edge = robot_length/2 
+    x_from_edge = robot_length / 2
+    y_from_edge = robot_length / 2
 
     random_x = random.uniform(x_from_edge, arena_width-x_from_edge)
     random_y = random.uniform(y_from_edge, robot_zone_y-y_from_edge)
 
-    robot_state.pose.position = Point(random_x, random_y, 0.75)
+    robot_state.pose.position = Point(random_x, random_y, 0.15)
 
     print("x from edge: ",x_from_edge," y from edge: ", y_from_edge)
 
