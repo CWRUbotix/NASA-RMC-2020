@@ -30,6 +30,9 @@ PACKAGES=(
     ros-$ROS_DISTRO-global-planner
     ros-$ROS_DISTRO-dwa-local-planner
 
+    # Mapping packages
+    ros-$ROS_DISTRO-map-server
+
     # Point cloud library
     ros-$ROS_DISTRO-pcl-ros
     ros-$ROS_DISTRO-pcl-conversions
@@ -37,3 +40,7 @@ PACKAGES=(
 
 sudo apt update # Make sure package list is up to date
 sudo apt install ${PACKAGES[@]} # Install all ros packages
+
+# Install imu_tools submodule
+git submodule init
+git submodule update
