@@ -131,9 +131,9 @@
     </link>
 
     <joint name="base_link_joint" type="fixed">
-	<origin xyz="0 0 ${bodyz}" rpy="0 0 0" />
-	<parent link="base_link_footprint"/>
-	<child link="base_link" />
+        <origin xyz="0 0 ${wheelradius}" rpy="0 0 0" />
+        <parent link="base_link_footprint"/>
+        <child link="base_link" />
     </joint>
 
     <xacro:wheel prefix="front_right" side="1" reflect="-1"/>
