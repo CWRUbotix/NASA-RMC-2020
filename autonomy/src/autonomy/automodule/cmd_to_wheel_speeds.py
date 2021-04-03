@@ -3,7 +3,7 @@ import numpy as np
 
 import rospy
 from geometry_msgs.msg import Twist
-from hwctrl.msg import MotorCmd, DriveMotorCmd
+from hwctrl.msg import MotorCmd
 
 # Make these members of class later
 failed = False
@@ -15,6 +15,12 @@ except KeyError:
 
 
 class CmdToWheelSpeedsNode:
+    """
+    Most ros nodes publish robot command velocities as a Twist message
+    The hwctrl expects MotorCmd messages (units of RPM in this case)
+    This node does that conversion. 
+    This could be factored out to the hwctrl if needed
+    """
     def __init__(self):
         rospy.init_node("cmd_to_wheel_speeds_node", anonymous=False)
 
@@ -24,7 +30,9 @@ class CmdToWheelSpeedsNode:
 
         self.motor_acceleration = rospy.get_param('/motor_command_accel')
 
-        self.motor_setpoint_pub = rospy.Publisher("/glenn_base/motor_cmds", DriveMotorCmd, queue_size=2)
+        self.left_motor_pub = rospy.Publisher("/glenn_base/port_motor_cmd", MotorCmd, queue_size=2)
+        self.right_motor_pub = rospy.Publisher("/glenn_base/starboard_motor_cmd", MotorCmd, queue_size=2)
+
         rospy.Subscriber("/glenn_base/cmd_vel", Twist, self.cmd_vel_callback, queue_size=1)
 
         rospy.spin()
@@ -38,4 +46,6 @@ class CmdToWheelSpeedsNode:
 
         right_cmd = MotorCmd(setpoint=right_speed, acceleration=self.motor_acceleration)
         left_cmd = MotorCmd(setpoint=left_speed, acceleration=self.motor_acceleration)
-        self.motor_setpoint_pub.publish(right=right_cmd, left=left_cmd)
+
+        self.left_motor_pub.publish(left_cmd)
+        self.right_motor_pub.publish(right_cmd)

@@ -6,13 +6,8 @@
 #include "types.h"
 #include "util.h"
 
-VescMotor::VescMotor(ros::NodeHandle nh, const std::string& name, uint32_t id,
-                     uint32_t can_id, ros::Duration update_pd,
-                     float accel_setpoint, float max_accel, float max_rpm,
-                     float gear_reduc, ros::Duration timeout)
-    : CanMotor(nh, name, id, can_id, MotorType::Vesc, ControlType::RPM,
-               update_pd, accel_setpoint, max_accel, max_rpm, gear_reduc,
-               timeout) {}
+VescMotor::VescMotor(ros::NodeHandle nh, MotorConfig const& config)
+    : CanMotor(nh, config) {}
 
 void VescMotor::setup() {
   // something maybe
@@ -28,7 +23,7 @@ void VescMotor::can_rx_callback(FramePtr frame) {
 
   switch (cmd) {
     case CanPacketId::CAN_PACKET_STATUS: {
-      if(m_id != can_id) {
+      if(m_config.id != can_id) {
         // this status message is not for us
         break;
       }
@@ -48,8 +43,8 @@ void VescMotor::can_rx_callback(FramePtr frame) {
       // publish rpm data
       hwctrl::MotorData msg;
       msg.data_type = msg.RPM;
-      msg.id = m_id;
-      msg.value = rpm / m_rpm_coef;
+      msg.id = m_config.id;
+      msg.value = rpm / m_config.gear_reduc;
       msg.timestamp = ros::Time::now();
       m_motor_data_pub.publish(msg);
 
@@ -81,12 +76,12 @@ void VescMotor::update(ros::Time time) {
   }
   m_last_setpoint += delta;
 
-  if ((time.toSec() - m_last_set_time.toSec()) > m_timeout.toSec()) {
+  if ((time.toSec() - m_last_set_time.toSec()) > m_config.timeout.toSec()) {
     // shut down the motor
     m_last_setpoint = 0;
   }
 
-  float eRPM = m_rpm_coef * m_last_setpoint;
+  float eRPM = m_config.gear_reduc * m_last_setpoint;
 
   m_last_update_time = time;
   send_rpm_frame(time, eRPM);
@@ -138,7 +133,7 @@ void VescMotor::send_values_frame(ros::Time time) {
 
 
 void VescMotor::update_values_from_buffer(uint8_t* buffer){
-  m_type = MotorType::Vesc;
+  m_config.m_type = MotorType::Vesc;
   // fill_data_from_buffer()
   size_t ind = 1;
   m_temp_mos1           = buffer::get_floating<float, int16_t>(buffer, 10.0f, ind);
