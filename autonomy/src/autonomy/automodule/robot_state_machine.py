@@ -79,9 +79,11 @@ class RobotStateMachine():
                                         goal=TestGoal(1),
                                         result_cb=self.dump_result_cb,
                                         input_keys=['sub_run'],
-                                        outcomes=['succeeded'],
+                                        output_keys=['sub_run', 'direction_out'],
+                                        outcomes=['succeeded']
                                     ),
-                                   transitions={'succeeded': 'succeeded'})
+                                   transitions={'succeeded': 'DRIVE'},
+                                   remapping={'direction_out': 'sm_drive_direction'})
 
         return sm
 
@@ -96,7 +98,7 @@ class RobotStateMachine():
 
         position = drive_goal.goal.target_pose.pose.position
 
-        if userdata.direction_in == "dig":
+        if userdata.direction_in == "dig" and userdata.sub_run < len(dig_spots):
             position.x = dig_spots[userdata.sub_run][0]
             position.y = dig_spots[userdata.sub_run][1]
         else:
@@ -119,6 +121,7 @@ class RobotStateMachine():
 
     def dump_result_cb(self, userdata, status, result):
         rospy.loginfo("DUMP state returned with status: " + GoalStatus.to_string(status))
+        userdata.direction_out = 'dig'
         userdata.sub_run += 1
         return 'succeeded'
 
