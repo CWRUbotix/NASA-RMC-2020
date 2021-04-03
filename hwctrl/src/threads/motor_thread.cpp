@@ -18,8 +18,6 @@
 #include "util.h"
 
 MotorThread::MotorThread(ros::NodeHandle nh) : HwctrlThread("motor_thread", nh, 1000) {
-  m_motor_set_sub = m_nh.subscribe("motor_setpoints", 128,
-                                   &MotorThread::set_motor_callback, this);
   m_estop_sub = m_nh.subscribe("estop", 128, &MotorThread::estop_callback, this);
   m_can_rx_sub = m_nh.subscribe("can_rx_frames", 128, &MotorThread::can_rx_callback, this);
 
@@ -145,6 +143,7 @@ void MotorThread::read_from_server() {
     const std::string full_name = base + "/" + *name;
     ROS_INFO("Checking for parameters under %s/...", full_name.c_str());
     const std::string name_param = full_name + "/name";
+    const std::string topic_param = full_name + "/topic";
     const std::string type_param = full_name + "/type";
     const std::string id_param = full_name + "/id";
     const std::string gear_reduc_param = full_name + "/gear_reduction";
@@ -152,74 +151,66 @@ void MotorThread::read_from_server() {
     const std::string max_accel_param = full_name + "/max_acceleration";
     const std::string period_param = full_name + "/update_period";
 
-    std::string name_str;
-    MotorType type;
-    ControlType c_type;
-    int id;
-    int can_id;
-    double gearing;
-    double max_rpm;
-    double max_acc;
-    ros::Duration update_pd;
-    ros::Duration timeout = ros::Duration(2.0);
+    MotorConfig config;
 
     boost::shared_ptr<Motor> motor;
     int found = 0;
 
     if (m_nh.hasParam(name_param)) {
-      m_nh.getParam(name_param, name_str);
-      ROS_INFO(" - Found motor name: %s", name_str.c_str());
+      m_nh.getParam(name_param, config.name);
+      ROS_INFO(" - Found motor name: %s", config.name.c_str());
       found++;
     }
-    if (m_nh.hasParam(type_param)) {
+    if (m_nh.hasParam(name_param)) {
+      m_nh.getParam(topic_param, config.cmd_topic);
+      ROS_INFO(" - Found motor name: %s", config.cmd_topic.c_str());
+      found++;
+    }
+   if (m_nh.hasParam(type_param)) {
       std::string type_str;
       m_nh.getParam(type_param, type_str);
       ROS_INFO(" - Found motor type: %s", type_str.c_str());
-      type = get_motor_type(type_str);
+      config.m_type = get_motor_type(type_str);
       found++;
     }
     if(m_nh.hasParam(id_param)) {
+      int id;
       m_nh.getParam(id_param, id);
       ROS_INFO(" - Found ID: %d", id);
-      can_id = id; // 
+      config.id = id;
       found++;
     }
     if (m_nh.hasParam(gear_reduc_param)) {
-      m_nh.getParam(gear_reduc_param, gearing);
-      ROS_INFO(" - Found gear reduction: %.2f", gearing);
+      m_nh.getParam(gear_reduc_param, config.gear_reduc);
+      ROS_INFO(" - Found gear reduction: %.2f", config.gear_reduc);
       found++;
     }
     if (m_nh.hasParam(max_rpm_param)) {
-      m_nh.getParam(max_rpm_param, max_rpm);
-      ROS_INFO(" - Found max RPM: %.2f", max_rpm);
+      m_nh.getParam(max_rpm_param, config.max_rpm);
+      ROS_INFO(" - Found max RPM: %.2f", config.max_rpm);
       found++;
     }
     if (m_nh.hasParam(max_accel_param)) {
-      m_nh.getParam(max_accel_param, max_acc);
-      ROS_INFO(" - Found max acceleration: %.2f", max_acc);
+      m_nh.getParam(max_accel_param, config.max_accel);
+      ROS_INFO(" - Found max acceleration: %.2f", config.max_accel);
       found++;
     }
     if (m_nh.hasParam(period_param)) {
       double pd;
       m_nh.getParam(period_param, pd);
-      update_pd = ros::Duration(pd);
+      config.update_pd = ros::Duration(pd);
       ROS_INFO(" - Found motor update period: %.3fs", pd);
     }
 
-    switch (type) {
+    switch (config.m_type) {
       case MotorType::Vesc: {
-        auto temp = boost::make_shared<VescMotor>(
-            m_nh, name_str, id, (uint32_t)can_id, update_pd,
-            (float)max_acc, (float)max_acc, (float)max_rpm, (float)gearing,
-            timeout);
+        auto temp = boost::make_shared<VescMotor>(m_nh, config);
         motor = temp;
         break;
       }
       case MotorType::BMC: {
-        auto temp = boost::make_shared<BMCMotor>(
-            m_nh, name_str, id, (uint32_t)can_id, update_pd,
-            (float)max_acc, (float)max_acc, (float)max_rpm, (float)gearing,
-            timeout);
+        auto temp = boost::make_shared<BMCMotor>(m_nh, config);
+        motor = temp;
         break;
       }
       case MotorType::Sabertooth:
@@ -229,16 +220,7 @@ void MotorThread::read_from_server() {
         break;
     }
 
-    if (found > 0 && motor != nullptr) m_motors.insert({id, motor});
-  }
-}
-
-void MotorThread::set_motor_callback(boost::shared_ptr<hwctrl::MotorCmd> msg) {
-  try {
-    m_motors.at(msg->id)->set_setpoint(ros::Time::now(), msg->setpoint,
-                                     msg->acceleration);
-  } catch(std::out_of_range&) {
-    ROS_WARN("Motor with ID %d is not defined.", msg->id);
+    if (found > 0 && motor != nullptr) m_motors.insert({config.id, motor});
   }
 }
 

@@ -2,14 +2,8 @@
 
 #include <linux/spi/spidev.h>
 
-EbayTempSensor::EbayTempSensor(ros::NodeHandle nh, const std::string& name,
-                               uint32_t id, const std::string& topic,
-                               uint32_t topic_size, ros::Duration update_period,
-                               boost::shared_ptr<Spi> spi,
-                               boost::movelib::unique_ptr<Gpio> cs_pin)
-    : SpiSensor<PubData>(nh, name, SensorType::TEMP_SENSE, id, topic,
-                         topic_size, update_period, spi, ADT7310_SPI_SPEED,
-                         ADT7310_SPI_MODE, std::move(cs_pin)) {}
+EbayTempSensor::EbayTempSensor(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, std::unique_ptr<Gpio> cs_pin, SensorConfig const& config)
+  : SpiSensor(nh, spi, ADT7310_SPI_SPEED, ADT7310_SPI_MODE, std::move(cs_pin), config) {};
 
 void EbayTempSensor::setup() {
   uint8_t buf[3] = {};
@@ -58,9 +52,9 @@ void EbayTempSensor::update() {
   int16_t raw = (buf[1] << 8) | buf[2];
 
   hwctrl::SensorData msg;
-  msg.sensor_id = m_id;
+  msg.sensor_id = get_id();
   msg.value = (float)raw * ADT7310_LSB_16_BIT;  // convert to degrees C
-  msg.name = m_name;
+  msg.name = get_name();
   m_pub.publish(msg);
 
   m_update = false;

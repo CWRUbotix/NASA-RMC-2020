@@ -4,11 +4,10 @@
 #include <ros/ros.h>
 #include <ros/timer.h>
 
-#include <boost/move/make_unique.hpp>
-#include <boost/move/unique_ptr.hpp>
 #include <boost/utility/string_view.hpp>
 
 #include <vector>
+#include <memory>
 
 #include "hwctrl.h"
 
@@ -17,8 +16,6 @@
 #include "hardware/sensor.h"
 #include "hardware/uwb.h"
 
-using boost::movelib::make_unique;
-using boost::movelib::unique_ptr;
 
 class SensorThread : public HwctrlThread {
  public:
@@ -34,7 +31,7 @@ class SensorThread : public HwctrlThread {
  private:
   boost::shared_ptr<Sensor> create_sensor_from_values(
       ros::NodeHandle nh, std::string name, std::string topic, SensorType type,
-      uint32_t id, ros::Duration period, unique_ptr<Gpio> gpio,
+      uint32_t id, ros::Duration period, std::unique_ptr<Gpio> gpio,
       boost::shared_ptr<Spi> spi);
 
   void uwb_ping_callback(const ros::TimerEvent&);

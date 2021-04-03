@@ -63,16 +63,10 @@ SensorType get_sensor_type_from_param(boost::string_view type_str) {
   }
 }
 
-Sensor::Sensor(SensorBaseArgs)
-    : m_nh(nh),
-      m_id(id),
-      m_name(name),
-      m_topic(topic),
-      m_update_period(update_period),
-      m_type(type),
-      m_update(true) {
+Sensor::Sensor(ros::NodeHandle nh, SensorConfig const& config)
+    : m_nh(nh), m_config(config), m_update(true) {
   m_update_timer =
-      m_nh.createTimer(m_update_period, &Sensor::set_update_flag, this);
+      m_nh.createTimer(m_config.update_period, &Sensor::set_update_flag, this);
 }
 
 void Sensor::add_calibration(const Calibration& cal) {
@@ -90,8 +84,8 @@ boost::optional<const Calibration&> Sensor::get_calibration_by_name(
 }
 
 template <typename T>
-CanSensor<T>::CanSensor(CanSensorArgs)
-    : SensorImplArgsPass(T), m_can_id(can_id) {
+CanSensor<T>::CanSensor(ros::NodeHandle nh, SensorConfig const& config)
+    : SensorImpl<T>(nh, config), m_can_id(config.id) {
   m_can_rx_sub = CanSensor<T>::m_nh.subscribe(
       "can_frames_rx", 128, &CanSensor::can_rx_callback, this);
   m_can_tx_pub = CanSensor<T>::m_nh.template advertise<hwctrl::CanFrame>(
@@ -99,15 +93,18 @@ CanSensor<T>::CanSensor(CanSensorArgs)
 }
 
 template <typename T>
-SpiSensor<T>::SpiSensor(SpiSensorArgs)
-    : SensorImplArgsPass(T),
+SpiSensor<T>::SpiSensor(ros::NodeHandle nh, boost::shared_ptr<Spi> spi, uint32_t spi_speed, uint32_t spi_mode, std::unique_ptr<Gpio> cs_pin, SensorConfig const& config)
+    : SensorImpl<T>(nh, config),
       m_spi(spi),
       m_spi_speed(spi_speed),
       m_spi_mode(spi_mode),
       m_cs(std::move(cs_pin)) {}
 
-GenericGpioSensor::GenericGpioSensor(GpioSensorArgs, Gpio::State on_state)
-    : GpioSensorArgsPass, m_on_state(on_state) {}
+GenericGpioSensor::GenericGpioSensor(
+    ros::NodeHandle nh, std::unique_ptr<Gpio> gpio,
+                    SensorConfig const &config,
+                    Gpio::State on_state)
+    : GpioSensor<hwctrl::SensorData>(nh, std::move(gpio), config), m_on_state(on_state) {}
 
 void GenericGpioSensor::setup() {
   m_gpio->set_direction(Gpio::Direction::Input);
@@ -116,23 +113,23 @@ void GenericGpioSensor::setup() {
 
 void GenericGpioSensor::update() {
   if (!m_is_setup) {
-    ROS_WARN("Cannot update sensor %s (id: %d): not setup yet", m_name.c_str(),
-             m_id);
+    ROS_WARN("Cannot update sensor %s (id: %d): not setup yet", m_config.name.c_str(),
+             m_config.id);
     return;
   }
   auto msg = boost::make_shared<hwctrl::SensorData>();
   auto val = m_gpio->read_state();
-  msg->name = m_name;
-  msg->sensor_id = m_id;
+  msg->name = m_config.name;
+  msg->sensor_id = m_config.id;
   msg->value = (float)(val == m_on_state);
   m_pub.publish(msg);
 
   m_update = false;
 }
 
-LimitSwitch::LimitSwitch(GpioSensorArgs, uint32_t motor_id,
-                         int32_t allowed_dir)
-    : GpioSensorArgsPass, m_motor_id(motor_id), m_allowed_dir(allowed_dir) {}
+LimitSwitch::LimitSwitch(ros::NodeHandle nh, std::unique_ptr<Gpio> gpio,uint32_t motor_id,
+                         int32_t allowed_dir, SensorConfig const& config)
+    : GpioSensor(nh, std::move(gpio), config), m_motor_id(motor_id), m_allowed_dir(allowed_dir) {}
 
 void LimitSwitch::setup() {
   m_gpio->set_direction(Gpio::Direction::Input);
@@ -141,13 +138,13 @@ void LimitSwitch::setup() {
 
 void LimitSwitch::update() {
   if (!m_is_setup) {
-    ROS_WARN("Cannot update sensor %s (id: %d): not setup yet", m_name.c_str(),
-             m_id);
+    ROS_WARN("Cannot update sensor %s (id: %d): not setup yet", m_config.name.c_str(),
+             m_config.id);
     return;
   }
   auto msg = boost::make_shared<hwctrl::LimitSwState>();
   auto state = m_gpio->read_state();
-  msg->id = m_id;
+  msg->id = m_config.id;
   msg->state = (state == Gpio::State::Set);
   msg->motor_id = m_motor_id;
   msg->allowed_dir = m_allowed_dir;
