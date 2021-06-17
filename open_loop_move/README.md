@@ -25,15 +25,25 @@ Recieves request to have the robot drive straight or turn in place, and outputs 
     Used to trigger the move
 
 #### Parameters
-need to fill out descriptions
 * `~dt` (`double`, default: `20.0`)
+    The rate in Hz to run the control loop to send velocity commands
 * `~max_vel_linear` (`double`, default: `0.5`)
+    Maximum linear velocity
 * `~max_accel_linear` (`double`, default: `1.5`)
+    Maximum linear acceleration
 * `~max_vel_angular` (`double`, default: `1.5`)
+    Maximum angular velocity
 * `~max_accel_angular` (`double`, default: `3.0`)
+    Maximum angular acceleration
 * `~kP_linear` (`double`, default: `0.0`)
+    Proportional gain for position controller for linear displacement
 * `~kP_angular` (`double`, default: `0.0`)
+    Proportional gain for position controller for angular displacement
 * `~kV_linear` (`double`, default: `0.0`)
+    Proportional gain for velocity controller for linear displacement
 * `~kV_angular` (`double`, default: `0.0`)
+    Proportional gain for velocity controller for angular displacement
 * `~kA_linear` (`double`, default: `0.0`)
+    Proportional gain for acceleration controller for linear displacement
 * `~kA_angular` (`double`, default: `0.0`)
+    Proportional gain for acceleration controller for angular displacement
