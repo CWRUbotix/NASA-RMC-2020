@@ -11,6 +11,24 @@ Has an action server that takes requests to depost the material stored in the
 regolith bucket. Dumps the regolith, then does a minilower and another dump to
 shake out any left over.
 
+#### Action API
+The dumper_node.py provides an implementation of the SimpleActionServer (see actionlib documentation), that takes in goals containing actionlib/TestGoal messages.
+
+##### Action Subscribed Topics
+* `dump/goal` (`actionlib/TestActionGoal`)
+    Triggers a deposition. The value of the goal controls the number
+    of times to mini-lower
+* `dump/cancel` (`actionlib_msgs/GoalID`)
+    A request to cancel a specific goal.
+
+##### Action Published Topics
+`dump/feedback` (`actionlib/TestActionFeedback`)
+    Feedback, unused.
+`dump/status` (`actionlib_msgs/GoalStatusArray`)
+    Provides status information on the goals that are sent to the dump action.
+`dump/result` (`mactionlib/TestActionResult`)
+    Result is empty for the dump action.
+
 #### Published Topics
 * `dumper/motor_cmd` (`hwctrl/MotorCmd`)
     The motor command for the deposition lift
@@ -44,6 +62,25 @@ shake out any left over.
 Has an action server that takes requests to excavate regolith.
 Excavation continues until the deposition bucket is full.
 
+#### Action API
+The excavator_node.py provides an implementation of the SimpleActionServer (see actionlib documentation), that takes in goals containing actionlib/TestGoal messages.
+
+##### Action Subscribed Topics
+* `dig/goal` (`actionlib/TestActionGoal`)
+    Triggers a excavation. The value of the goal is passed to
+    the dump action server during the state where it dumps
+    the top layer of regolith in the bucket to make room for ice
+* `dig/cancel` (`actionlib_msgs/GoalID`)
+    A request to cancel a specific goal.
+
+##### Action Published Topics
+`dig/feedback` (`actionlib/TestActionFeedback`)
+    Feedback, unused.
+`dig/status` (`actionlib_msgs/GoalStatusArray`)
+    Provides status information on the goals that are sent to the dig action.
+`dig/result` (`mactionlib/TestActionResult`)
+    Result is empty for the dig action.
+
 #### Published Topics
 * `excavation/angle_cmd` (`hwctrl/MotorCmd`)
     The motor command for excavation arm lift
@@ -60,6 +97,3 @@ Excavation continues until the deposition bucket is full.
 * `dumper/weight` (`std_msgs/Float32`)
     Data fromt the weight sensor that detects bucket regolith weight
     in the stowed position
-
-
-TODO: add action server info for both
