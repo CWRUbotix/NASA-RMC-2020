@@ -8,7 +8,7 @@ Also has nodes to receive IMU and encoder messages and publishes open loop odome
 ## Nodes
 
 ### localization_listener_node.py
-Receives data from the uwb recievers and calulcates the likely position of the robot with least squares
+Receives data from the uwb receivers and calculates the likely position of the robot with least squares
 
 #### Published Topics
 * `uwb_nodes` (`geometry_msgs/PoseWithCovarianceStamped`)

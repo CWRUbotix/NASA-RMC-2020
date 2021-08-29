@@ -15,11 +15,11 @@ Could alternatively be implemented in the hwctrl package.
 
 #### Published Topics
 * `/glenn_base/motor_cmds` (`hwctrl/DriveMotorCmd`)
-    The speed commands to each side of the drive train
+  * The speed commands to each side of the drive train
 
 #### Subscribed Topics
 * `/glenn_base/cmd_vel` (`geometry_msgs/Twist`)
-    The linear and angular velocity commands for the robot base
+  * The linear and angular velocity commands for the robot base
 
 #### Parameters
 * todo
@@ -34,7 +34,7 @@ Could alternatively be implemented in the hwctrl package.
 ### simulator_node.py
 Simulates a robot moving when given input commands and sending sensor data back. It May be useful for simple testing, but we also have the Gazebo simulation.
 
-#### Publish topics  
+#### Published topics  
 * odometry/filtered_map
 * motor_data
 * local_occupancy_grid
@@ -43,7 +43,7 @@ Simulates a robot moving when given input commands and sending sensor data back.
 
 ### transit_node.py
 Path planner and follower. Receives robot odometry, occupancy grid, goal position, and outputs velocity commands to drive to target position. 
-#### Publish topics 
+#### Published topics 
 * /glenn_base/cmd_vel
 * transit_path
 * transit_control_data
