@@ -1,4 +1,4 @@
-# For parameter descriptions, please refer to the template parameter files for each node.
+# For parameter descriptions, please see ekf_sample.yaml
 ekf_se_map:
   frequency: 30
   sensor_timeout: 0.1
@@ -13,7 +13,7 @@ ekf_se_map:
 
   map_frame: map
   odom_frame: odom
-  base_link_frame: base_link
+  base_link_frame: base_link_footprint
   world_frame: map
 
   initial_state: [2, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
