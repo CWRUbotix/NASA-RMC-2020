@@ -6,9 +6,9 @@ two_d_mode: true
 
 publish_tf: true
 
-odom_frame: odom                  # Defaults to "odom" if unspecified
-base_link_frame: base_link_frame  # Defaults to "base_link_frame" if unspecified
-world_frame: odom                 # Defaults to the value of odom_frame if unspecified
+odom_frame: odom  # Defaults to "odom" if unspecified
+base_link_frame: base_link_footprint  # Defaults to "base_link_frame" if unspecified
+world_frame: odom  # Defaults to the value of odom_frame if unspecified
 
 
 odom0: /glenn_base/odom
