@@ -26,8 +26,8 @@
     <!-- body is for aligning the robot mesh to the center of gravity-->
     <!-- Data from cad model 
     X = -2.54667
-	Y = 0.68615
-	Z = 9.90497
+    Y = 0.68615
+    Z = 9.90497
     Note not currently used but leaving here because might be useful later-->
     <xacro:property name="bodyx" value="0.13"/>
     <xacro:property name="bodyy" value="0.01"/>
@@ -126,10 +126,12 @@
         </inertial>
     </link>
 
+    <!-- Create a root link with no inertia to make the solver happy and raise the robot above the floor -->
     <link name="base_link_footprint">
-		<origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
+        <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
     </link>
 
+    <!-- Connect that link to the base link in the middle of the robot -->
     <joint name="base_link_joint" type="fixed">
         <origin xyz="0 0 ${wheelradius}" rpy="0 0 0" />
         <parent link="base_link_footprint"/>
