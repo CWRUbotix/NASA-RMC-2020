@@ -2,13 +2,14 @@
 import rospy
 import actionlib
 from actionlib_msgs.msg import GoalStatus
-from glenn_msgs.msg import GoToGoalAction, GoToGoalGoal
 
+from move_base_msgs.msg import MoveBaseAction, MoveBaseActionGoal
+import traceback
 
 def main():
     rospy.init_node("autonomy")
 
-    client = actionlib.SimpleActionClient('go_to_goal', GoToGoalAction)
+    client = actionlib.SimpleActionClient("move_base", MoveBaseAction)
     rospy.loginfo("Waiting for robot action server")
     client.wait_for_server()
     rospy.loginfo("Server found")
@@ -27,8 +28,14 @@ def main():
 
         rospy.loginfo("Sent")
 
-        goal = GoToGoalGoal(x=x, y=y)
-        client.send_goal(goal)
+        action_goal = MoveBaseActionGoal()
+
+        action_goal.goal.target_pose.header.frame_id = "map"
+        action_goal.goal.target_pose.pose.position.x = x
+        action_goal.goal.target_pose.pose.position.y = y
+        action_goal.goal.target_pose.pose.orientation.w = 1
+
+        client.send_goal(action_goal.goal)
 
         input("Press <Enter> to stop robot or continue")
 

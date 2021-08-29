@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(glenn_utilities)
+project(randomize_arena)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
-  hwctrl
 )
 
 catkin_package(
-  CATKIN_DEPENDS rospy hwctrl geometry_msgs
+  CATKIN_DEPENDS 
+    rospy
 )
 
 catkin_python_setup()

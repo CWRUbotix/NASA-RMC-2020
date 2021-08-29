@@ -7,12 +7,11 @@ import smach_ros
 from actionlib.msg import TestAction, TestGoal
 from actionlib_msgs.msg import GoalStatus
 
-from glenn_msgs.msg import GoToGoalAction, GoToGoalGoal
+from move_base_msgs.msg import MoveBaseAction, MoveBaseActionGoal 
 
 
 class Calibrate(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'],
+    def __init__(self): smach.State.__init__(self, outcomes=['succeeded'],
                              output_keys=['direction_out'])
 
     def execute(self, userdata):
@@ -40,6 +39,7 @@ class RobotStateMachine():
     def construct_state_machine(self):
         sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
         sm.userdata.sm_drive_direction = 'none'
+        sm.userdata.sub_run = 0
 
         # Create state machine
         with sm:
@@ -49,11 +49,11 @@ class RobotStateMachine():
 
             smach.StateMachine.add('DRIVE',
                                     smach_ros.SimpleActionState(
-                                        'go_to_goal',
-                                        GoToGoalAction,
+                                        'move_base',
+                                        MoveBaseAction,
                                         goal_cb=self.drive_goal_cb,
                                         result_cb=self.drive_result_cb,
-                                        input_keys=['direction_in'],
+                                        input_keys=['direction_in', 'sub_run'],
                                         outcomes=['succeeded_dig', 'succeeded_dump']
                                     ),
                                    transitions={'succeeded_dig': 'DIG',
@@ -78,20 +78,36 @@ class RobotStateMachine():
                                         TestAction,
                                         goal=TestGoal(1),
                                         result_cb=self.dump_result_cb,
-                                        outcomes=['succeeded'],
+                                        input_keys=['sub_run'],
+                                        output_keys=['sub_run', 'direction_out'],
+                                        outcomes=['succeeded']
                                     ),
-                                   transitions={'succeeded': 'succeeded'})
+                                   transitions={'succeeded': 'DRIVE'},
+                                   remapping={'direction_out': 'sm_drive_direction'})
 
         return sm
 
     def drive_goal_cb(self, userdata, goal):
-        if userdata.direction_in == 'dig':
-            drive_goal = GoToGoalGoal(x=2.5, y=1.5)
-        else:
-            drive_goal = GoToGoalGoal(x=1.5, y=0.85)
+        drive_goal = MoveBaseActionGoal()
 
-        rospy.loginfo("State DRIVE sending goal: " + str(drive_goal.x) + ", " + str(drive_goal.y))
-        return drive_goal
+        drive_goal.goal.target_pose.header.frame_id = "map"
+        drive_goal.goal.target_pose.pose.orientation.w = 1
+
+        dig_spots = [(1, 5.75), (1, 4.75), (1.75, 5.75), (1.75, 4.75)]
+        bin_spot = (1.5, 0.85)
+
+        position = drive_goal.goal.target_pose.pose.position
+
+        if userdata.direction_in == "dig" and userdata.sub_run < len(dig_spots):
+            position.x = dig_spots[userdata.sub_run][0]
+            position.y = dig_spots[userdata.sub_run][1]
+        else:
+            position.x = bin_spot[0]
+            position.y = bin_spot[1]
+
+        rospy.loginfo("State DRIVE sending goal: " + str(position.x) + ", " + str(position.y))
+
+        return drive_goal.goal
 
     def drive_result_cb(self, userdata, status, result):
         rospy.loginfo("DRIVE state returned with status: " + GoalStatus.to_string(status))
@@ -105,6 +121,8 @@ class RobotStateMachine():
 
     def dump_result_cb(self, userdata, status, result):
         rospy.loginfo("DUMP state returned with status: " + GoalStatus.to_string(status))
+        userdata.direction_out = 'dig'
+        userdata.sub_run += 1
         return 'succeeded'
 
     def shutdown(self):
