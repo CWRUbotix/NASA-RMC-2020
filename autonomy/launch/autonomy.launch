@@ -5,7 +5,7 @@
     
     <machine name="robot" address="192.168.0.100" user="cwrubotix" password="cwrubotix" default="never" env-loader="/home/cwrubotix/my_env_setup.sh"/>
 
-    <rosparam command="load" file="$(find glenn_launcher)/params/autonomy/autonomy.yaml" ns="autonomy"/>
+    <rosparam command="load" file="$(find autonomy)/params/autonomy.yaml" ns="autonomy"/>
 
     <group if="$(arg launch_from_robot)">
         <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
@@ -20,10 +20,10 @@
             <param name="controller_frequency" value="10.0"/>
             <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
             <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS"/>
-            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_global.yaml" command="load"/>
-            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/costmap_local.yaml" command="load"/>
-            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/global_trajectory_planner.yaml" command="load"/>
-            <rosparam file="$(find glenn_launcher)/params/autonomy/path_planning/local_trajectory_planner.yaml" command="load"/>
+            <rosparam file="$(find autonomy)/params/path_planning/costmap_global.yaml" command="load"/>
+            <rosparam file="$(find autonomy)/params/path_planning/costmap_local.yaml" command="load"/>
+            <rosparam file="$(find autonomy)/params/path_planning/global_trajectory_planner.yaml" command="load"/>
+            <rosparam file="$(find autonomy)/params/path_planning/local_trajectory_planner.yaml" command="load"/>
 
             <remap from="/cmd_vel" to="/glenn_base/cmd_vel"/>
             <remap from="/odom" to="/odometry/odom_filtered"/>
