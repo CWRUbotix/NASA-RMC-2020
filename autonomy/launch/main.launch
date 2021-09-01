@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="bags" default="true"/>
+    <arg name="sim" default="false"/>
+
+    <rosparam command="load" file="$(find glenn_launcher)/params/glenn_params.yaml"/>
+
+    <include file="$(find uwb_localization)/launch/localization.launch">
+        <arg name="sim" value="$(arg sim)"/>
+    </include>
+
+    <include file="$(find obstacle_detection)/launch/obstacle_detection.launch">
+        <arg name="sim" value="$(arg sim)"/>
+    </include>
+
+    <include file="$(find autonomy)/launch/autonomy.launch"/>
+
+    <include file="$(find excavation)/launch/excavation.launch">
+        <arg name="sim" value="$(arg sim)"/>
+    </include>
+
+    <include file="$(find glenn_utilities)/launch/bagging_node.launch" if="$(arg bags)"/>
+</launch>
