@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <rosparam command="load" file = "$(find glenn_launcher)/params/autonomy/autonomy_simulator.yaml" ns="autonomy"/>
+    <rosparam command="load" file = "$(find autonomy)/params/autonomy_simulator.yaml" ns="autonomy"/>
 
     <node name="transit_node" pkg="autonomy" type="transit_node.py" launch-prefix="xterm -e"/>
     <node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/>

@@ -5,7 +5,7 @@
     <arg name="sim" default="false"/>
     <arg name="map_file" value="$(find obstacle_detection)/maps/arena_map.yaml"/>   
 
-    <rosparam command="load" file = "$(find glenn_launcher)/params/obstacle_detection/obstacle_detection_params.yaml" ns="obstacle_detection"/>
+    <rosparam command="load" file="$(find obstacle_detection)/params/obstacle_detection_params.yaml" ns="obstacle_detection"/>
     <include file="$(find obstacle_detection)/launch/realsense_camera.launch" unless="$(arg sim)"/>
 
     <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
