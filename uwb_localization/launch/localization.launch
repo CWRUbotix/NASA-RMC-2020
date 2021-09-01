@@ -2,7 +2,7 @@
 <launch>
     <arg name="sim" default="false"/>
 
-    <rosparam command="load" file="$(find glenn_launcher)/params/uwb_localization/ekf_map.yaml" />
+    <rosparam command="load" file="$(find uwb_localization)/params/ekf_map.yaml"/>
 
     <node pkg="uwb_localization" type="imu_listener_node.py" name="imu_node" cwd="node"/>
     <node pkg="uwb_localization" type="localization_listener_node.py" name="uwb_node" cwd="node" unless="$(arg sim)"/>
@@ -14,6 +14,6 @@
 
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odometry">
         <remap from="odometry/filtered" to="/glenn_base/odom_filtered"/>
-        <rosparam command="load" file="$(find glenn_launcher)/params/uwb_localization/ekf_odometry.yaml" />
+        <rosparam command="load" file="$(find uwb_localization)/params/ekf_odometry.yaml"/>
     </node>
 </launch>
