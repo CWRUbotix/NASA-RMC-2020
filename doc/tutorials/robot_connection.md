@@ -13,4 +13,9 @@ This is a tutorial about how to connect to the robot.
 
 1. Open terminal
 2. [ssh](https://en.wikipedia.org/wiki/Secure_Shell) cwrubotix@192.168.0.100
+3. Password: cwrubotix
+4. Run roscore
+5. In a new terminal run rostopic
+
+
     
