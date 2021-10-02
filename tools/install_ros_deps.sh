@@ -14,7 +14,7 @@ PACKAGES=(
     # Plotjuggler is a very cool plotting software
     ros-$ROS_DISTRO-plotjuggler
 
-    if [$USERNAME != "Cwrubotix"]
+    if [$USERNAME != "cwrubotix"]
     then
     # Used to drive simulated robot
         ros-$ROS_DISTRO-ros-controllers
