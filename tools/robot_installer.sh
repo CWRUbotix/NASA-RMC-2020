@@ -31,7 +31,7 @@ cd src
 
 repository="https://github.com/cwruRobotics/NASA-RMC-2020.git"
 localFolder=""
-branchName="master"
+branch="master"
 
 git clone --depth 1 -b "$branch" "$repository"  
 
