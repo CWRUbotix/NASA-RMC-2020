@@ -15,6 +15,7 @@ sudo apt update
 
 sudo apt install ros-melodic-desktop
 
+
 echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
 source ~/.bashrc
 
@@ -44,6 +45,9 @@ rm -r glenn_simulation
 cd tools
 
 ./install_helper_programs.sh
+
+source ~/.bashrc
+
 ./install_ros_deps.sh
 
 sudo apt-get upgrade
