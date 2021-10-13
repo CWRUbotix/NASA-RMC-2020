@@ -2,6 +2,7 @@
 import subprocess
 import os
 import datetime
+import getpass
 
 import rospy
 
@@ -15,7 +16,13 @@ class RosBagger():
         today = datetime.datetime.now().strftime("%Y_%m_%d")
         now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
-        bag_dir = os.path.expandvars("$HOME/glenn_bags" + "/" + today)
+        desired_path ="$HOME/"
+
+        if("cwrubotix" == getpass.getuser()):
+            desired_path="~/../../media/cwrubotix/usb_bagging/"
+        
+
+        bag_dir = os.path.expandvars(desired_path + "glenn_bags" + "/" + today)
 
         if not os.path.exists(bag_dir):
             os.makedirs(bag_dir)
