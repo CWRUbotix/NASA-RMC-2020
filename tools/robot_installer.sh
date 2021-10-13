@@ -19,6 +19,8 @@ sudo apt install ros-melodic-desktop
 echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
 source ~/.bashrc
 
+
+
 sudo apt install python-rosdep
 sudo rosdep init
 rosdep update
@@ -57,3 +59,6 @@ cd ../../../
 catkin build            
 
 cd ../   
+
+echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
+source ~/.bashrc
