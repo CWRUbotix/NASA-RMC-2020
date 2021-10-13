@@ -31,7 +31,7 @@ cd src
 
 repository="https://github.com/cwruRobotics/NASA-RMC-2020.git"
 localFolder=""
-branch ="tutorials"
+branchName="master"
 
 git clone --depth 1 -b "$branch" "$repository"  
 
@@ -53,6 +53,3 @@ cd ../../../
 catkin build            
 
 cd ../   
-
-sudo apt-get autoremove 
-

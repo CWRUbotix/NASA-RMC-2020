@@ -14,8 +14,6 @@ PACKAGES=(
     # Plotjuggler is a very cool plotting software
     ros-$ROS_DISTRO-plotjuggler
 
-    if [$USERNAME != "cwrubotix"]
-    then
     # Used to drive simulated robot
         ros-$ROS_DISTRO-ros-controllers
 
@@ -23,8 +21,6 @@ PACKAGES=(
     # These packages depend on Gazebo and will install it automatically
         ros-$ROS_DISTRO-gazebo-ros-pkgs
         ros-$ROS_DISTRO-gazebo-ros-control
-
-    fi
 
     # Needed to calculate point clouds of obstacles
     ros-$ROS_DISTRO-ros-numpy
