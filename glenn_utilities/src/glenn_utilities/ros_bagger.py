@@ -17,8 +17,9 @@ class RosBagger():
         now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
         # Will now store bags with respect to ros logs
-        desired_path =os.getenv('ROS_LOG_DIR')        
-        bag_dir = os.path.expandvars(desired_path + "../" + "glenn_bags/" + today)
+        desired_path =os.getenv('ROS_LOG_DIR')       
+        desired_path=os.abspath(desired_path) 
+        bag_dir = os.path.expandvars(desired_path  + "glenn_bags/" + today)
 
         if not os.path.exists(bag_dir):
             os.makedirs(bag_dir)
