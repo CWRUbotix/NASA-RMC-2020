@@ -20,7 +20,7 @@ class RosBagger():
         desired_path =os.getenv('ROS_LOG_DIR')       
         desired_path= os.path.abspath(os.path.join(desired_path , "../"))
         rospy.loginfo("hello" +desired_path)
-        bag_dir = desired_path + "glenn_bags/" + today
+        bag_dir = desired_path + "/glenn_bags/" + today
 
         if not os.path.exists(bag_dir):
             os.makedirs(bag_dir)
