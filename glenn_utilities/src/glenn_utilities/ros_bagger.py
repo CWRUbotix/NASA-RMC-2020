@@ -22,7 +22,7 @@ class RosBagger():
         rospy.loginfo("hello" +desired_path)
         bag_dir = desired_path + "/glenn_bags/" + today
 
-        symlink_dir =desired_path + "/glenn_bags/"
+        symlink_dir =desired_path + "/glenn_bags/latest/"
 
         if not os.path.exists(bag_dir):
             os.makedirs(bag_dir)
