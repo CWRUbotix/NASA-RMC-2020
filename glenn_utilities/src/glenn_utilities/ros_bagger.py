@@ -19,7 +19,7 @@ class RosBagger():
         # Will now store bags with respect to ros logs
         desired_path =os.getenv('ROS_LOG_DIR')       
         desired_path= os.path.abspath(desired_path)
-        print(desired_path)
+        rospy.log(desired_path)
         bag_dir = desired_path + "glenn_bags/" + today
 
         if not os.path.exists(bag_dir):
