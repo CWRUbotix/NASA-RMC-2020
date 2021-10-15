@@ -63,5 +63,5 @@ cd ../
 echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
 source ~/.bashrc
 
-echo "export ROS_LOG_DIR=~/../../media/cwrubotix/USB_BAGGING/log" >> ~/.bashrc
+echo "export ROS_LOG_DIR=~/../../media/cwrubotix/USB_BAGGING/log/" >> ~/.bashrc
 source ~/.bashrc
