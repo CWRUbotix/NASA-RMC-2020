@@ -17,9 +17,17 @@ class RosBagger():
         today = datetime.datetime.now().strftime("%Y_%m_%d")
         now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
-        # Will now store bags with respect to ROS_LOG_DIR
-        desired_path =os.getenv('ROS_LOG_DIR')       
-        desired_path= os.path.abspath(os.path.join(desired_path , "../"))
+        # default bag location
+        desired_path="$HOME" 
+
+        # Will now store bags with respect to ROS_LOG_DIR if it has been set
+        # Bags to external USB stick if the ROS_LOG_DIR is set to the path of the stick
+        if 'ROS_LOG_DIR' in os.environ:
+            desired_path =os.getenv('ROS_LOG_DIR')
+
+            #gets parent directory of ros logs
+            desired_path= os.path.abspath(os.path.join(desired_path , "../"))
+       
         bag_dir = desired_path + "/glenn_bags/" + today
 
 
