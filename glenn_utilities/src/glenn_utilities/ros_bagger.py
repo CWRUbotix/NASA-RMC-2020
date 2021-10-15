@@ -22,8 +22,11 @@ class RosBagger():
         rospy.loginfo("hello" +desired_path)
         bag_dir = desired_path + "/glenn_bags/" + today
 
+        symlink_dir =desired_path + "/glenn_bags/"
+
         if not os.path.exists(bag_dir):
             os.makedirs(bag_dir)
 
         # Record specific bag topics, save bag to bag_dir
         self.bag_process = subprocess.Popen(["rosbag", "record", "-O", bag_dir + "/" + now + ".bag"] + bag_topics)
+        os.symlink(bag_dir,symlink_dir)
