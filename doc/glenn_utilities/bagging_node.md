@@ -18,6 +18,6 @@ In `bagging_node.launch`, `bag_topics.yaml` is loaded.
 
 ## Implementation Details
 
-Uses python `subprocess` module to call `rosbag record`. Bags are saved with respect to `ROS_LOG_DIR`. They will be parrell to the log folder of ros.  
+Uses python `subprocess` module to call `rosbag record`. Bags are saved with respect to `ROS_LOG_DIR`. glenn_bags will be parallel to the log folder of ros.  
 In this folder, bags are put into folders by date with format `%Y_%m_%d`.  
 Bags are named with timestamp of creation, in format `%Y_%m_%d_%H_%M_%S`.
