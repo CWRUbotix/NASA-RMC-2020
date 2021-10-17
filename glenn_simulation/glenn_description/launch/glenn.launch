@@ -4,7 +4,7 @@
     <arg name="rviz" default="true"/>
     <arg name="use_steering" default="true"/>
     <arg name="model" default="$(find glenn_description)/urdf/glenn.urdf.xacro"/>
-    <arg name="world" default="randomized"/>
+    <arg name="world" default="flat"/>
     <arg name="verbose" default="false"/>
 
     <rosparam command="load" file="$(find glenn_description)/config/diff_drive.yaml"
