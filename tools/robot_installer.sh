@@ -62,5 +62,5 @@ cd ../
 
 # Adds the lines to the .bashrc and sources the .bashrc
 echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
-echo "export ROS_LOG_DIR=/media/cwrubotix/USB_BAGGING/log/" >> ~/.bashrc
+echo "export ROS_LOG_DIR=/media/cwrubotix/USB_BAGGING/log" >> ~/.bashrc
 source ~/.bashrc

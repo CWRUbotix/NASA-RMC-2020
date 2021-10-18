@@ -22,5 +22,6 @@ Uses python `subprocess` module to call `rosbag record`.\
 Bags are saved with respect to `ROS_LOG_DIR`.\
 glenn_bags has the same parent directory as ROS's log file.\
 If no `ROS_LOG_DIR` is set will default to `$HOME/glenn_bags`.\
+Important Note `ROS_LOG_DIR` should not end in a /.\
 In this folder, bags are put into folders by date with format `%Y_%m_%d`.  
 Bags are named with timestamp of creation, in format `%Y_%m_%d_%H_%M_%S`.
