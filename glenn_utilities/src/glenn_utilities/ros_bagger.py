@@ -3,7 +3,6 @@ import atexit
 import subprocess
 import os
 import datetime
-import getpass
 
 import rospy
 
@@ -26,7 +25,7 @@ class RosBagger():
             desired_path =os.getenv('ROS_LOG_DIR')
 
             #gets parent directory of ros logs
-            desired_path= os.path.abspath(os.path.join(desired_path , "../"))
+            desired_path= os.path.dirname(desired_path)
        
         bag_dir = desired_path + "/glenn_bags/" + today
 
