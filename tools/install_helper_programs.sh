@@ -18,6 +18,9 @@ PACKAGES=(
 
     # Terminal for automodule
     xterm
+
+    # Enables ssh from a computer onto another device
+    openssh-server
 )
 
 sudo apt update # Make sure package list is up to date
@@ -26,8 +29,8 @@ sudo apt install ${PACKAGES[@]} # Install all packages
 # Update pip and install packages
 # We use py3 most of the time but some
 # ros packages only work with py2
-pip3 install --user --upgrade pip
-pip install --user --upgrade pip
+python -m pip install --user --upgrade pip
+python3 -m pip3 install --user --upgrade pip
 
-pip install -r requirements.txt
-pip3 install -r requirements.txt
+python -m pip install -r requirements.txt
+python3 -m pip3 install -r requirements.txt
