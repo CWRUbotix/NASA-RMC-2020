@@ -8,6 +8,16 @@
     <node pkg="uwb_localization" type="localization_listener_node.py" name="uwb_node" cwd="node" unless="$(arg sim)"/>
     <node pkg="uwb_localization" type="kalman_filter_listener_node.py" name="kalman_filter_node" output="screen" cwd="node"/>
 
+    <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
+        <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
+        <remap from="/imu/data" to="/imu_realsense/data"/>
+        <param name="use_mag" value="false"/>
+        <param name="publish_tf" value="true"/>
+        <param name="fixed_frame" value="realsense_footprint_link"/>
+        <param name="remove_yaw_tf" value="true"/>
+        <param name="reverse_tf" value="false"/>
+    </node>
+
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true">
         <remap from="odometry/filtered" to="/glenn_base/odom_map"/>
     </node>

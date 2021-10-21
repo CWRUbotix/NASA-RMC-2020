@@ -5,6 +5,7 @@
   <arg name="json_file_path"        default=""/>
   <arg name="camera"                default="camera"/>
 
+<!-- Launches the realsense-->
   <group ns="$(arg camera)">
     <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
       <arg name="serial_no"         value="$(arg serial_no)"/>
@@ -30,6 +31,31 @@
 
     </include>
 
-
   </group>
+
+  <node name="pcl_manager" pkg="nodelet" type="nodelet" args="manager"/>
+
+  <!-- TODO what do these do?-->
+  <node name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid pcl_manager">
+        <remap from="~input" to="camera/depth/color/points"/>
+        <remap from="~output" to="/realsense/depth/points"/>
+        <param name="leaf_size" value="0.05"/>
+        <param name="filter_field_name" value="z"/>
+        <param name="filter_limit_min" value="0.0"/>
+        <param name="filter_limit_max" value="3.0"/>
+        <param name="use_indices" value="false"/>
+        <param name="output_frame" value="realsense_footprint_link"/>
+    </node>
+
+   <node name="point_cloud_normal_estimator" pkg="obstacle_detection" type="point_cloud_normal_estimator">
+        <remap from="input_cloud" to="/realsense/depth/points"/>
+        <remap from="output_cloud" to="/realsense/depth/points_obstacles"/>
+        <remap from="output_models" to="/obstacles/coefficients"/>
+
+        <param name="search_radius" value="0.07"/>
+        <param name="normal_threshold" value="0.95"/>
+        <param name="cluster_tolerance" value="0.1"/>
+    </node>
+
+
 </launch>

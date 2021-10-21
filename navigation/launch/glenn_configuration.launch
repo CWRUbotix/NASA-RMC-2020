@@ -1,0 +1,22 @@
+<launch>
+
+   <arg name="sim" default="false"/>
+
+   <!-- Launches the realsense-->
+   <!-- Navigation Stack sensor_msgs/pointcloud2-->
+   <include file="$(find navigation)/launch/realsense_camera.launch" unless="$(arg sim)"/>
+
+   <!-- Launches the localization-->
+   <!-- This does the odometry-->
+   <include file="$(find uwb_localization)/launch/localization.launch" unless="$(arg sim)"/>
+
+    <!-- Needed for cmd_to_wheel_speeds_node-->
+   <rosparam command="load" file = "$(find glenn_launcher)/params/glenn_params.yaml"/>
+
+
+   <!-- Base Controller-->
+   <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
+
+  
+
+</launch> 

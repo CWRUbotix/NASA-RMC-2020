@@ -22,7 +22,7 @@ class CmdToWheelSpeedsNode:
             rospy.logerr("Parameters could not be found, please ensure they are on the param server")
             rospy.spin()
 
-        self.motor_acceleration = rospy.get_param('/motor_command_accel')
+        self.motor_acceleration = rospy.get_param('motor_command_accel')
 
         self.motor_setpoint_pub = rospy.Publisher("/glenn_base/motor_cmds", DriveMotorCmd, queue_size=2)
         rospy.Subscriber("/glenn_base/cmd_vel", Twist, self.cmd_vel_callback, queue_size=1)

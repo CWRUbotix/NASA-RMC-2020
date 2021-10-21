@@ -36,6 +36,12 @@ PACKAGES=(
     # Point cloud library
     ros-$ROS_DISTRO-pcl-ros
     ros-$ROS_DISTRO-pcl-conversions
+
+    # Realsense library
+    ros-$ROS_DISTRO-realsense2-camera
+
+    # amcl package
+    ros-$ROS_DISTRO-amcl
 )
 
 sudo apt update # Make sure package list is up to date

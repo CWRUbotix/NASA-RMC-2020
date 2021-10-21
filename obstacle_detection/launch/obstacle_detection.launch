@@ -8,6 +8,7 @@
     <rosparam command="load" file="$(find obstacle_detection)/params/obstacle_detection_params.yaml" ns="obstacle_detection"/>
     <include file="$(find obstacle_detection)/launch/realsense_camera.launch" unless="$(arg sim)"/>
 
+    <!-- TODO this should live in localization?-->
     <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
         <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
         <remap from="/imu/data" to="/imu_realsense/data"/>
@@ -17,7 +18,7 @@
         <param name="remove_yaw_tf" value="true"/>
         <param name="reverse_tf" value="false"/>
     </node>
-
+<!--
     <node name="pcl_manager" pkg="nodelet" type="nodelet" args="manager"/>
 
     <node name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid pcl_manager">
@@ -40,6 +41,7 @@
         <param name="normal_threshold" value="0.95"/>
         <param name="cluster_tolerance" value="0.1"/>
     </node>
+-->
 
     <node name="obstacle_detection_node" pkg="obstacle_detection" type="obstacle_detection_node.py">
         <remap from="input_cloud" to="/realsense/depth/points_obstacles"/>
