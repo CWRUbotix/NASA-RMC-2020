@@ -9,6 +9,7 @@
     <include file="$(find obstacle_detection)/launch/realsense_camera.launch" unless="$(arg sim)"/>
 
     <!-- TODO this should live in localization?-->
+   <!--
     <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
         <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
         <remap from="/imu/data" to="/imu_realsense/data"/>
@@ -18,6 +19,7 @@
         <param name="remove_yaw_tf" value="true"/>
         <param name="reverse_tf" value="false"/>
     </node>
+    -->
 <!--
     <node name="pcl_manager" pkg="nodelet" type="nodelet" args="manager"/>
 

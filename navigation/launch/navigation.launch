@@ -1,0 +1,10 @@
+<launch>
+
+   
+<!-- Starts Sensors-->
+   <include file="$(find navigation)/launch/glenn_configuration.launch"/>
+
+<!-- Starts move_base-->
+    <include file="$(find navigation)/launch/move_base.launch"/>
+
+</launch> 
