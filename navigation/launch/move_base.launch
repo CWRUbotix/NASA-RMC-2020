@@ -2,12 +2,8 @@
 <launch>
 
    
-<!-- Mapping-->
-   <node name="map_server" pkg="map_server" type="map_server" args="$(find navigation)/maps/arena_map.yaml"/>
- 
- <!--- Run AMCL --> 
-    <include file="$(find amcl)/examples/amcl_diff.launch" />
 
+ 
    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
     <rosparam file="$(find navigation)/params/move_base/costmap_local.yaml" command="load"/> 
    <rosparam file="$(find navigation)/params/move_base/costmap_global.yaml" command="load"/>
@@ -19,6 +15,14 @@
     <remap from="/odom" to="/odometry/odom_filtered"/>
  
  </node>
+ 
+ <!---> Run AMCL dont think i need this
+    <include file="$(find amcl)/examples/amcl_diff.launch" />
+-->
+ 
+<!-- Abstracts manual wheel control away-->
+<node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
+
 
 </launch> 
 

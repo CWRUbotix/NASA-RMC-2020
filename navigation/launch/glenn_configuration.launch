@@ -13,10 +13,20 @@
     <!-- Needed for cmd_to_wheel_speeds_node-->
    <rosparam command="load" file = "$(find glenn_launcher)/params/glenn_params.yaml"/>
 
+   <!-- Explanatinos of tf-->
+   <!-- https://automaticaddison.com/coordinate-frames-and-transforms-for-ros-based-mobile-robots/-->
 
    <!-- Base Controller-->
-   <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
+   <!-- Relationship between the realsense link and the base_link(our robot)-->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="realsense_footprint_link_to_base_link" args="1 0 0 0 0 0 base_link realsense_footprint_link" />
 
-  
+   <!-- Relationship between the camera_link and the realsense_link -->
+   <node pkg="tf2_ros" type="static_transform_publisher" name="camera_link_to_realsense_footprint_link" args="0 0 0 0 0 0 realsense_footprint_link camera_link" />
+
+   <!-- Starting location of robot-->
+   <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0 map odom" />
+
+   <!-- Base_foot_print is 2d location robot base_link is the link from 2d vertical up to the center of the robot-->
+   <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 1 0 0 0 base_footprint base_link" />
 
 </launch> 

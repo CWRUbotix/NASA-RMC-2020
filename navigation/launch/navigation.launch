@@ -1,5 +1,7 @@
 <launch>
 
+<!-- Mapping-->
+   <node name="map_server" pkg="map_server" type="map_server" args="$(find navigation)/maps/arena_map.yaml"/>
    
 <!-- Starts Sensors-->
    <include file="$(find navigation)/launch/glenn_configuration.launch"/>
