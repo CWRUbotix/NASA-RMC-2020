@@ -8,13 +8,13 @@ ekf_se_map:
   print_diagnostics: true
   publish_acceleration: true
   debug: false
-  debug_out_file: /home/edf42001/kalman_debug.txt
+  debug_out_file: /home/kalman_debug.txt
   dynamic_process_noise_covariance: true
 
   map_frame: map
   odom_frame: odom
   base_link_frame: base_link_footprint
-  world_frame: map
+  world_frame: odom
 
   initial_state: [2, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 

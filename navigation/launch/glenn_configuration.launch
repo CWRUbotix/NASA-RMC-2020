@@ -27,6 +27,6 @@
    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0 map odom" />
 
    <!-- Base_foot_print is 2d location robot base_link is the link from 2d vertical up to the center of the robot-->
-   <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 1 0 0 0 base_footprint base_link" />
+   <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 1 0 0 0 base_link_footprint base_link" />
 
 </launch> 

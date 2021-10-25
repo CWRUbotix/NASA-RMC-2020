@@ -33,7 +33,7 @@ class LocalizationNode:
         self.robot_y = []  # list of past and current y positions
         self.robot_theta = []  # list of past and current yaw measurements
         self.sensors = None  # DataFrame of sensors, types, and relative positions
-
+        
         # setup visualization directory and remove all past visualizations
         os.makedirs(self.viz_dir, exist_ok=True)
         try:
@@ -44,10 +44,12 @@ class LocalizationNode:
             print(e)
 
     def init_nodes(self):
-        rp = rospkg.RosPack()
-        # find config file in canbus node directory
-        script_path = os.path.join(rp.get_path("canbus"), "include", "node_config.csv")
-        sensors = pd.read_csv(script_path)
+       
+        # from hwctrl_params.yaml
+        
+        for i in range(4):
+            rospy.get_param("uwb_node" + i)
+
         self.sensors = sensors
         print(sensors)
         return sensors
