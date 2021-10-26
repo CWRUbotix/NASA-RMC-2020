@@ -1,12 +1,15 @@
 <launch>
 
+   <arg name="sim" default="false"/>
 <!-- Mapping-->
    <node name="map_server" pkg="map_server" type="map_server" args="$(find navigation)/maps/arena_map.yaml"/>
    
 <!-- Starts Sensors-->
-   <include file="$(find navigation)/launch/glenn_configuration.launch"/>
-
+   <include file="$(find navigation)/launch/glenn_configuration.launch">
+      <arg name="sim" value="$(arg sim)"/>
+   </include>
 <!-- Starts move_base-->
-    <include file="$(find navigation)/launch/move_base.launch"/>
-
+   <include file="$(find navigation)/launch/move_base.launch">
+      <arg name="sim" value="$(arg sim)"/>
+   </include>
 </launch> 

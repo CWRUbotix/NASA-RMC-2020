@@ -41,7 +41,7 @@ class IMU:
                                         rospy.get_param('imu_angular_vel_z_offset')]
         self.acceleration_offset = [0, 0, 0]
 
-        self.wheel_pub = rospy.Publisher('wheel', Odometry, queue_size=10)
+        self.wheel_pub = rospy.Publisher('glenn_base/odom', Odometry, queue_size=10)
         self.imu_pub = rospy.Publisher('imu/data', Imu, queue_size=10)
 
         rospy.Subscriber('imu/data_raw', Imu, self.receive_imu)
@@ -144,7 +144,7 @@ class IMU:
 
         stamped_msg = Odometry()
         stamped_msg.header = header
-        stamped_msg.child_frame_id = 'base_link'
+        stamped_msg.child_frame_id = 'base_link_footprint'
         stamped_msg.pose = pose_with_cov
         stamped_msg.twist = twist_with_cov
 

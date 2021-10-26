@@ -6,16 +6,16 @@
     <machine name="robot" address="192.168.0.100" user="cwrubotix" password="cwrubotix" default="never" env-loader="/home/cwrubotix/my_env_setup.sh"/>
 
     <rosparam command="load" file="$(find autonomy)/params/autonomy.yaml" ns="autonomy"/>
-
+<!--
     <group if="$(arg launch_from_robot)">
         <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/>
         <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
     </group>
     <group unless="$(arg launch_from_robot)">
-        <!-- Commented out for now until we figure out how to switch between launching on robot and launching on computer -->
-<!--         <node machine="robot" name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/> -->
+         Commented out for now until we figure out how to switch between launching on robot and launching on computer -->
+         <node machine="robot" name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/> -->
         <!-- <node name="transit_node" pkg="autonomy" type="transit_node.py" output="screen"/> -->
-
+    <!--
         <node pkg="move_base" type="move_base" name="move_base" output="screen">
             <param name="controller_frequency" value="10.0"/>
             <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
@@ -30,7 +30,7 @@
         </node>
 
         <node name="cmd_to_wheel_speeds_node" pkg="autonomy" type="cmd_to_wheel_speeds_node.py"/>
-
+-->
 	<!-- <node name="autonomy_node" pkg="autonomy" type="autonomy_node.py" launch-prefix="xterm -e"/> -->
 
         <node name="robot_state_machine_node" pkg="autonomy" type="robot_state_machine_node.py" />

@@ -1,15 +1,22 @@
 <?xml version="1.0"?>
 <launch>
+    
     <arg name="sim" default="false"/>
-
+    
     <rosparam command="load" file="$(find uwb_localization)/params/ekf_map.yaml"/>
+   
     <rosparam command="load" file="$(find uwb_localization)/params/uwb_locations.yaml"/>
 
-    <node pkg="uwb_localization" type="imu_listener_node.py" name="imu_node" cwd="node"/>
+    <!-- Listens for imu and encoder odometry-->
+    <node pkg="uwb_localization" type="imu_listener_node.py" name="imu_node" cwd="node" unless="$(arg sim)"/>
+   <!-- TODO this is broken-->
     <node pkg="uwb_localization" type="localization_listener_node.py" name="uwb_node" cwd="node" unless="$(arg sim)"/>
+
+
+    <!-- What does this do?-->
     <node pkg="uwb_localization" type="kalman_filter_listener_node.py" name="kalman_filter_node" output="screen" cwd="node"/>
 
-    <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node">
+    <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node" unless="$(arg sim)">
         <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
         <remap from="/imu/data" to="/imu_realsense/data"/>
         <param name="use_mag" value="false"/>
@@ -19,12 +26,20 @@
         <param name="reverse_tf" value="false"/>
     </node>
 
+    
+
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true">
-        <remap from="odometry/filtered" to="/glenn_base/odom_map"/>
+      <!--  <remap from="/odometry/filtered" to="/glenn_base/odom_map"/>
+    -->
     </node>
 
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odometry">
-        <remap from="odometry/filtered" to="/glenn_base/odom_filtered"/>
+       <!--
+        <remap from="/odometry/filtered" to="/glenn_base/odom_filtered"/>
+        -->
         <rosparam command="load" file="$(find uwb_localization)/params/ekf_odometry.yaml"/>
     </node>
+
+ <!--   <remap from="/glenn_base/odom_filtered" to="/odom"/>
+-->
 </launch>

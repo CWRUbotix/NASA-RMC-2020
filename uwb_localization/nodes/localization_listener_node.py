@@ -48,7 +48,7 @@ class LocalizationNode:
         # from hwctrl_params.yaml
         
         for i in range(4):
-            rospy.get_param("uwb_node" + i)
+            rospy.get_param("uwb_node" + str(i))
 
         self.sensors = sensors
         print(sensors)
@@ -170,6 +170,7 @@ if __name__ == '__main__':
     localization_node = LocalizationNode()
     sensors = localization_node.init_nodes()
     for i, sensor in sensors.iterrows():
+        # TODO this is terrible
         if sensor['type'] == 'node':
             uwb_node = UltraWideBandNode(sensor['id'], sensor['x'], sensor['y'], sensor['type'], sensors)
             localization_node.nodes.append(uwb_node)
