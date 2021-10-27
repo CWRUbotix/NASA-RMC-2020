@@ -2,6 +2,8 @@
 
 # BEGIN SENSOR CONFIGS
 hardware:
+  can_interface: ""
+
   sensor:
     uwb_node_1:
       id: 1

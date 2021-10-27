@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import time
 import math
 import pandas as pd
@@ -82,3 +83,5 @@ class UltraWideBandNode:
         ret = np.cumsum(a, dtype=float)
         ret[n:] = ret[n:] - ret[:-n]
         return ret[n - 1:] / n
+
+
