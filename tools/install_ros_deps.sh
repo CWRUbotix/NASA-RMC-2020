@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e # Exit if any command fails
+ # Exit if any command fails
 
 PACKAGES=(
     # Kalman filters for robot localization
@@ -26,7 +26,7 @@ PACKAGES=(
     ros-$ROS_DISTRO-ros-numpy
 
     # SBG Driver Package
-    ros-$ROS_DISTRO-sbg-driver
+
 
     ros-$ROS_DISTRO-realsense2-camera
 
