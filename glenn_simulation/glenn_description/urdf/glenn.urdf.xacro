@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<robot name="glenn" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:include filename="$(find glenn_description)/urdf/glenn.gazebo.xacro"/>
+    <xacro:include filename="$(find glenn_description)/urdf/glenn.transmission.xacro"/>
+    <xacro:include filename="$(find glenn_description)/urdf/realsense.urdf.xacro"/>
+
+    <!-- NOTE Length=x, Width=y, Height=z-->
+
+    <!-- Values for the robot body-->
+
+    <!-- Units in Meters-->
+    <xacro:property name="bodylength" value="0.4577"/>
+    <xacro:property name="bodywidth" value="0.9411"/>
+    <xacro:property name="bodyheight" value="0.477"/>
+    <xacro:property name="wheelradius" value="0.1561"/>
+    <xacro:property name="wheelwidth" value="0.0762"/>
+    <!-- Distance from the centers of the wheels in the length and width of robot. -->
+    <!-- wheelsepx distance from spoke to spoke over 2 -->
+    <xacro:property name="wheelsepx" value="${0.3947/2}"/>
+    <!-- wheelsepy is from wheel to wheel not crossing the center line-->
+    <xacro:property name="wheelsepy" value="0.3175"/>
+    <!-- If wheels are not aligned use offset-->
+    <xacro:property name="wheeloffsetx" value="0.0"/>
+
+    <!-- body is for aligning the robot mesh to the center of gravity-->
+    <!-- Data from cad model 
+    X = -2.54667
+    Y = 0.68615
+    Z = 9.90497
+    Note not currently used but leaving here because might be useful later-->
+    <xacro:property name="bodyx" value="0.13"/>
+    <xacro:property name="bodyy" value="0.01"/>
+    <xacro:property name="bodyz" value="0.12"/>
+
+    <!-- Controls tilt of robot model-->
+    <xacro:property name="bodyroll" value="0"/>
+    <xacro:property name="bodypitch" value="0"/>
+    <xacro:property name="bodyyaw" value="${pi/2}"/>
+
+    <!-- Note line up robot model first or you will spend time realigning the other sensors-->
+
+    <!-- Inertia Section-->
+
+    <!-- Cadders Inertia Offset-->
+    <xacro:property name="robotlengthfromzero" value="-0.282549"/>
+    <xacro:property name="robotwidthfromzero" value="0.85221"/>
+    <xacro:property name="robotheightfromzero" value="-9.8254"/>
+
+    <!-- Masses unit kg-->
+    
+    <xacro:property name="wheelmass" value="1.05216"/>
+    <!-- Mass of robot without wheels-->
+    <xacro:property name="robotmass" value="30.8"/>
+
+    <!-- Inertial values for robot units kg/m^2-->
+    <xacro:property name="robotlxx" value="0.385"/>
+    <xacro:property name="robotlxy" value="0"/>
+    <xacro:property name="robotlxz" value="0"/>
+    <xacro:property name="robotlyy" value="1.92098166"/>
+    <xacro:property name="robotlyz" value="0"/>
+    <xacro:property name="robotlzz" value="1.844169"/>
+
+    <!-- Inertial values for wheels units kg/m^2-->
+    <xacro:macro name="cylinder_inertia" params="m r h">
+      <inertia  ixx="${m*(3*r*r+h*h)/12}" ixy = "0" ixz = "0"
+        iyy="${m*(3*r*r+h*h)/12}" iyz = "0"
+        izz="${m*r*r/2}"/>
+    </xacro:macro>
+
+    <xacro:macro name="wheel" params="prefix side reflect">
+        <link name="${prefix}_wheel_link">
+            <visual>
+                <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+                <geometry>
+                    <cylinder radius="${wheelradius}" length="${wheelwidth}"/>
+                </geometry>
+            </visual>
+            <collision>
+                <!-- cylinder origin different than mesh origin -->
+                <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+                <geometry>
+                    <cylinder radius="${wheelradius}" length="${wheelwidth}"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <origin xyz="0 0 0" rpy="${pi/2} 0 0" />
+                <mass value="${wheelmass}"/>
+                <xacro:cylinder_inertia m="${wheelmass}" r="${wheelradius}" h="${wheelwidth}"/>
+            </inertial>
+        </link>
+        
+        <!-- set gazebo wheel properties -->
+        <xacro:wheel_gazebo prefix="${prefix}"/>
+
+        <joint name="${prefix}_wheel_joint" type="continuous">
+            <parent link="base_link"/>
+            <child link="${prefix}_wheel_link"/>
+            <origin xyz="${side*wheelsepx + wheeloffsetx} ${reflect*(wheelsepy/2 + wheelwidth/2)} 0"/>
+            <axis xyz="0 1 0"/>
+            <dynamics damping="0.8" friction="2.0"/>
+        </joint>
+        
+        <!-- set wheel transmission properties -->
+        <xacro:wheel_transmission prefix="${prefix}"/>
+        
+    </xacro:macro>
+
+    <link name="base_link">
+        <visual>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
+            <geometry>
+                <mesh filename="package://glenn_description/meshes/chassis.dae"/>
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
+            <geometry>
+                <mesh filename="package://glenn_description/meshes/chassis.dae"/>
+                <!-- <box size="${bodylength} ${bodywidth} ${bodyheight}"/> -->
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="${robotmass}"/>
+            <inertia ixx="${robotlxx}" ixy="${robotlxy}" ixz="${robotlxz}" iyy="${robotlyy}" iyz="${robotlyz}" izz="${robotlzz}" />
+        </inertial>
+    </link>
+
+    <!-- Create a root link with no inertia to make the solver happy and raise the robot above the floor -->
+    <link name="base_link_footprint">
+        <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
+    </link>
+
+    <!-- Connect that link to the base link in the middle of the robot -->
+    <joint name="base_link_joint" type="fixed">
+        <origin xyz="0 0 ${wheelradius}" rpy="0 0 0" />
+        <parent link="base_link_footprint"/>
+        <child link="base_link" />
+    </joint>
+
+    <xacro:wheel prefix="front_right" side="1" reflect="-1"/>
+    <xacro:wheel prefix="front_left" side="1" reflect="1"/>
+    <xacro:wheel prefix="back_right" side="-1" reflect="-1"/>
+    <xacro:wheel prefix="back_left" side="-1" reflect="1"/>
+
+    <xacro:realsense name="realsense"/>
+
+    <!-- Waiting on this location from CAD people-->
+    <link name="imu_link"/>
+    <joint name="imu_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="imu_link"/>
+        <origin xyz="0.35 -0.1 0" rpy="0 0 0"/>
+    </joint>
+</robot>

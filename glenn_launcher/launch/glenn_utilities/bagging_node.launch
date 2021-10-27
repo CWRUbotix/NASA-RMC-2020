@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <node name="bagging_node" pkg="glenn_utilities" type="bagging_node.py">
-        <rosparam file="$(find glenn_launcher)/params/glenn_utilities/bag_topics.yaml"/>
-    </node>
-</launch>

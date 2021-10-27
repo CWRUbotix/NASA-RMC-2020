@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <machine name="beaglebone" address="beaglebone.local" user="ros" password="cwrubotix" env-loader="/home/ros/ros_setup.sh" timeout="10.0" />
-    <rosparam command="load" file="$(find glenn_launcher)/params/hardware/hwctrl_params.yaml"/>
-    <node machine="beaglebone" name="hwctrl_node" pkg="hwctrl" type="hwctrl" output="screen" >
-    <env name="ROS_MASTER_URI" value="http://192.168.7.1:11311" />
-    </node>
-</launch>
