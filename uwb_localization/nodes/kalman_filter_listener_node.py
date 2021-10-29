@@ -24,7 +24,7 @@ from nav_msgs.msg import Odometry
 
 class KalmanFilterNode:
     def __init__(self):
-        self.topic = 'odometry/filtered_map'
+        self.topic = 'glenn_base/odom_filtered'
         self.accel_topic = 'accel/filtered'
         print('Booting up node...')
         rospy.init_node('kalman_filter_listener', anonymous=True)

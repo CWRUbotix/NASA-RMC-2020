@@ -29,14 +29,14 @@
     
 
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true">
-      <!--  <remap from="/odometry/filtered" to="/glenn_base/odom_map"/>
-    -->
+        <remap from="/odometry/filtered" to="/glenn_base/odom_map"/>
+    
     </node>
 
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odometry">
-       <!--
+      
         <remap from="/odometry/filtered" to="/glenn_base/odom_filtered"/>
-        -->
+        
         <rosparam command="load" file="$(find uwb_localization)/params/ekf_odometry.yaml"/>
     </node>
 

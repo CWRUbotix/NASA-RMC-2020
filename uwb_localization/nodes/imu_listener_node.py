@@ -120,7 +120,7 @@ class IMU:
     def receive_encoders(self, msg):
         header = Header()
         header.stamp = rospy.Time.now()
-        header.frame_id = 'base_link'
+        header.frame_id = 'map'
 
         point_msg = Point(0, 0, 0)
         orientation_quat = R.from_euler('xyz', [0, 0, 0]).as_quat()
@@ -144,7 +144,7 @@ class IMU:
 
         stamped_msg = Odometry()
         stamped_msg.header = header
-        stamped_msg.child_frame_id = 'base_link_footprint'
+        stamped_msg.child_frame_id = 'base_footprint'
         stamped_msg.pose = pose_with_cov
         stamped_msg.twist = twist_with_cov
 

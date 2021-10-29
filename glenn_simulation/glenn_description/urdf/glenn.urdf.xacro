@@ -127,14 +127,14 @@
     </link>
 
     <!-- Create a root link with no inertia to make the solver happy and raise the robot above the floor -->
-    <link name="base_link_footprint">
+    <link name="base_footprint">
         <origin xyz="${bodyx} ${bodyy} ${bodyz}" rpy="${bodyroll} ${bodypitch} ${bodyyaw}"/>
     </link>
 
     <!-- Connect that link to the base link in the middle of the robot -->
     <joint name="base_link_joint" type="fixed">
         <origin xyz="0 0 ${wheelradius}" rpy="0 0 0" />
-        <parent link="base_link_footprint"/>
+        <parent link="base_footprint"/>
         <child link="base_link" />
     </joint>
 

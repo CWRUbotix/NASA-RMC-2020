@@ -7,13 +7,11 @@
    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
    <rosparam file="$(find navigation)/params/move_base/costmap_local.yaml" command="load"/> 
    <rosparam file="$(find navigation)/params/move_base/costmap_global.yaml" command="load"/>
-   <rosparam file="$(find navigation)/params/move_base/local_costmap_params.yaml" command="load" />
-   <rosparam file="$(find navigation)/params/move_base/global_costmap_params.yaml" command="load" /> 
-   <rosparam file="$(find navigation)/params/move_base/base_local_planner_params.yaml" command="load" />
- 
-    <remap from="/cmd_vel" to="/glenn_base/cmd_vel"/>
-    <remap from="/odom" to="/odometry/odom_filtered"/>
- 
+
+      <remap from="/cmd_vel" to="/glenn_base/cmd_vel"/>
+     
+     <!--<remap from="/odom" to="/odometry/odom_filtered"/>
+ -->
  </node>
  
  <!---> Run AMCL dont think i need this

@@ -76,11 +76,11 @@ class Simulator:
     def publishOdometry(self):
         header = Header()
         header.stamp = rospy.Time.now()
-        header.frame_id = 'odom'
+        header.frame_id = 'map'
 
         msg = Odometry()
         msg.header = header
-        msg.child_frame_id = "base_link_footprint"
+        msg.child_frame_id = "base_footprint"
 
         pose = Pose()
         pose.position = Point(self.robot.state[0, 0], self.robot.state[1, 0], 0)

@@ -13,7 +13,7 @@ ekf_se_map:
 
   map_frame: map
   odom_frame: odom
-  base_link_frame: base_link_footprint
+  base_link_frame: base_footprint
   world_frame: odom
 
   initial_state: [2, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
