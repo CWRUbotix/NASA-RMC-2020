@@ -7,14 +7,15 @@ ekf_se_map:
   transform_timeout: 0.0
   print_diagnostics: true
   publish_acceleration: true
-  debug: false
-  debug_out_file: /home/kalman_debug.txt
+  debug: true
+  debug_out_file: /kalman_debug.txt
   dynamic_process_noise_covariance: true
+  publish_tf: true
 
   map_frame: map
   odom_frame: odom
   base_link_frame: base_footprint
-  world_frame: odom
+  world_frame: map
 
   initial_state: [2, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 

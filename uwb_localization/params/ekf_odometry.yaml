@@ -10,6 +10,8 @@ odom_frame: odom  # Defaults to "odom" if unspecified
 base_link_frame: base_footprint  # Defaults to "base_link" if unspecified
 world_frame: odom  # Defaults to the value of odom_frame if unspecified
 
+# rostopic echo /diagnostic for help test
+print_diagnostics: true
 
 odom0: /glenn_base/odom
 odom0_config: [false, false, false,

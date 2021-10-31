@@ -28,7 +28,7 @@
 
     
 
-    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true">
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map">
         <remap from="/odometry/filtered" to="/glenn_base/odom_map"/>
     
     </node>
