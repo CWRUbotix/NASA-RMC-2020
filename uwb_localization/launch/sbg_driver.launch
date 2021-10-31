@@ -1,16 +1,12 @@
+<!-- Node to start sbg imu-->
 <launch>
 
     <arg name="sim" default="false"/>
-    <!--
-    <include file="$(find sbg_driver)/launch/sbg_device.launch" unless="$(arg sim)">
-        <arg name="/confWithRos" value="true"/>
-    </include>
-    -->
-    
     
     <node name="sbg_device" pkg="sbg_driver" type="sbg_device" output="screen" unless="$(arg sim)">
-      
+        <!-- Loads generic variables-->
         <rosparam command="load" file="$(find sbg_driver)/config/sbg_device_uart_default.yaml"/>
+        <!-- Variables for sbg to output standars ros messages-->
         <param name="confWithRos"  value="true"/>
         <param name="output/ros_standard" value="true"/>
     </node>
