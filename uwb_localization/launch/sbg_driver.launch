@@ -3,18 +3,18 @@
 
     <node name="sbg_device" pkg="sbg_driver" type="sbg_device" output="screen">
         <!-- Loads generic variables-->
-        <rosparam command="load" file="$(find sbg_driver)/config/example/ellipse_A_default.yaml"/>
+        <rosparam command="load" file="$(find sbg_driver)/config/ellipse_A_NASA.yaml"/>
         <!-- Variables for sbg to output standars ros messages-->
         <param name="confWithRos"  value="true"/>
         <param name="output/ros_standard" value="true"/>
 
         <!-- Should disable compass and gps data-->
         <!-- Done with compliance to NASA rules-->
-        <param name="magnetometer/magnetometerRejectMode" value="0"/>
+        <!-- <param name="magnetometer/magnetometerRejectMode" value="0"/>
         <param name="gnss/posRejectMode" value="0"/>
         <param name="gnss/velRejectMode" value="0"/>
-        <param name="gnss/hdtRejectMode" value="0"/>
-        <param name="output/log_mag"     value="0"/>
+        <param name="gnss/hdtRejectMode" value="0"/> -->
+        <!-- <param name="output/log_mag"     value="0"/> -->
         
     </node>
 
