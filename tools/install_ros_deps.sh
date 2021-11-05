@@ -25,6 +25,9 @@ PACKAGES=(
     # Needed to calculate point clouds of obstacles
     ros-$ROS_DISTRO-ros-numpy
 
+    # SBG Driver Package
+    # TODO checkback for ros-$ROS_DISTRO-sbg-driver
+
     # Navigation packages
     ros-$ROS_DISTRO-move-base
     ros-$ROS_DISTRO-global-planner

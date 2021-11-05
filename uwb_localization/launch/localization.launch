@@ -7,9 +7,7 @@
    
     <rosparam command="load" file="$(find uwb_localization)/params/uwb_locations.yaml"/>
 
-    <!-- Listens for imu and encoder odometry-->
-    <node pkg="uwb_localization" type="imu_listener_node.py" name="imu_node" cwd="node" unless="$(arg sim)"/>
-   <!-- TODO this is broken-->
+    <node pkg="uwb_localization" type="wheel_odom_node.py" name="wheel_odom_node" cwd="node" unless="$(arg sim)"/>
     <node pkg="uwb_localization" type="localization_listener_node.py" name="uwb_node" cwd="node" unless="$(arg sim)"/>
 
 
@@ -42,4 +40,6 @@
 
  <!--   <remap from="/glenn_base/odom_filtered" to="/odom"/>
 -->
+    <include file="$(find uwb_localization)/launch/sbg_driver.launch" unless="$(arg sim)"/>
+    
 </launch>
