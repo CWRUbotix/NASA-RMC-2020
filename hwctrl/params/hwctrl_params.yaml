@@ -5,45 +5,51 @@
 # TODO find acutally locations of the uwb_nodes
 hardware:
   anchors:
-    uwb_anchor_1:
+    uwb_anchor_0:
       id: 1
-    uwb_anchor_2:
+      x:  0
+      y:  0
+    uwb_anchor_1:
       id: 2
-    uwb_anchor_3:
+      x:  0
+      y:  0
+    uwb_anchor_2:
       id: 3
+      x:  0
+      y:  0
   sensor:
+    uwb_node_0:
+      id: 0
+      name: 'UWB NODE 0'
+      type: 'uwb'
+      can_id: 1
+      update_period: 0.1
+      relative_x: 0
+      relative_y: 0
     uwb_node_1:
       id: 1
       name: 'UWB NODE 1'
       type: 'uwb'
-      can_id: 1
+      can_id: 2
       update_period: 0.1
-      x: 0
-      y: 0
+      relative_x: 0
+      relative_y: 1
     uwb_node_2:
       id: 2
       name: 'UWB NODE 2'
       type: 'uwb'
-      can_id: 2
+      can_id: 3
       update_period: 0.1
-      x: 0
-      y: 1
+      relative_x: 1
+      relative_y: 1
     uwb_node_3:
       id: 3
       name: 'UWB NODE 3'
       type: 'uwb'
-      can_id: 3
-      update_period: 0.1
-      x: 1
-      y: 1
-    uwb_node_4:
-      id: 4
-      name: 'UWB NODE 4'
-      type: 'uwb'
       can_id: 4
       update_period: 0.1
-      x: 1
-      y: 1
+      relative_x: 1
+      relative_y: 1
     ebay_temperature:
       id: 5
       name: 'EBAY TEMPERATURE'

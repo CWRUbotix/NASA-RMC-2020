@@ -5,7 +5,7 @@
     
     <rosparam command="load" file="$(find uwb_localization)/params/ekf_map.yaml"/>
    
-    <rosparam command="load" file="$(find uwb_localization)/params/uwb_locations.yaml"/>
+    <rosparam command="load" file="$(find hwctrl)/params/hwctrl_params.yaml"/>
 
     <node pkg="uwb_localization" type="wheel_odom_node.py" name="wheel_odom_node" cwd="node" unless="$(arg sim)"/>
     <node pkg="uwb_localization" type="localization_listener_node.py" name="uwb_node" cwd="node" unless="$(arg sim)"/>

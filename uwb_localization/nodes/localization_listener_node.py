@@ -33,11 +33,11 @@ class UwbLocalizationNode:
         self.anchors = []
 
         self.pub = rospy.Publisher("uwb_nodes", PoseWithCovarianceStamped, queue_size=12)
-        self.sub = rospy.Subscriber("localization_data", UwbData, self.position_callback, None, 12)
+        #self.sub = rospy.Subscriber("localization_data", UwbData, self.position_callback, None, 12)
         
         # get anchors 
         for i in range(3):
-            base_path = f"/hardware/anchors/anchor_{i}/"
+            base_path = f"hardware/anchors/uwb_anchor_{i}/"
             id =  int(rospy.get_param(base_path + "id"))
             x = float(rospy.get_param(base_path + "x"))
             y = float(rospy.get_param(base_path + "y"))
@@ -45,13 +45,13 @@ class UwbLocalizationNode:
         
         # get uwbs
         for i in range(4):
-            base_path = f"/hardware/sensors/uwb_{i}/"
+            base_path = f"hardware/sensor/uwb_node_{i}/"
             id = int(rospy.get_param(base_path + "id"))
             rel_x = int(rospy.get_param(base_path + "relative_x"))
-            rel_y = int(rospy.get_param(base_path + "relative_x"))
+            rel_y = int(rospy.get_param(base_path + "relative_y"))
 
-            uwb = UltraWideBandNode(id, rel_x, rel_y, anchors)
-            nodes[id] = uwb
+            uwb = UltraWideBandNode(id, rel_x, rel_y, self.anchors)
+            self.nodes[id] = uwb
 
 
     def get_robot_rotation(self):
