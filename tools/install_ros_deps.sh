@@ -26,7 +26,7 @@ PACKAGES=(
     ros-$ROS_DISTRO-ros-numpy
 
     # SBG Driver Package
-
+    ros-$ROS_DISTRO-sbg-driver
 
     ros-$ROS_DISTRO-realsense2-camera
 

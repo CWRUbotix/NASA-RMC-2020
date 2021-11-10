@@ -1,7 +1,3 @@
 [submodule "externals/imu_tools"]
 	path = externals/imu_tools
 	url = https://github.com/cwruRobotics/imu_tools.git
-
-[submodule "externals/sbg_ros_driver"]
-	path = externals/sbg_ros_driver
-	url = https://github.com/SBG-Systems/sbg_ros_driver.git
