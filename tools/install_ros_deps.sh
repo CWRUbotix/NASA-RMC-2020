@@ -26,7 +26,11 @@ PACKAGES=(
     ros-$ROS_DISTRO-ros-numpy
 
     # SBG Driver Package
-    # TODO checkback for ros-$ROS_DISTRO-sbg-driver
+    ros-$ROS_DISTRO-sbg-driver
+
+    # Realsense Camera Package
+    ros-$ROS_DISTRO-realsense2-camera
+
 
     # Navigation packages
     ros-$ROS_DISTRO-move-base
