@@ -28,15 +28,19 @@
       <arg name="tf_prefix"         value="$(arg camera)"/>
       <arg name="initial_reset"     value="true"/>
       <arg name="filters"           value="pointcloud"/>
+      <arg name="unite_imu_method"  value="linear_interpolation"/>
+      <arg name="gyro_fps"          value="6"/>
+      <ara name="accel_fps"        value="6"/>  
 
+      
     </include>
-
   </group>
 
   <node name="pcl_manager" pkg="nodelet" type="nodelet" args="manager"/>
 
   <!-- TODO what do these do?-->
   <node name="point_cloud_decimator" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid pcl_manager">
+        
         <remap from="~input" to="camera/depth/color/points"/>
         <remap from="~output" to="/realsense/depth/points"/>
         <param name="leaf_size" value="0.05"/>
@@ -57,5 +61,6 @@
         <param name="cluster_tolerance" value="0.1"/>
     </node>
 
+ 
 
 </launch>

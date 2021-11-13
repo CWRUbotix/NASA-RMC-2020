@@ -21,7 +21,7 @@
     <!-- TODO is this necessary?-->
     <!--
     <node name="realsense_imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node" unless="$(arg sim)">
-        <remap from="/imu/data_raw" to="/imu_realsense/data_raw"/>
+        <remap from="/imu/data_raw" to="/realsense/data_raw"/>
         <remap from="/imu/data" to="/imu_realsense/data"/>
         <param name="use_mag" value="false"/>
         <param name="publish_tf" value="true"/>
@@ -30,10 +30,11 @@
     </node>
     -->
     
-    
-
+    <remap to="/camera/imu" from="/realsense/data_raw"/>
+  
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map">
         <remap from="/odometry/filtered" to="/glenn_base/odom_map"/>
+        
     </node>
 
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odometry">

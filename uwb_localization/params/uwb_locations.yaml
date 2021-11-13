@@ -1,6 +1,0 @@
-#TODO get actual location for these
-# [x,y,z]
-uwb_location0: [1,0,1]
-uwb_location1: [1,1,1]
-uwb_location2: [0,0,1]
-uwb_location3: [0,1,1]
