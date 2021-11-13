@@ -31,6 +31,8 @@ PACKAGES=(
     # Realsense Camera Package
     ros-$ROS_DISTRO-realsense2-camera
 
+    # IMU filter
+    ros-$ROS_DISTRO-imu-tools
 
     # Navigation packages
     ros-$ROS_DISTRO-move-base

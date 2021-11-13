@@ -34,4 +34,8 @@
    <!-- Base_foot_print is 2d location robot base_link is the link from 2d vertical up to the center of the robot-->
    <node pkg="tf2_ros" type="static_transform_publisher" name="base_footprint_to_base_link_broadcaster" args="0 0 1 0 0 0 base_footprint base_link" />
 
+   <!-- base_link to sbg_link TODO find locatino relative to base_link-->
+   <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_to_sbg" args="0 0 0 0 0 0 base_link sbg_link" />
+
+
 </launch> 

@@ -15,7 +15,9 @@
         <param name="gnss/velRejectMode" value="0"/>
         <param name="gnss/hdtRejectMode" value="0"/> -->
         <!-- <param name="output/log_mag"     value="0"/> -->
-
+        <remap from="/imu/data"  to="/sbg/data_raw"/>
     </node>
+
+
 
 </launch>

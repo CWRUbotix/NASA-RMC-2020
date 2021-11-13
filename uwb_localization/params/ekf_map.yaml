@@ -19,7 +19,7 @@ ekf_se_map:
 
   initial_state: [2, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-  imu0: imu
+  imu0: /sbg/data_raw
   imu0_config: [false, false, false,
                 false,  false, false,
                 false, false, false,
