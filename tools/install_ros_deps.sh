@@ -36,6 +36,9 @@ PACKAGES=(
     # Point cloud library
     ros-$ROS_DISTRO-pcl-ros
     ros-$ROS_DISTRO-pcl-conversions
+
+    # SMACC Viewer
+    ros-$ROS_DISTRO-smacc-viewer
 )
 
 sudo apt update # Make sure package list is up to date
