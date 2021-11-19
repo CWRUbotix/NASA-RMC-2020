@@ -52,6 +52,10 @@ cd tools
 source ~/.bashrc
 ./install_ros_deps.sh
 
+# Installs VSCode
+source ~/.bashrc
+./install_vscode.sh
+
 # Upgrades all packages
 sudo apt-get upgrade
 
