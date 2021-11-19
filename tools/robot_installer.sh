@@ -39,11 +39,8 @@ localFolder=""
 branch="master"
 git clone --depth 1 -b "$branch" "$repository"  
 
-# Updates the submodule
-cd NASA-RMC-2020
-git submodule update --init
-
 # Removes the simulation folder
+cd NASA-RMC-2020
 rm -r glenn_simulation
 
 # Installs helper programs and ROS depencies
@@ -51,10 +48,11 @@ cd tools
 ./install_helper_programs.sh
 source ~/.bashrc
 ./install_ros_deps.sh
+source ~/.bashrc
 
 # Installs VSCode
-source ~/.bashrc
 ./install_vscode.sh
+source ~/.bashrc
 
 # Upgrades all packages
 sudo apt-get upgrade

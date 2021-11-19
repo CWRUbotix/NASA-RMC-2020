@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Installs VsCode
 sudo apt update
 sudo apt install software-properties-common apt-transport-https wget
