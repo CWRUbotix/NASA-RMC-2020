@@ -8,8 +8,9 @@ Almost all robots use the operating system called Linux (imagine if your Windows
 
 <ol>
     <li>
-
-Click on the Windows or Mac icon under VMware Products from the [CWRU software center](https://softwarecenter.case.edu/index.php). Log in in the top right corner to view the products.</p></li>
+   
+Click on the Windows or Mac icon under VMware Products from the [CWRU software center](https://softwarecenter.case.edu/index.php). Log in in the top right corner to view the products.
+    </li>
     <li>
     Download VMWare Workstation Pro 
     </li>
@@ -38,22 +39,19 @@ ROS is the robot operating system. It’s not an operating system, at its core i
 Read [this](https://www.ros.org/about-ros/) (very) basic intro to ROS, and you can also feel free to read this [more in depth intro](https://www.ros.org/core-components/). However you can also skip the more in depth intro because later you will learn by doing.
     </li>
     <li>
-[Here](http://wiki.ros.org/noetic/Installation/Ubuntu) are the instructions to install ROS Noetic onto Ubuntu 20.04. Please read the director's commentary below for each step. (To copy/paste text to a terminal, you can’t use Ctrl-C as is reserved for stopping running programs. Use Shift-Ctrl-C or V. 
+    [Here](http://wiki.ros.org/noetic/Installation/Ubuntu) are the instructions to install ROS Noetic onto Ubuntu 20.04. Please read the director's commentary below for each step. (To copy/paste text to a terminal, you can’t use Ctrl-C as is reserved for stopping running programs. Use Shift-Ctrl-C or V. 
     <ol>
-<li>
-Skip this step. Should already be setup.
-</li>
-<li>
-The sources.list tells Linux where to download new software packages from.
-
-` sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' `
-
-</li>
-
-<li> Keys are a security measure to make sure the software packages haven’t been tampered with
-
-` sudo apt install curl # if you haven't already installed curl`
-` curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -`
+        <li>
+        Skip this step. Should already be setup.
+        </li>
+        <li>
+        The sources.list tells Linux where to download new software packages from.<br>
+        ` sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' `
+        </li>
+        <li> 
+        Keys are a security measure to make sure the software packages haven’t been tampered with<br>
+        ` sudo apt install curl # if you haven't already installed curl`<br>
+        ` curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -`
 </li>
 1.4) Do the Desktop install, not the Desktop-Full
 1.5) This command will add a command to your .bashrc that will setup the ros environment. The `source` command just runs a script
