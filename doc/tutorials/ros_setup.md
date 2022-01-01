@@ -32,18 +32,42 @@ Click on the Windows or Mac icon under VMware Products from the [CWRU software c
 
 ROS is the robot operating system. It’s not an operating system, at its core it's a framework for different parts of the robot to communicate with each other. 
 
-Read this (very) basic intro to ros, and you can also feel free to read this more in depth intro. However you can also skip the more in depth intro because later you will learn by doing.
-Here are the instructions to install ROS Melodic onto Ubuntu 18.04. Please read the director's commentary below for each step. (To copy/paste text to a terminal, you can’t use Ctrl-C as is reserved for stopping running programs. Use Shift-Ctrl-C or V. 
-1.1) Skip this step. Should already be setup.
-1.2) The sources.list tells Linux where to download new software packages from
-1.3) Keys are a security measure to make sure the software packages haven’t been tampered with
+<ol>
+    <li>
+
+Read [this](https://www.ros.org/about-ros/) (very) basic intro to ROS, and you can also feel free to read this [more in depth intro](https://www.ros.org/core-components/). However you can also skip the more in depth intro because later you will learn by doing.
+    </li>
+    <li>
+[Here](http://wiki.ros.org/noetic/Installation/Ubuntu) are the instructions to install ROS Noetic onto Ubuntu 20.04. Please read the director's commentary below for each step. (To copy/paste text to a terminal, you can’t use Ctrl-C as is reserved for stopping running programs. Use Shift-Ctrl-C or V. 
+    <ol>
+<li>
+Skip this step. Should already be setup.
+</li>
+<li>
+The sources.list tells Linux where to download new software packages from.
+
+` sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' `
+
+</li>
+
+<li> Keys are a security measure to make sure the software packages haven’t been tampered with
+
+` sudo apt install curl # if you haven't already installed curl`
+` curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -`
+</li>
 1.4) Do the Desktop install, not the Desktop-Full
 1.5) This command will add a command to your .bashrc that will setup the ros environment. The `source` command just runs a script
 1.6) Skip 1.6, only do 1.6.1 (although it’s not really necessary)
 Test your ros build by running the command `roscore`
+</ol>
+<li>
 Go through the first 8 tutorials here. This will take a while but by the end you will have a good knowledge of ros. I think you can do tutorials 3 and 4 last as they aren’t as fun
+</li>
+<li>
 Additional tutorial about how to write code for nodes. (Not needed for next steps but very good knowledge to have)
+</li>
 
+</ol>
 <h2> Part 3) Git </h2>
 
 Git is a version control system which allows you to track changes in your code and help multiple people work together on one project. Our code is stored on GitHub, a website for hosting git repositories. 
