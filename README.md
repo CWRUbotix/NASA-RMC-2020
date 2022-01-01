@@ -30,7 +30,7 @@ See https://wiki.ros.org/ROS/Patterns/Communication#Communication_via_Topics_vs_
 * Use existing ROS topic types when applicable. For example sensor_msgs/BatteryState or sensor_msgs/Imu
 * Use namespacing in the parameter server so that everything isn't in the global namespace. For example autonomy/target_robot_speed instead of target_robot_speed
 
-## CWRUbotix Custom Conventions
+### CWRUbotix Custom Conventions
 
 * Python ROS nodes should be implemented as classes
-  * Anything being published could have its own publish function that encapsulates the code to convert data to ROS msg types
+* Anything being published could have its own publish function that encapsulates the code to convert data to ROS msg types
