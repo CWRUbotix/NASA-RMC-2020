@@ -7,25 +7,26 @@ By the end of this “bootcamp” you will have a knowledge of Linux, ROS, our r
 Almost all robots use the operating system called Linux (imagine if your Windows robot decided to update without your permission). However, most of you probably have a Windows computer, luckily we can install a Virtual Machine to use Linux. These instructions should also work if you have a mac but it hasn’t been tested. 
 
 <ol>
-<li>
-Click on the Windows or Mac icon under VMware Products from the [CWRU software center](https://softwarecenter.case.edu/index.php). Log in in the top right corner to view the products.
-<li>
-Download VMWare Workstation Pro 
-</li>
-<li>
-We want to run Ubuntu 18.04 Bionic Beaver in our VM. Download it here.
-Install Bionic Beaver into your VM. Download it [here](https://releases.ubuntu.com/18.04.5/).
-</li>
-<li>
-Here are a couple useful linux commands, try out the first 12 in a terminal. Don’t delete anything important!
-</li>
-<li>
-VIM is a text editor you can use when editing files in the command 
-line. The very general use is: type `vim <file>` to open a file. Press `a` to enter editing mode. Make your edits. Press `Esc` to exit editing mode. Type `:x` and press enter to save and quit. Or type `:q` to exit without saving. Try it out. Don’t worry, most code is written with a normal editor not Vim. 
-</li>
-<li>
-Tips: The VM is just another computer so you can install chrome and your favorite editor and whatever else you like. 
-</li>
+    <li>
+
+Click on the Windows or Mac icon under VMware Products from the [CWRU software center](https://softwarecenter.case.edu/index.php). Log in in the top right corner to view the products.</p></li>
+    <li>
+    Download VMWare Workstation Pro 
+    </li>
+    <li>
+    We want to run Ubuntu 20.04 Focal Fossa in our VM. Download it here.
+    Install Focal Fossa into your VM. Download it [here](https://releases.ubuntu.com/20.04.3/).
+    </li>
+    <li>
+    [Here](https://www.pcsuggest.com/basic-linux-commands/) are a couple useful linux commands, try out the first 12 in a terminal. Don’t delete anything important!
+    </li>
+    <li>
+    VIM is a text editor you can use when editing files in the command 
+    line. The very general use is: type `vim <file>` to open a file. Press `a` to enter editing mode. Make your edits. Press `Esc` to exit editing mode. Type `:x` and press enter to save and quit. Or type `:q` to exit without saving. Try it out. Don’t worry, most code is written with a normal editor not Vim. 
+    </li>
+    <li>
+    Tips: The VM is just another computer so you can install chrome and your favorite editor and whatever else you like. 
+    </li>
 </ol>
 
 <h2>Part 2) Installing ROS</h2>
