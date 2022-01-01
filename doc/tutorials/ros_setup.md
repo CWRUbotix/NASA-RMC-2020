@@ -1,8 +1,16 @@
-<h1>Welcome to the NASA Software team!</h1>
+# Welcome to the NASA Software team!
 
 By the end of this “bootcamp” you will have a knowledge of Linux, ROS, our robot’s code, and be able to drive our robot around in our brand-new simulator!
 
-<h2>Part 1) Installing Linux</h2>
+## Table of Contents
+- [Welcome to the NASA Software team!](#welcome-to-the-nasa-software-team)
+  - [Table of Contents](#table-of-contents)
+  - [Part 1 Installing Linux](#part-1-installing-linux)
+  - [Part 2 Installing ROS](#part-2-installing-ros)
+  - [Part 3 Git](#part-3-git)
+  - [Part 4 Software and Simulator](#part-4-software-and-simulator)
+
+## Part 1 Installing Linux
 
 Almost all robots use the operating system called Linux (imagine if your Windows robot decided to update without your permission). However, most of you probably have a Windows computer, luckily we can install a Virtual Machine to use Linux. These instructions should also work if you have a mac but it hasn’t been tested. 
 
@@ -29,7 +37,7 @@ Click on the Windows or Mac icon under VMware Products from the [CWRU software c
     </li>
 </ol>
 
-<h2>Part 2) Installing ROS</h2>
+## Part 2 Installing ROS
 
 ROS is the robot operating system. It’s not an operating system, at its core it's a framework for different parts of the robot to communicate with each other. 
 
@@ -39,42 +47,55 @@ ROS is the robot operating system. It’s not an operating system, at its core i
 Read [this](https://www.ros.org/about-ros/) (very) basic intro to ROS, and you can also feel free to read this [more in depth intro](https://www.ros.org/core-components/). However you can also skip the more in depth intro because later you will learn by doing.
     </li>
     <li>
-    [Here](http://wiki.ros.org/noetic/Installation/Ubuntu) are the instructions to install ROS Noetic onto Ubuntu 20.04. Please read the director's commentary below for each step. (To copy/paste text to a terminal, you can’t use Ctrl-C as is reserved for stopping running programs. Use Shift-Ctrl-C or V. 
+    [Here](http://wiki.ros.org/noetic/Installation/Ubuntu) are the instructions to install ROS Noetic onto Ubuntu 20.04. You may either follow the ROS guide or use the one provided below. (To copy/paste text to a terminal, you can’t use Ctrl-C as is reserved for stopping running programs. Use Shift-Ctrl-C or V. 
     <ol>
         <li>
         Skip this step. Should already be setup.
         </li>
         <li>
         The sources.list tells Linux where to download new software packages from.<br>
-        ` sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' `
+        `sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'`
         </li>
         <li> 
         Keys are a security measure to make sure the software packages haven’t been tampered with<br>
-        ` sudo apt install curl # if you haven't already installed curl`<br>
-        ` curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -`
-</li>
-1.4) Do the Desktop install, not the Desktop-Full
-1.5) This command will add a command to your .bashrc that will setup the ros environment. The `source` command just runs a script
-1.6) Skip 1.6, only do 1.6.1 (although it’s not really necessary)
-Test your ros build by running the command `roscore`
+        `sudo apt install curl # if you haven't already installed curl`<br>
+        `curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -`
+        </li>
+        <li>
+        Do the Desktop install, not the Desktop-Full<br>
+        `sudo apt update` <br>
+        `sudo apt install ros-noetic-desktop` <br>
+        </li>
+        <li>
+        This command will add a command to your .bashrc that will setup the ros environment. The `source` command just runs a script.<br>
+        `echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc`<br>
+        `source ~/.bashrc`
+        </li>
+        <li>
+        Skip 1.6, only do 1.6.1 (although it’s not really necessary)<br>
+        `sudo apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential`<br>
+        `sudo rosdep init`<br>
+        `rosdep update`<br>
+        Test your ros build by running the command `roscore`
+        </li>
+    </ol>
+    <li>
+    Go through the first 8 tutorials here. This will take a while but by the end you will have a good knowledge of ros. I think you can do tutorials 3 and 4 last as they aren’t as fun
+    </li>
+    <li>
+    Additional tutorial about how to write code for nodes. (Not needed for next steps but very good knowledge to have)
+    </li>
 </ol>
-<li>
-Go through the first 8 tutorials here. This will take a while but by the end you will have a good knowledge of ros. I think you can do tutorials 3 and 4 last as they aren’t as fun
-</li>
-<li>
-Additional tutorial about how to write code for nodes. (Not needed for next steps but very good knowledge to have)
-</li>
 
-</ol>
-<h2> Part 3) Git </h2>
+## Part 3 Git 
 
 Git is a version control system which allows you to track changes in your code and help multiple people work together on one project. Our code is stored on GitHub, a website for hosting git repositories. 
 
-Follow this git tutorial. Note git should already be installed in your Linux. 
+Follow this git tutorial. Note git should already be installed on your Linux VM. 
 Create a github account if you don’t have one.
 Tell us your username so we can add you to our organization
 
-<h2> Part 4) Our Software + Simulator </h2>
+## Part 4 Software and Simulator
 
 At the end of this step you will be able to build and run our robot software in the simulation.
 
@@ -93,7 +114,9 @@ You should hopefully see our robot in the simulation. Try driving it around or p
 
 Next steps:
 Do this tutorial on programming a ros node if you haven’t yet. 
-Here’s a document that explains the nodes currently on our robot. Run the robot simulator. Use `rosnode list` and `rosnode info <node_name>` to see what topics each node is publishing. Also use `rostopic list` and `rostopic info <topic_name> to learn about the topics we use.
+Here’s a document that explains the nodes currently on our robot. Run the robot simulator. Use `rosnode list` and `rosnode info <node_name>` to see what topics each node is publishing. Also use `rostopic list` and `rostopic info <topic_name>` to learn about the topics we use.
+
+
 
 
 
