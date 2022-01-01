@@ -14,8 +14,7 @@ Click on the Windows or Mac icon under VMware Products from the [CWRU software c
     Download VMWare Workstation Pro 
     </li>
     <li>
-    We want to run Ubuntu 20.04 Focal Fossa in our VM. Download it here.
-    Install Focal Fossa into your VM. Download it [here](https://releases.ubuntu.com/20.04.3/).
+    We want to run Ubuntu 20.04 Focal Fossa in our VM. Download it [here](https://releases.ubuntu.com/20.04.3/).
     </li>
     <li>
     [Here](https://www.pcsuggest.com/basic-linux-commands/) are a couple useful linux commands, try out the first 12 in a terminal. Don’t delete anything important!
