@@ -1,8 +1,0 @@
-<launch>
-    
-    <rosparam command="load" file="$(find excavation)/config/sm_atomic_config.yaml" />
-    <node pkg="excavation" type="sm_atomic_node" name="sm_atomic"/>
-        <node pkg="smacc_runtime_test" name="smacc_runtime_test_node" type="smacc_runtime_test_node" output="screen">
-        <rosparam file="$(find excavation)/config/sm_atomic_test.yaml"/>
-    </node>
-</launch>

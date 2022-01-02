@@ -34,3 +34,7 @@ See https://wiki.ros.org/ROS/Patterns/Communication#Communication_via_Topics_vs_
 
 * Python ROS nodes should be implemented as classes
 * Anything being published could have its own publish function that encapsulates the code to convert data to ROS msg types
+
+### CWRUbotix Software Set Up and Tutorial
+
+* Click [here](doc/tutorials/ros_setup.md) for our tutorial on setting up your computer.

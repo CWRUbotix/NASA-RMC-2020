@@ -1,14 +1,16 @@
-# Welcome to the NASA Software team!
+# CWRUbotix Software Set Up and Tutorial
 
-By the end of this “bootcamp” you will have a knowledge of Linux, ROS, our robot’s code, and be able to drive our robot around in our brand-new simulator!
+By the end of this “bootcamp” you will have a knowledge of Linux, ROS, our robot’s code, and be able to drive our robot around in our simulator!<br>
+
 
 ## Table of Contents
-- [Welcome to the NASA Software team!](#welcome-to-the-nasa-software-team)
+- [CWRUbotix Software Set Up and Tutorial](#cwrubotix-software-set-up-and-tutorial)
   - [Table of Contents](#table-of-contents)
   - [Part 1 Installing Linux](#part-1-installing-linux)
   - [Part 2 Installing ROS](#part-2-installing-ros)
   - [Part 3 Git](#part-3-git)
   - [Part 4 Software and Simulator](#part-4-software-and-simulator)
+  - [Part 5 IDE](#part-5-ide)
 
 ## Part 1 Installing Linux
 
@@ -67,12 +69,12 @@ Read [this](https://www.ros.org/about-ros/) (very) basic intro to ROS, and you c
         `sudo apt install ros-noetic-desktop` <br>
         </li>
         <li>
-        This command will add a command to your .bashrc that will setup the ros environment. The `source` command just runs a script.<br>
+        This command will add a command to your .bashrc that will setup the ros environment. The `source` command just runs a script. For those at home who don't know or don't remember .bashrc file is a file that runs everytime Linux starts up.<br> 
         `echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc`<br>
         `source ~/.bashrc`
         </li>
         <li>
-        Skip 1.6, only do 1.6.1 (although it’s not really necessary)<br>
+        These code lines will install some basic depencies for ROS<br>
         `sudo apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential`<br>
         `sudo rosdep init`<br>
         `rosdep update`<br>
@@ -80,10 +82,10 @@ Read [this](https://www.ros.org/about-ros/) (very) basic intro to ROS, and you c
         </li>
     </ol>
     <li>
-    Go through the first 8 tutorials here. This will take a while but by the end you will have a good knowledge of ros. I think you can do tutorials 3 and 4 last as they aren’t as fun
+    Go through the first 8 tutorials [here](http://wiki.ros.org/ROS/Tutorials). This will take a while but by the end you will have a good knowledge of ros. I think you can do tutorials 3 and 4 last as they aren’t as fun
     </li>
     <li>
-    Additional tutorial about how to write code for nodes. (Not needed for next steps but very good knowledge to have)
+    [Additional tutorial](http://wiki.ros.org/rospy_tutorials/Tutorials/WritingPublisherSubscriber) about how to write code for nodes. (Not needed for next steps but very good knowledge to have)
     </li>
 </ol>
 
@@ -91,38 +93,51 @@ Read [this](https://www.ros.org/about-ros/) (very) basic intro to ROS, and you c
 
 Git is a version control system which allows you to track changes in your code and help multiple people work together on one project. Our code is stored on GitHub, a website for hosting git repositories. 
 
-Follow this git tutorial. Note git should already be installed on your Linux VM. 
-Create a github account if you don’t have one.
-Tell us your username so we can add you to our organization
+Follow [this](https://www.freecodecamp.org/news/what-is-git-and-how-to-use-it-c341b049ae61/) git tutorial. Note git should already be installed on your Linux VM. 
+Create a [github](https://github.com/) account if you don’t have one.
+Tell us your username so we can add you to our [organization](https://github.com/cwruRobotics).
 
 ## Part 4 Software and Simulator
 
 At the end of this step you will be able to build and run our robot software in the simulation.
 
-Create a catkin_ws in your home folder. The home folder is the ~ folder. Then create a `src` folder in that folder. Clone the NASA-RMC-2020 repository into `~/catkin_ws/src/`. 
-Navigate to the new NASA-RMC-2020 folder and run `git submodule update --init`
-Navigate to the `tools` folder inside of NASA-RMC-2020. Run `source install_ros_deps.sh` to install our ros dependencies. Run `source install_helper_programs.sh` to install three nice helper programs (open these files if you’re curious what you’re installing)
-Build the code using `catkin build`. Note: need to be in the catkin_ws folder. `catkin build` is a nicer version of `catkin_make`.
-Now that we have a workspace, it helps to automatically setup the workspace when we login. Add the commands `source /opt/ros/melodic/setup.bash` (If it is not there already, you might have done this step in the ROS tutorials) and `source ~/catkin_ws/devel/setup.bash` to your `~/.bashrc` file.
-To open the .bashrc file, do `vim .bashrc` while in the home (~) folder. Or do `vim ~/.bashrc` if you’re not in the home folder. Note that because this folder starts with a `.` it is hidden to `ls` unless you do `ls -a` 
-Gazebo needs to know the path to plugins built for it. Add the line `export GAZEBO_PLUGIN_PATH=~/catkin_ws/devel/lib/` to your `.bashrc`. It also needs to know where our arena models are. Add the line `export GAZEBO_MODEL_PATH=~/catkin_ws/src/NASA-RMC-2020/glenn_simulation/glenn_description/models/` to the  `.bashrc` as well
-Time to run the simulator!
-Open a terminal and run `roscore`
-Open another terminal and run `roslaunch glenn_description glenn.launch`
-Open a third terminal and run `roslaunch glenn_launcher main.launch bags:=false sim:=true` (Set bags to true if you want to record data from the simulation)
-You should hopefully see our robot in the simulation. Try driving it around or playing with some of the windows that opened
+<ol>
+    <li>
+
+Create a catkin_ws in your home folder. The home folder is the ~ folder. Then create a `src` folder in the catkin_ws.<br>
+    `mkdir -p ~/catkin_ws/src`
+    </li>
+    <li>
+    Clone the NASA-RMC-2020 repository into `~/catkin_ws/src/`. <br>
+    `cd ~/catkin_ws/src`<br>
+    `git clone https://github.com/cwruRobotics/NASA-RMC-2020.git`
+    </li>
+    <li>
+    Navigate to the `tools` folder inside of NASA-RMC-2020. <br>
+    `cd NASA-RMC-2020/tools`<br>
+    Run `source install_ros_deps.sh` to install our ros dependencies. Run `source install_helper_programs.sh` to install helper programs (open these files if you’re curious what you’re installing)
+    </li>
+    <li>
+    Build the code using `catkin build`. Note: need to be in the catkin_ws folder. `catkin build` is a nicer version of `catkin_make`.<br>
+    `cd ~/catkin_ws/src`<br>
+    `catkin build`
+    </li>
+    Now that we have a workspace, it helps to automatically setup the workspace when we login. Add the commands `source /opt/ros/melodic/setup.bash` (If it is not there already, you might have done this step in the ROS tutorials) and `source ~/catkin_ws/devel/setup.bash` to your `~/.bashrc` file.
+    To open the .bashrc file, do `vim .bashrc` while in the home (~) folder. Or do `vim ~/.bashrc` if you’re not in the home folder. Note that because this folder starts with a `.` it is hidden to `ls` unless you do `ls -a` 
+    Gazebo needs to know the path to plugins built for it. Add the line `export GAZEBO_PLUGIN_PATH=~/catkin_ws/devel/lib/` to your `.bashrc`. It also needs to know where our arena models are. Add the line `export GAZEBO_MODEL_PATH=~/catkin_ws/src/NASA-RMC-2020/glenn_simulation/glenn_description/models/` to the  `.bashrc` as well
+    Time to run the simulator!
+    Open a terminal and run `roscore`
+    Open another terminal and run `roslaunch glenn_description glenn.launch`
+    Open a third terminal and run `roslaunch glenn_launcher main.launch bags:=false sim:=true` (Set bags to true if you want to record data from the simulation)
+    You should hopefully see our robot in the simulation. Try driving it around or playing with some of the windows that opened
+
+</ol>
+
+## Part 5 IDE
+
+You are free to use whatever IDE you want as long as it can devolop for both C++ and Python. I would reccomend using VsCode.<br>
+`source install_vscode.sh`
 
 Next steps:
 Do this tutorial on programming a ros node if you haven’t yet. 
 Here’s a document that explains the nodes currently on our robot. Run the robot simulator. Use `rosnode list` and `rosnode info <node_name>` to see what topics each node is publishing. Also use `rostopic list` and `rostopic info <topic_name>` to learn about the topics we use.
-
-
-
-
-
-
-
-
-
-
-
