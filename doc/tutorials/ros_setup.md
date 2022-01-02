@@ -50,8 +50,9 @@ ROS is the robot operating system. It’s not an operating system, at its core i
 Read [this](https://www.ros.org/about-ros/) (very) basic intro to ROS, and you can also feel free to read this [more in depth intro](https://www.ros.org/core-components/). However you can also skip the more in depth intro because later you will learn by doing.
     </li>
     <li>
-    [Here](http://wiki.ros.org/noetic/Installation/Ubuntu) are the instructions to install ROS Noetic onto Ubuntu 20.04. You may either follow the ROS guide or use the one provided below. (To copy/paste text to a terminal, you can’t use Ctrl-C as is reserved for stopping running programs. Use Shift-Ctrl-C or V. 
+    [Here](http://wiki.ros.org/noetic/Installation/Ubuntu) are the instructions to install ROS Noetic onto Ubuntu 20.04. You may either follow the ROS guide or use the one provided below. To copy/paste text to a terminal, you can’t use Ctrl-C as is reserved for stopping running programs. Use Shift-Ctrl-C or V. 
     <ol>
+        <!-- Line kept to better match ROS tutorial> <-->
         <li>
         Skip this step. Should already be setup.
         </li>
