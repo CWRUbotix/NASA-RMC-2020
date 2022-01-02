@@ -1,6 +1,6 @@
 # CWRUbotix Software Set Up and Tutorial
 
-By the end of this “bootcamp” you will have a knowledge of Linux, ROS, our robot’s code, and be able to drive our robot around in our simulator!<br>
+By the end of this “bootcamp” you will have a knowledge of Linux, ROS, our robot’s code, and be able to drive our robot around in our simulator! If you on the CWRUbotics team feel free to ask questions in the NASA-RMC-Software Slack Channel. If you have stumbled across this tutorial and have questions feel free to email me at <rmc170@case.edu>.<br>
 
 
 ## Table of Contents
@@ -11,10 +11,11 @@ By the end of this “bootcamp” you will have a knowledge of Linux, ROS, our r
   - [Part 3 Git](#part-3-git)
   - [Part 4 Software and Simulator](#part-4-software-and-simulator)
   - [Part 5 IDE](#part-5-ide)
+  - [Part 6 Next Steps](#part-6-next-steps)
 
 ## Part 1 Installing Linux
 
-Almost all robots use the operating system called Linux (imagine if your Windows robot decided to update without your permission). However, most of you probably have a Windows computer, luckily we can install a Virtual Machine to use Linux. These instructions should also work if you have a mac but it hasn’t been tested. 
+Almost all robots use the operating system called Linux (imagine if your Windows robot decided to update without your permission). However, most of you probably have a Windows computer, luckily we can install a Virtual Machine to use Linux. These instructions should also work if you have a mac but it hasn’t been tested. If you already have a linux Virtual machine or better have a real Linux machine feel free to skip this step.
 
 <ol>
     <li>
@@ -115,29 +116,46 @@ Create a catkin_ws in your home folder. The home folder is the ~ folder. Then cr
     <li>
     Navigate to the `tools` folder inside of NASA-RMC-2020. <br>
     `cd NASA-RMC-2020/tools`<br>
-    Run `source install_ros_deps.sh` to install our ros dependencies. Run `source install_helper_programs.sh` to install helper programs (open these files if you’re curious what you’re installing)
+    Run `install_ros_deps.sh` to install our ros dependencies. <br>
+    Run `install_helper_programs.sh` to install helper programs (open these files if you’re curious what you’re installing)<br>
+    `source install_ros_dep.sh`<br>
+    `source insall_helper_programs`
     </li>
     <li>
     Build the code using `catkin build`. Note: need to be in the catkin_ws folder. `catkin build` is a nicer version of `catkin_make`.<br>
     `cd ~/catkin_ws/src`<br>
     `catkin build`
     </li>
-    Now that we have a workspace, it helps to automatically setup the workspace when we login. Add the commands `source /opt/ros/melodic/setup.bash` (If it is not there already, you might have done this step in the ROS tutorials) and `source ~/catkin_ws/devel/setup.bash` to your `~/.bashrc` file.
-    To open the .bashrc file, do `vim .bashrc` while in the home (~) folder. Or do `vim ~/.bashrc` if you’re not in the home folder. Note that because this folder starts with a `.` it is hidden to `ls` unless you do `ls -a` 
-    Gazebo needs to know the path to plugins built for it. Add the line `export GAZEBO_PLUGIN_PATH=~/catkin_ws/devel/lib/` to your `.bashrc`. It also needs to know where our arena models are. Add the line `export GAZEBO_MODEL_PATH=~/catkin_ws/src/NASA-RMC-2020/glenn_simulation/glenn_description/models/` to the  `.bashrc` as well
+    <li>
+    Now that we have a workspace, it helps to automatically setup the workspace when we login. Add the commands `source /opt/ros/noeitc/setup.bash` (If it is not there already, you might have done this step in the ROS tutorials) and `source ~/catkin_ws/devel/setup.bash` to your `~/.bashrc` file and then source the file<br>
+    `echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc`<br>
+    `echo "export ROS_LOG_DIR=/media/cwrubotix/USB_BAGGING/log" >> ~/.bashrc`<br>
+    `source ~/.bashrc`
+    </li>
+    <li>
+    For those new to linux anyhing in the .bashrc file will run automatically everytime you start up linux. It is a very basic way to automate some repetive things. To edit the .bashrc `vim ~/.bashrc`. Note that because this folder starts with a `.` it is hidden to `ls` unless you do `ls -a` 
+    </li>
+    Gazebo needs to know the path to plugins built for it. Add the line `export GAZEBO_PLUGIN_PATH=~/catkin_ws/devel/lib/` to your `.bashrc`. It also needs to know where our arena models are. Add the line `export GAZEBO_MODEL_PATH=~/catkin_ws/src/NASA-RMC-2020/glenn_simulation/glenn_description/models/` to the  `.bashrc` as well.<br>
+    `echo "export GAZEBO_PLUGIN_PATH=~/catkin_ws/devel/lib/" >> ~/.bashrc`<br>
+    `echo "export GAZEBO_MODEL_PATH=~/catkin_ws/src/NASA-RMC-2020/glenn_simulation/glenn_description/models/" >> ~/.bashrc`<br>
+    </li>
+    <li>
     Time to run the simulator!
     Open a terminal and run `roscore`
     Open another terminal and run `roslaunch glenn_description glenn.launch`
     Open a third terminal and run `roslaunch glenn_launcher main.launch bags:=false sim:=true` (Set bags to true if you want to record data from the simulation)
     You should hopefully see our robot in the simulation. Try driving it around or playing with some of the windows that opened
-
+    `roscore`<br>
+    `roslaunch glenn_description glenn.launch`<br>
+    `roslaunch glenn_launcher main.launch bags:=false sim:=true`
+    </li>
 </ol>
 
 ## Part 5 IDE
 
-You are free to use whatever IDE you want as long as it can devolop for both C++ and Python. I would reccomend using VsCode.<br>
-`source install_vscode.sh`
+You are free to use whatever IDE you want as long as it can devolop for both C++ and Python. If you want to use VsCode on your VM we have file to install and setup.<br>
+`source ~/catkin_ws/src/NASA-RMC-2020/tools/install_vscode.sh`
 
-Next steps:
+## Part 6 Next Steps
 Do this tutorial on programming a ros node if you haven’t yet. 
 Here’s a document that explains the nodes currently on our robot. Run the robot simulator. Use `rosnode list` and `rosnode info <node_name>` to see what topics each node is publishing. Also use `rostopic list` and `rostopic info <topic_name>` to learn about the topics we use.
