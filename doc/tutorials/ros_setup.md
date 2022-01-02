@@ -157,5 +157,5 @@ You are free to use whatever IDE you want as long as it can devolop for both C++
 `source ~/catkin_ws/src/NASA-RMC-2020/tools/install_vscode.sh`
 
 ## Part 6 Next Steps
-Do [this](http://wiki.ros.org/rospy_tutorials/Tutorials/WritingPublisherSubscriber) tutorial on programming a ros node if you haven’t yet. 
-[Here’s])(https://docs.google.com/document/d/1mGesu10JnqWqZkxbHqHrwBc_WiGuTWYFXLr6ffkSuD8/edit?usp=sharing) a document that explains the nodes currently on our robot. Run the robot simulator. Use `rosnode list` and `rosnode info <node_name>` to see what topics each node is publishing. Also use `rostopic list` and `rostopic info <topic_name>` to learn about the topics we use.
+Do [this](http://wiki.ros.org/rospy_tutorials/Tutorials/WritingPublisherSubscriber) tutorial on programming a ros node if you haven’t yet.
+[Here’s](https://docs.google.com/document/d/1mGesu10JnqWqZkxbHqHrwBc_WiGuTWYFXLr6ffkSuD8/edit?usp=sharing) a document that explains the nodes currently on our robot. Run the robot simulator. Use `rosnode list` and `rosnode info <node_name>` to see what topics each node is publishing. Also use `rostopic list` and `rostopic info <topic_name>` to learn about the topics we use.
