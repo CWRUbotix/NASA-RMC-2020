@@ -27,6 +27,8 @@ Click on the Windows or Mac icon under VMware Products from the [CWRU software c
     <li>
     We want to run Ubuntu 20.04 Focal Fossa in our VM. Download it [here](https://releases.ubuntu.com/20.04.3/).
     </li>
+    <li>You can open a terminal as an application or by using the shortcut `Control+Alt+T`.
+    </li>
     <li>
     [Here](https://www.pcsuggest.com/basic-linux-commands/) are a couple useful linux commands, try out the first 12 in a terminal. Don’t delete anything important!
     </li>
@@ -119,7 +121,8 @@ Create a catkin_ws in your home folder. The home folder is the ~ folder. Then cr
     Run `install_ros_deps.sh` to install our ros dependencies. <br>
     Run `install_helper_programs.sh` to install helper programs (open these files if you’re curious what you’re installing).<br>
     `source install_ros_dep.sh`<br>
-    `source insall_helper_programs`
+    `source insall_helper_programs`<br>
+    `sudo apt upgrade`
     </li>
     <li>
     Build the code using `catkin build`. Note: need to be in the catkin_ws folder. `catkin build` is a nicer version of `catkin_make`.<br>
@@ -159,7 +162,9 @@ Create a catkin_ws in your home folder. The home folder is the ~ folder. Then cr
 ## Part 5 IDE
 
 You are free to use whatever IDE you want as long as it can devolop for both C++ and Python. If you want to use VsCode on your VM we have file to install and setup.<br>
-`source ~/catkin_ws/src/NASA-RMC-2020/tools/install_vscode.sh`
+`source ~/catkin_ws/src/NASA-RMC-2020/tools/install_vscode.sh`<br>
+To open VSCode either use `code -n ~/catkin_ws/src/NASA-RMC-2020/` or as an application.<br>
+`code -n ~/catkin_ws/src/NASA-RMC-2020/`
 
 ## Part 6 Next Steps
 Do [this](http://wiki.ros.org/rospy_tutorials/Tutorials/WritingPublisherSubscriber) tutorial on programming a ros node if you haven’t yet.
