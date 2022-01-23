@@ -23,7 +23,7 @@ source ~/.bashrc
 
 
 # Installs python ROS depencies
-sudo apt install python-rosdep
+sudo apt install python3-rosdep
 sudo rosdep init
 rosdep update
 

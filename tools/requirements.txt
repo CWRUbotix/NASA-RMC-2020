@@ -10,3 +10,10 @@ filterpy
 shapely
 scikit-build
 opencv-contrib-python
+
+# For smacc Viwer
+wxpython
+    # For wxpython
+    
+
+

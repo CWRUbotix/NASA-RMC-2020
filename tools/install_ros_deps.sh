@@ -36,6 +36,11 @@ PACKAGES=(
     # Point cloud library
     ros-$ROS_DISTRO-pcl-ros
     ros-$ROS_DISTRO-pcl-conversions
+
+    # ROS SMACC
+    ros-$ROS_DISTRO-flexbe-behavior-engine
+    ros-$ROD_DISTRO-behaviortree-cpp-v3
+    ros-$ROD_DISTRO-smacc-viewer
 )
 
 sudo apt update # Make sure package list is up to date

@@ -3,9 +3,11 @@
     <arg name="sim" default="false"/>
 
     <rosparam command="load" file="$(find excavation)/params/excavation_params.yaml"/>
-
+<!--
     <node name="dumper_node" pkg="excavation" type="dumper_node.py"/>
     <node name="excavator_node" pkg="excavation" type="excavator_node.py"/>
 
     <node name="excavation_simulator_node" pkg="excavation" type="excavation_simulator_node.py" if="$(arg sim)"/>
+-->
+    <node name="behavior_tree_factory" pkg="excavation" type="behavior_tree_factory"/>
 </launch>
