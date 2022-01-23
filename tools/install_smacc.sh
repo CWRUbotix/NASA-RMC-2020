@@ -5,7 +5,7 @@
 curl -s https://b0e12e65a4f16bfc4594206c69dce2a49a5eabd04efb7540:@packagecloud.io/install/repositories/reelrbtx/SMACC_viewer/script.deb.sh | sudo bash
 
 #Seperate file because this takes like 50 years
-python3 -m pip install wxPython
+python3 -m pip install wxPython --verbose
 
 curl -s https://packagecloud.io/install/repositories/reelrbtx/SMACC/script.deb.sh | sudo bash
 
