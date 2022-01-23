@@ -27,7 +27,7 @@ PACKAGES=(
         libgtk-3-dev
 )
 
-sudo apt update # Make sure package list is up to date
+sudo apt upgrade # Make sure package list is up to date
 sudo apt install ${PACKAGES[@]} # Install all packages
 
 # Update pip and install packages

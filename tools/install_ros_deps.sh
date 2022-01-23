@@ -39,7 +39,7 @@ PACKAGES=(
 
 )
 
-sudo apt update # Make sure package list is up to date
+sudo apt upgrade # Make sure package list is up to date
 sudo apt install ${PACKAGES[@]} # Install all ros packages
 
 # Install imu_tools submodule
