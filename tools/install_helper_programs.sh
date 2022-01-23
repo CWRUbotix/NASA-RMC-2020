@@ -20,12 +20,16 @@ PACKAGES=(
 
     # Enables ssh from a computer onto another device
     openssh-server
+
+    # For wxPython
+
+        python3-dev # (for your version of python)
+        libgtk-3-dev
 )
 
 sudo apt update # Make sure package list is up to date
 sudo apt install ${PACKAGES[@]} # Install all packages
 
 # Update pip and install packages
-# We use py3 most of the time but some
-python3 -m pip install --user --upgrade pip
+python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt

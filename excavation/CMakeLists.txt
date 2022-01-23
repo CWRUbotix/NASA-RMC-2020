@@ -6,20 +6,18 @@ find_package(catkin REQUIRED COMPONENTS
   glenn_msgs
   rospy
   roscpp
+  smacc
+  ros_timer_client
 )
 
 catkin_python_setup()
 
 catkin_package(
   INCLUDE_DIRS include
-
-  LIBRARIES excavation
-
-  CATKIN_DEPENDS 
-    actionlib 
-    glenn_msgs 
-    rospy 
-    roscpp
+#  LIBRARIES hwctrl
+  CATKIN_DEPENDS actionlib glenn_msgs rospy roscpp smacc ros_timer_client
+#  DEPENDS system_lib
+#  CATKIN_DEPENDS 
 )
 
 include_directories(
@@ -27,7 +25,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(behavior_tree_factory src/behavior_tree_factory.cpp)
+add_executable(sm_atomic_node src/sm_atomic_node.cpp)
 
-target_link_libraries(behavior_tree_factory ${catkin_LIBRARIES})
-add_dependencies(behavior_tree_factory ${catkin_EXPORTED_TARGETS})
+target_link_libraries(sm_atomic_node ${catkin_LIBRARIES})
