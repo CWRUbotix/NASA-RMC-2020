@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(excavation)
+project(mechs)
 
 find_package(catkin REQUIRED COMPONENTS
   actionlib
@@ -26,5 +26,7 @@ include_directories(
 )
 
 add_executable(sm_atomic_node src/sm_atomic_node.cpp)
+add_executable(sm_deposition_node src/sm_deposition_node.cpp)
 
 target_link_libraries(sm_atomic_node ${catkin_LIBRARIES})
+target_link_libraries(sm_deposition_node ${catkin_LIBRARIES})

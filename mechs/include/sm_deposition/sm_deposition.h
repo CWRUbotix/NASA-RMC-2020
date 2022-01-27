@@ -4,16 +4,15 @@
 #include <ros_timer_client/cl_ros_timer.h>
 
 // ORTHOGONALS
-#include <sm_atomic/orthogonals/or_timer.h>
+#include <sm_deposition/orthogonals/or_timer.h>
 
 //CLIENT BEHAVIORS
-#include <ros_timer_client/client_behaviors/cb_timer_countdown_loop.h>
-#include <ros_timer_client/client_behaviors/cb_timer_countdown_once.h>
+
 
 using namespace boost;
 using namespace smacc;
 
-namespace sm_atomic
+namespace sm_deposition
 {
 
 //STATE
@@ -22,8 +21,8 @@ class State2;
 
 //--------------------------------------------------------------------
 //STATE_MACHINE
-struct SmAtomic
-    : public smacc::SmaccStateMachineBase<SmAtomic, State1>
+struct SmDeposition
+    : public smacc::SmaccStateMachineBase<SmDeposition, State1>
 {
     using SmaccStateMachineBase::SmaccStateMachineBase;
 
@@ -33,7 +32,7 @@ struct SmAtomic
     }
 };
 
-} // namespace sm_atomic
+} // namespace sm_deposition
 
-#include <sm_atomic/states/st_state_1.h>
-#include <sm_atomic/states/st_state_2.h>
+#include <sm_deposition/states/st_slide_up.h>
+#include <sm_depositionstates/st_slide_down.h>

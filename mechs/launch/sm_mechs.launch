@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="sim" default="false"/>
+
+    <rosparam command="load" file="$(find mechs)/config/mechs_params.yaml"/>
+
+   <!-- <node name="dumper_node" pkg="mechs" type="dumper_node.py"/>
+    <node name="excavator_node" pkg="mechs" type="excavator_node.py"/>
+
+    <node name="excavation_simulator_node" pkg="mechs" type="excavation_simulator_node.py" if="$(arg sim)"/>
+    -->
+    <node name="sm_depostion" pkg="mechs" type="sm_depostion_node"/>
+    
+</launch>
