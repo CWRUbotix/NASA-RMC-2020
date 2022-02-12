@@ -1,5 +1,0 @@
-dumper_node:
-  move_speed: 0.5  # (u) Speed to move dumper at
-  wait_time: 2  #( s) How long to let dirt fall out for
-  max_accel: 4  # (u/s^2) Max bucket acceleration
-  mini_lower_time: 3 # (s) Mini lower duration
