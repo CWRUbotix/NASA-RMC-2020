@@ -120,7 +120,7 @@ Create a catkin_ws in your home folder. The home folder is the ~ folder. Then cr
     `cd NASA-RMC-2020/tools`<br>
     Run `install_ros_deps.sh` to install our ros dependencies. <br>
     Run `install_helper_programs.sh` to install helper programs (open these files if you’re curious what you’re installing).<br>
-    `source install_ros_dep.sh`<br>
+    `source install_ros_deps.sh`<br>
     `source install_helper_programs.sh`<br>
     `sudo apt upgrade`
     </li>
